@@ -1,14 +1,14 @@
 import cocotb
 from cocotb.triggers import Timer
+from cocotb.clock import Clock
 
 
 @cocotb.test()
-async def my_first_test(dut):
-    """Try accessing the design."""
+async def clocking(dut):
+    """Basic clocking."""
+    clk = await cocotb.start(Clock(dut.clk, 1, "ns").start())
 
     for cycle in range(10):
-        dut.clk.value = 0
-        await Timer(1, units="ns")
-        dut.clk.value = 1
-        await Timer(1, units="ns")
         dut._log.info("pc is %s", dut.pc.value)
+        await Timer(1, units="ns")
+        
