@@ -5,6 +5,7 @@ SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 
 VERILOG_SOURCES += $(PWD)/../rtl/cpu.sv
+VERILOG_SOURCES += $(PWD)/../rtl/cpu_control.sv
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
 TOPLEVEL = cpu
