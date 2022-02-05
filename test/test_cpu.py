@@ -9,6 +9,6 @@ async def clocking(dut):
     clk = await cocotb.start(Clock(dut.clk, 1, "ns").start())
 
     for cycle in range(16):
-        dut._log.info("pc is %s", dut.pc.value)
-        await Timer(1, units="ns")
+        dut._log.info("pc is {:04X}".format(dut.pc.value.integer))
+        await Timer(4, units="ns")
         

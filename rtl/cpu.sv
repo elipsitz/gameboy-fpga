@@ -16,9 +16,9 @@ module cpu (
     /// System bus address selection.
     output [15:0] mem_addr,
     /// System bus access enable.
-    output        mem_read_enable,
+    output        mem_enable,
     /// System bus write enable.
-    output        mem_write_enable,
+    output        mem_write,
     /// System bus data in.
     input  [7:0]  mem_data_in,
     /// System bus data out.
@@ -34,14 +34,25 @@ module cpu (
 
     //////////////////////////////////////// Control Unit
     wire pc_update_e pc_update;
+    wire load_instruction_register;
+    logic [7:0] instruction_register; // Holds the current instruction.
     cpu_control control (
         .clk,
         .reset,
-        .pc_update
+        .instruction_register,
+        .pc_update,
+        .load_instruction_register,
+        .mem_enable,
+        .mem_write
     );
+    always_ff @(posedge clk) begin
+        // Handle instruction register.
+        if (reset) instruction_register <= 0;
+        else if (load_instruction_register) instruction_register <= mem_data_in;
+    end
 
     //////////////////////////////////////// Program Counter
-    logic [15:0] pc = 0;
+    logic [15:0] pc = 0; // Current PC
     always_ff @(posedge clk) begin
         if (reset) pc <= 0;
         else if (m_cycle) begin
@@ -51,7 +62,5 @@ module cpu (
 
     /// Stubbed signals.
     assign mem_addr = pc;
-    assign mem_read_enable = 1;
-    assign mem_write_enable = 0;
     assign mem_data_out = 8'd0;
 endmodule
