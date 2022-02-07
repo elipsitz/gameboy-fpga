@@ -25,21 +25,19 @@ module cpu (
     output [7:0]  mem_data_out
 );
     //////////////////////////////////////// Clocking: T-Cycles
-    logic [1:0] t_counter = 0;
+    logic [1:0] t_cycle = 0;
     always_ff @(posedge clk) begin
-        if (reset) t_counter <= 0;
-        else t_counter <= t_counter + 1;
+        if (reset) t_cycle <= 0;
+        else t_cycle <= t_cycle + 1;
     end
-    logic m_cycle;
-    assign m_cycle = (t_counter == 3);
 
     //////////////////////////////////////// Control Unit
     logic pc_next;
     logic inst_load;
-    logic [7:0] instruction_register; // Holds the current instruction.
+    logic [7:0] instruction_register = 0; // Holds the current instruction.
     cpu_control control (
         .clk,
-        .m_cycle,
+        .t_cycle,
         .reset,
         .instruction_register,
         .pc_next,
@@ -50,14 +48,14 @@ module cpu (
     always_ff @(posedge clk) begin
         // Handle instruction register.
         if (reset) instruction_register <= 0;
-        else if (inst_load) instruction_register <= mem_data_in;
+        else if (t_cycle == 3 && inst_load) instruction_register <= mem_data_in;
     end
 
     //////////////////////////////////////// Program Counter
     logic [15:0] pc = 0; // Current PC
     always_ff @(posedge clk) begin
         if (reset) pc <= 0;
-        else if (m_cycle) begin
+        else if (t_cycle == 3) begin
             if (pc_next == PcNextInc) pc <= pc + 16'd1;
         end
     end
@@ -65,4 +63,12 @@ module cpu (
     /// Stubbed signals.
     assign mem_addr = pc;
     assign mem_data_out = 8'd0;
+
+    `ifdef COCOTB_SIM
+    initial begin
+        $dumpfile ("cpu.vcd");
+        $dumpvars (0, cpu);
+        #1;
+    end
+    `endif
 endmodule

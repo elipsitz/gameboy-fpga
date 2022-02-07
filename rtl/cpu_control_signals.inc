@@ -7,7 +7,7 @@
     microbranch = MicroBranchDispatch;
 end
 1: begin
-    // STUCK
+    // INVALID
     pc_next = PcNextSame;
     inst_load = 0;
     mem_enable = 0;

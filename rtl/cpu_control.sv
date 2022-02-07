@@ -10,7 +10,7 @@ typedef logic [2:0] state_t;
 module cpu_control (
     /// Clock
     input clk,
-    input m_cycle,
+    input [1:0] t_cycle,
     /// Synchronous reset
     input reset,
 
@@ -48,11 +48,12 @@ module cpu_control (
     // Describe next state given current state.
     always_ff @(posedge clk) begin
         if (reset) state <= 0;
-        else if (m_cycle) begin
+        else if (t_cycle == 1) begin
             if (microbranch == MicroBranchNext) state <= state + 1;
             else if (microbranch == MicroBranchDispatch) begin
                 casez (instruction_register)
                     `include "cpu_control_dispatch.inc"
+                    default: state <= 1; // "STUCK" state.
                 endcase
             end else if (microbranch == MicroBranchJump) state <= next_state;
             else if (microbranch == MicroBranchCond) begin
