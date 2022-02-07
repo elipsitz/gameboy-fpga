@@ -1,10 +1,10 @@
 /// Control signal: how PC should be updated on an M-cycle.
 typedef enum logic [0:0] {
     /// Do not change PC.
-    PcUpdateNone,
+    PcNextSame,
     /// Increment PC by 1.
-    PcUpdateInc
-} pc_update_e;
+    PcNextInc
+} pc_next_e;
 
 /// GameBoy CPU - Sharp SM83
 module cpu (
@@ -30,25 +30,27 @@ module cpu (
         if (reset) t_counter <= 0;
         else t_counter <= t_counter + 1;
     end
-    wire m_cycle = (t_counter == 3);
+    logic m_cycle;
+    assign m_cycle = (t_counter == 3);
 
     //////////////////////////////////////// Control Unit
-    wire pc_update_e pc_update;
-    wire load_instruction_register;
+    logic pc_next;
+    logic inst_load;
     logic [7:0] instruction_register; // Holds the current instruction.
     cpu_control control (
         .clk,
+        .m_cycle,
         .reset,
         .instruction_register,
-        .pc_update,
-        .load_instruction_register,
+        .pc_next,
+        .inst_load,
         .mem_enable,
         .mem_write
     );
     always_ff @(posedge clk) begin
         // Handle instruction register.
         if (reset) instruction_register <= 0;
-        else if (load_instruction_register) instruction_register <= mem_data_in;
+        else if (inst_load) instruction_register <= mem_data_in;
     end
 
     //////////////////////////////////////// Program Counter
@@ -56,7 +58,7 @@ module cpu (
     always_ff @(posedge clk) begin
         if (reset) pc <= 0;
         else if (m_cycle) begin
-            if (pc_update == PcUpdateInc) pc <= pc + 16'd1;
+            if (pc_next == PcNextInc) pc <= pc + 16'd1;
         end
     end
 
