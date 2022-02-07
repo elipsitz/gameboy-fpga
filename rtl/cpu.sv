@@ -1,3 +1,5 @@
+`timescale 1ns/1ns
+
 /// Control signal: how PC should be updated on an M-cycle.
 typedef enum logic [0:0] {
     /// Do not change PC.
@@ -26,6 +28,8 @@ module cpu (
 );
     //////////////////////////////////////// Clocking: T-Cycles
     logic [1:0] t_cycle = 0;
+    logic clk_phi;
+    assign clk_phi = !t_cycle[1];
     always_ff @(posedge clk) begin
         if (reset) t_cycle <= 0;
         else t_cycle <= t_cycle + 1;
