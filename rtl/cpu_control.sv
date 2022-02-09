@@ -14,8 +14,8 @@ module cpu_control (
     /// Synchronous reset
     input reset,
 
-    /// Current instruction register.
-    input [7:0] instruction_register,
+    /// Current memory data in.
+    input [7:0] mem_data_in,
 
     /// Control signal: how PC should be updated.
     output pc_next_e pc_next,
@@ -63,10 +63,11 @@ module cpu_control (
     // Describe next state given current state.
     always_ff @(posedge clk) begin
         if (reset) state <= 0;
-        else if (t_cycle == 0) begin
+        else if (t_cycle == 3) begin
             if (microbranch == MicroBranchNext) state <= state + 1;
             else if (microbranch == MicroBranchDispatch) begin
-                casez (instruction_register)
+                // Dispatch based off the next memory we're reading.
+                casez (mem_data_in)
                     `include "cpu_control_dispatch.inc"
                     default: state <= 1; // "INVALID" state.
                 endcase

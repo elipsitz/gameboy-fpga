@@ -61,12 +61,13 @@ module cpu (
     reg_sel_e reg_write_sel;
     logic reg_write_enable;
     reg_input_e reg_write_input;
-    logic [7:0] instruction_register = 0; // Holds the current instruction.
+    // Holds the current instruction. Used to address registers, etc.
+    logic [7:0] instruction_register = 0;
     cpu_control control (
         .clk,
         .t_cycle,
         .reset,
-        .instruction_register,
+        .mem_data_in,
         .pc_next,
         .inst_load,
         .reg_read1_sel,
