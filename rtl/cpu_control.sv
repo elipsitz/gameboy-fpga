@@ -21,6 +21,16 @@ module cpu_control (
     output pc_next_e pc_next,
     /// Control signal: if the instruction reg. should be loaded with memory read.
     output logic inst_load,
+    /// Control signal: the first register we're reading.
+    output reg_sel_e reg_read1_sel,
+    /// Control signal: the second register we're reading.
+    output reg_sel_e reg_read2_sel,
+    /// Control signal: the register we're (maybe) writing to.
+    output reg_sel_e reg_write_sel,
+    /// Control signal: whether we're writing to the write register.
+    output logic reg_write_enable,
+    /// Control signal: where the data for the write register comes from.
+    output reg_input_e reg_write_input,
     /// Control signal: whether we're accessing memory.
     output logic mem_enable,
     /// Control signal: whether we're writing to memory (if `mem_enable`).
@@ -35,6 +45,11 @@ module cpu_control (
         // TODO: make these don't cares?
         pc_next = PcNextSame;
         inst_load = 0;
+        reg_read1_sel = RegSelA;
+        reg_read2_sel = RegSelA;
+        reg_write_sel = RegSelA;
+        reg_write_enable = 0;
+        reg_write_input = RegInputAlu;
         mem_enable = 0;
         mem_write = 0;
         microbranch = MicroBranchNext;
@@ -48,12 +63,12 @@ module cpu_control (
     // Describe next state given current state.
     always_ff @(posedge clk) begin
         if (reset) state <= 0;
-        else if (t_cycle == 1) begin
+        else if (t_cycle == 0) begin
             if (microbranch == MicroBranchNext) state <= state + 1;
             else if (microbranch == MicroBranchDispatch) begin
                 casez (instruction_register)
                     `include "cpu_control_dispatch.inc"
-                    default: state <= 1; // "STUCK" state.
+                    default: state <= 1; // "INVALID" state.
                 endcase
             end else if (microbranch == MicroBranchJump) state <= next_state;
             else if (microbranch == MicroBranchCond) begin

@@ -8,6 +8,24 @@ typedef enum logic [0:0] {
     PcNextInc
 } pc_next_e;
 
+/// Control signal: 8-bit register select.
+typedef enum logic [1:0] {
+    /// The accumulator register.
+    RegSelA,
+    /// The 8-bit register denoted by bits 2:0.
+    RegSelReg8Src,
+    /// The 8-bit register denoted by bits 5:3.
+    RegSelReg8Dest
+} reg_sel_e;
+
+/// Control signal: register write data source.
+typedef enum logic [0:0] {
+    /// The output of the ALU.
+    RegInputAlu,
+    /// The memory data input.
+    RegInputMem
+} reg_input_e;
+
 /// GameBoy CPU - Sharp SM83
 module cpu (
     /// Clock (normally 4 MHz)
@@ -38,6 +56,11 @@ module cpu (
     //////////////////////////////////////// Control Unit
     logic pc_next;
     logic inst_load;
+    reg_sel_e reg_read1_sel;
+    reg_sel_e reg_read2_sel;
+    reg_sel_e reg_write_sel;
+    logic reg_write_enable;
+    reg_input_e reg_write_input;
     logic [7:0] instruction_register = 0; // Holds the current instruction.
     cpu_control control (
         .clk,
@@ -46,6 +69,11 @@ module cpu (
         .instruction_register,
         .pc_next,
         .inst_load,
+        .reg_read1_sel,
+        .reg_read2_sel,
+        .reg_write_sel,
+        .reg_write_enable,
+        .reg_write_input,
         .mem_enable,
         .mem_write
     );
@@ -61,6 +89,52 @@ module cpu (
         if (reset) pc <= 0;
         else if (t_cycle == 3) begin
             if (pc_next == PcNextInc) pc <= pc + 16'd1;
+        end
+    end
+
+    //////////////////////////////////////// Register File
+    // 11 Registers: BC DE HL FA SP WZ
+    //               01 23 45 67 89 AB
+    logic [7:0] registers [0:11];
+    logic [7:0] reg_read1_out; // The value of selected Register 1.
+    logic [7:0] reg_read2_out; // The value of selected Register 2.
+    logic [3:0] reg_read1_index; // The index of the first register to read.
+    logic [3:0] reg_read2_index; // The index of the second register to read.
+    logic [3:0] reg_write_index; // The index of the register to write.
+    logic [7:0] reg_write_data; // The data to write to the register.
+    always @(*) begin
+        case (reg_read1_sel)
+            RegSelA: reg_read1_index = 7;
+            RegSelReg8Src: reg_read1_index = {1'b0, instruction_register[2:0]};
+            RegSelReg8Dest: reg_read1_index = {1'b0, instruction_register[5:3]};
+        endcase
+        case (reg_read2_sel)
+            RegSelA: reg_read2_index = 7;
+            RegSelReg8Src: reg_read2_index = {1'b0, instruction_register[2:0]};
+            RegSelReg8Dest: reg_read2_index = {1'b0, instruction_register[5:3]};
+        endcase
+        case (reg_write_sel)
+            RegSelA: reg_write_index = 7;
+            RegSelReg8Src: reg_write_index = {1'b0, instruction_register[2:0]};
+            RegSelReg8Dest: reg_write_index = {1'b0, instruction_register[5:3]};
+        endcase
+        reg_read1_out = registers[reg_read1_index];
+        reg_read2_out = registers[reg_read2_index];
+        case (reg_write_input)
+            RegInputAlu: reg_write_data = 0; // TODO: do ALU.
+            RegInputMem: reg_write_data = mem_data_in;
+        endcase
+    end
+    int i;
+    initial begin
+        for (i = 0; i < 12; i += 1) registers[i] = 0;
+    end
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            for (i = 0; i < 12; i += 1) registers[i] <= 0;
+        end else if (t_cycle == 3 && reg_write_enable) begin
+            // TODO resolve conflict with writing to flags register.
+            registers[reg_write_index] <= reg_write_data;
         end
     end
 

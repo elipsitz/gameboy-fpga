@@ -1,3 +1,5 @@
-Label,Encoding,PcNext,MemEn,MemWr,MicroBranch,NextState
-NOP,00000000,-,-,-,Fetch,-
-INVALID,,Same,No,No,Jump,INVALID
+Label,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegWriteInput,RegWriteEn,MemEn,MemWr,MicroBranch,NextState
+NOP,00000000,-,-,-,-,-,No,-,-,Fetch,-
+INVALID,,Same,-,-,-,-,No,No,No,Jump,INVALID
+LD_r8_u8,00???110,Inc,-,-,Reg8Dest,Mem,Yes,Yes,No,Next,-
+,,-,-,-,-,-,No,-,-,Fetch,-

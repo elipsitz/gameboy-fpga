@@ -3,6 +3,11 @@ from pathlib import Path
 import math
 
 BINARY = {"Yes": "1", "No": "0"}
+REG_SELECT = {
+    "A": "RegSelA",
+    "Reg8Src": "RegSelReg8Src",
+    "Reg8Dest": "RegSelReg8Dest",
+}
 SIGNALS = {
     "Label": None,
     "Encoding": None,
@@ -11,6 +16,14 @@ SIGNALS = {
         "Same": "PcNextSame",
         "Inc": "PcNextInc",
     },
+    "RegRead1Sel": REG_SELECT,
+    "RegRead2Sel": REG_SELECT,
+    "RegWriteSel": REG_SELECT,
+    "RegWriteInput": {
+        "Alu": "RegInputAlu",
+        "Mem": "RegInputMem",
+    },
+    "RegWriteEn": BINARY,
     "MemEn": BINARY,
     "MemWr": BINARY,
     "MicroBranch": {
@@ -98,6 +111,11 @@ if __name__ == "__main__":
             simple_signal(f, s, "MemEn", "mem_enable")
             simple_signal(f, s, "MemWr", "mem_write")
             simple_signal(f, s, "MicroBranch", "microbranch")
+            simple_signal(f, s, "RegRead1Sel", "reg_read1_sel")
+            simple_signal(f, s, "RegRead2Sel", "reg_read2_sel")
+            simple_signal(f, s, "RegWriteSel", "reg_write_sel")
+            simple_signal(f, s, "RegWriteInput", "reg_write_enable")
+            simple_signal(f, s, "RegWriteEn", "reg_write_input")
             if s.next_state is not None:
                 f.write(f"    next_state = {s.next_state};\n")
             f.write("end\n")
@@ -107,5 +125,5 @@ if __name__ == "__main__":
     with open(path, "w") as f:
         for s in states:
             if encoding := s.data["Encoding"]:
-                f.write(f"8'b{encoding}: state <= {s.i};")
+                f.write(f"8'b{encoding}: state <= {s.i};\n")
 
