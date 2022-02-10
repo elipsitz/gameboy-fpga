@@ -21,11 +21,13 @@ SIGNALS = {
     "RegRead1Sel": REG_SELECT,
     "RegRead2Sel": REG_SELECT,
     "RegWriteSel": REG_SELECT,
-    "RegWriteInput": {
-        "Alu": "RegInputAlu",
-        "Mem": "RegInputMem",
+    "RegOp": {
+        "None": "RegOpNone",
+        "WriteAlu": "RegOpWriteAlu",
+        "WriteMem": "RegOpWriteMem",
+        "IncHL": "RegOpIncHL",
+        "DecHl": "RegOpDecHL",
     },
-    "RegWriteEn": BINARY,
     "AluOp": {
         "CopyA": "AluOpCopyA",
         "IncA": "AluOpIncA",
@@ -133,8 +135,7 @@ if __name__ == "__main__":
             simple_signal(f, s, "RegRead1Sel", "reg_read1_sel")
             simple_signal(f, s, "RegRead2Sel", "reg_read2_sel")
             simple_signal(f, s, "RegWriteSel", "reg_write_sel")
-            simple_signal(f, s, "RegWriteEn", "reg_write_enable")
-            simple_signal(f, s, "RegWriteInput", "reg_write_input")
+            simple_signal(f, s, "RegOp", "reg_op")
             simple_signal(f, s, "AluOp", "alu_op")
             simple_signal(f, s, "AluSelA", "alu_sel_a")
             simple_signal(f, s, "AluSelB", "alu_sel_b")

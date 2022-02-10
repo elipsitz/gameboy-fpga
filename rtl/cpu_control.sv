@@ -27,10 +27,8 @@ module cpu_control (
     output reg_sel_e reg_read2_sel,
     /// Control signal: the register we're (maybe) writing to.
     output reg_sel_e reg_write_sel,
-    /// Control signal: whether we're writing to the write register.
-    output logic reg_write_enable,
-    /// Control signal: where the data for the write register comes from.
-    output reg_input_e reg_write_input,
+    /// Control signal: register write operation to perform.
+    output reg_op_e reg_op,
     /// Control signal: ALU operation.
     output alu_op_e alu_op,
     /// Control signal: ALU select A.
@@ -56,8 +54,7 @@ module cpu_control (
         reg_read1_sel = RegSelA;
         reg_read2_sel = RegSelA;
         reg_write_sel = RegSelA;
-        reg_write_enable = 0;
-        reg_write_input = RegInputAlu;
+        reg_op = RegOpNone;
         alu_op = AluOpCopyA;
         alu_sel_a = AluSelAReg1;
         alu_sel_b = AluSelBReg2;

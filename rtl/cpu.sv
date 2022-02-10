@@ -20,13 +20,19 @@ typedef enum logic [1:0] {
     RegSelHL
 } reg_sel_e;
 
-/// Control signal: register write data source.
-typedef enum logic [0:0] {
-    /// The output of the ALU.
-    RegInputAlu,
-    /// The memory data input.
-    RegInputMem
-} reg_input_e;
+/// Control signal: register write operation.
+typedef enum logic [2:0] {
+    /// Do not write a register.
+    RegOpNone,
+    /// Write the output of the ALU.
+    RegOpWriteAlu,
+    /// Write the memory data input.
+    RegOpWriteMem,
+    /// Increment HL.
+    RegOpIncHl,
+    /// Decrement HL.
+    RegOpDecHl
+} reg_op_e;
 
 /// Control signal: ALU operation.
 typedef enum logic [0:0] {
@@ -91,8 +97,7 @@ module cpu (
     reg_sel_e reg_read1_sel;
     reg_sel_e reg_read2_sel;
     reg_sel_e reg_write_sel;
-    logic reg_write_enable;
-    reg_input_e reg_write_input;
+    reg_op_e reg_op;
     alu_op_e alu_op;
     alu_sel_a_e alu_sel_a;
     alu_sel_b_e alu_sel_b;
@@ -109,8 +114,7 @@ module cpu (
         .reg_read1_sel,
         .reg_read2_sel,
         .reg_write_sel,
-        .reg_write_enable,
-        .reg_write_input,
+        .reg_op,
         .alu_op,
         .alu_sel_a,
         .alu_sel_b,
@@ -164,7 +168,6 @@ module cpu (
     logic [3:0] reg_read1_index; // The index of the first register to read.
     logic [3:0] reg_read2_index; // The index of the second register to read.
     logic [3:0] reg_write_index; // The index of the register to write.
-    logic [7:0] reg_write_data; // The data to write to the register.
     always @(*) begin
         case (reg_read1_sel)
             RegSelA: reg_read1_index = 7;
@@ -185,10 +188,6 @@ module cpu (
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
-        case (reg_write_input)
-            RegInputAlu: reg_write_data = alu_out;
-            RegInputMem: reg_write_data = mem_data_in;
-        endcase
     end
     int i;
     initial begin
@@ -197,9 +196,14 @@ module cpu (
     always_ff @(posedge clk) begin
         if (reset) begin
             for (i = 0; i < 12; i += 1) registers[i] <= 0;
-        end else if (t_cycle == 3 && reg_write_enable) begin
+        end else if (t_cycle == 3) begin
             // TODO resolve conflict with writing to flags register.
-            registers[reg_write_index] <= reg_write_data;
+            case (reg_op)
+                RegOpWriteAlu: registers[reg_write_index] <= alu_out;
+                RegOpWriteMem: registers[reg_write_index] <= mem_data_in;
+                RegOpIncHl: {registers[4], registers[5]} = ({registers[4], registers[5]} + 1);
+                RegOpDecHl: {registers[4], registers[5]} = ({registers[4], registers[5]} - 1);
+            endcase
         end
     end
 
