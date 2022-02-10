@@ -7,10 +7,12 @@ REG_SELECT = {
     "A": "RegSelA",
     "Reg8Src": "RegSelReg8Src",
     "Reg8Dest": "RegSelReg8Dest",
+    "HL": "RegSelHL",
 }
 SIGNALS = {
     "Label": None,
     "Encoding": None,
+    "Comment": None,
     "NextState": None,
     "PcNext": {
         "Same": "PcNextSame",
@@ -36,6 +38,11 @@ SIGNALS = {
     },
     "MemEn": BINARY,
     "MemWr": BINARY,
+    "MemAddrSel": {
+        "PC": "MemAddrSelPc",
+        "HL": "MemAddrSelHl",
+        "Reg": "MemAddrSelReg",
+    },
     "MicroBranch": {
         "Next": "MicroBranchNext",
         "Jump": "MicroBranchJump",
@@ -67,6 +74,7 @@ class State:
                 "PcNext": "Inc",
                 "MemEn": "Yes",
                 "MemWr": "No",
+                "MemAddrSel": "PC",
                 "NextState": "-",
                 "InstLoad": "Yes",
             }
@@ -120,6 +128,7 @@ if __name__ == "__main__":
             simple_signal(f, s, "InstLoad", "inst_load")
             simple_signal(f, s, "MemEn", "mem_enable")
             simple_signal(f, s, "MemWr", "mem_write")
+            simple_signal(f, s, "MemAddrSel", "mem_addr_sel")
             simple_signal(f, s, "MicroBranch", "microbranch")
             simple_signal(f, s, "RegRead1Sel", "reg_read1_sel")
             simple_signal(f, s, "RegRead2Sel", "reg_read2_sel")

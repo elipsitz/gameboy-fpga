@@ -1,7 +1,11 @@
-Label,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegWriteInput,RegWriteEn,AluOp,AluSelA,AluSelB,MemEn,MemWr,MicroBranch,NextState
-NOP,00000000,-,-,-,-,-,No,-,-,-,-,-,Fetch,-
-INVALID,,Same,-,-,-,-,No,-,-,-,No,No,Jump,INVALID
-HALT,01110110,Same,-,-,-,-,No,-,-,-,No,No,Jump,HALT
-"LD r,r",01??????,-,Reg8Src,-,Reg8Dest,Alu,Yes,CopyA,Reg1,-,-,-,Fetch,-
-"LD r,n",00???110,Inc,-,-,Reg8Dest,Mem,Yes,-,-,-,Yes,No,Next,-
-,,-,-,-,-,-,No,-,-,-,-,-,Fetch,-
+Label,Comment,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegWriteInput,RegWriteEn,AluOp,AluSelA,AluSelB,MemEn,MemWr,MemAddrSel,MicroBranch,NextState
+NOP,,00000000,-,-,-,-,-,No,-,-,-,-,-,-,Fetch,-
+INVALID,,,Same,-,-,-,-,No,-,-,-,No,No,-,Jump,INVALID
+HALT,,01110110,Same,-,-,-,-,No,-,-,-,No,No,-,Jump,HALT
+"LD r, (HL)",,01???110,Same,-,-,Reg8Dest,Mem,Yes,-,-,-,Yes,No,HL,Next,-
+,,,-,-,-,-,-,No,-,-,-,-,-,-,Fetch,-
+"LD (HL), r",,01110???,Same,Reg8Src,-,-,-,No,CopyA,Reg1,-,Yes,Yes,HL,Next,-
+,,,-,-,-,-,-,No,-,-,-,-,-,-,Fetch,-
+"LD r,r",,01??????,-,Reg8Src,-,Reg8Dest,Alu,Yes,CopyA,Reg1,-,-,-,-,Fetch,-
+"LD r,n",,00???110,Inc,-,-,Reg8Dest,Mem,Yes,-,-,-,Yes,No,PC,Next,-
+,,,-,-,-,-,-,No,-,-,-,-,-,-,Fetch,-

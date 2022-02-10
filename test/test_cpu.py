@@ -13,7 +13,7 @@ def get_register(dut, name):
         lo = dut.registers[registers.index(name[1])].value.integer
         return (hi << 8) | lo
 
-async def run_program(dut, program, max_steps=10):
+async def run_program(dut, program, max_steps=100):
     clk = await cocotb.start(Clock(dut.clk, 1, "ns").start())
     dut.reset.value = 1
     dut.mem_data_in.value = 0
@@ -36,6 +36,7 @@ async def run_program(dut, program, max_steps=10):
             if dut.mem_write.value:
                 # Write
                 data = dut.mem_data_out.value.integer
+                dut._log.info(f"    mem write at {address:04X} <- {data:02X}   |  ")
                 if address >= 0xC000 and address <= 0xDFFF:
                     memory[address - 0xC000] = data
             else:
@@ -56,20 +57,28 @@ async def run_program(dut, program, max_steps=10):
         steps += 1
 
 @cocotb.test()
-async def nop_slide(dut):
+async def test_nop(dut):
     """Execute a bunch of NOPs."""
     program = b"\x00\x00\x00\x00\x00"
     await run_program(dut, program)
 
 @cocotb.test()
-async def reg_load(dut):
-    """Load an immediate value, and then copy it to another register."""
+async def test_load(dut):
+    """Load values around between registers and memory."""
     program = [
         0x06, 0xAB, # ld B, 0xAB
         0x48,       # ld C, B
+        0x56,       # ld D, (HL)
+        0x26, 0xC0, # ld H, 0xC0
+        0x2e, 0x00, # ld L, 0x00
+        0x72,       # ld (HL), D
+        0x5e,       # ld E, (HL)
         0x00,       # NOP
     ]
     await run_program(dut, bytes(program))
     assert get_register(dut, "B") == 0xAB
     assert get_register(dut, "C") == 0xAB
+    assert get_register(dut, "D") == 0x06
+    assert get_register(dut, "E") == 0x06
+    assert get_register(dut, "HL") == 0xC0_00
         

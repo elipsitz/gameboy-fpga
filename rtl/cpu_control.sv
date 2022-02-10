@@ -5,7 +5,7 @@ typedef enum logic [1:0] {
     MicroBranchDispatch
 } microbranch_e;
 
-typedef logic [2:0] state_t;
+typedef logic [7:0] state_t;
 
 module cpu_control (
     /// Clock
@@ -40,7 +40,9 @@ module cpu_control (
     /// Control signal: whether we're accessing memory.
     output logic mem_enable,
     /// Control signal: whether we're writing to memory (if `mem_enable`).
-    output logic mem_write
+    output logic mem_write,
+    /// Control signal: where the memory address comes from.
+    output mem_addr_sel_e mem_addr_sel
 );
     state_t state = 0; // Initial state = NOP
 
@@ -61,6 +63,7 @@ module cpu_control (
         alu_sel_b = AluSelBReg2;
         mem_enable = 0;
         mem_write = 0;
+        mem_addr_sel = MemAddrSelPc;
         microbranch = MicroBranchNext;
         next_state = 0;
         
@@ -82,7 +85,7 @@ module cpu_control (
                 endcase
             end else if (microbranch == MicroBranchJump) state <= next_state;
             else if (microbranch == MicroBranchCond) begin
-                // TODO: check condition
+                // TODO: check condition 
                 state <= next_state;
             end
         end

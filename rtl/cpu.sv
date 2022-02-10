@@ -15,7 +15,9 @@ typedef enum logic [1:0] {
     /// The 8-bit register denoted by bits 2:0.
     RegSelReg8Src,
     /// The 8-bit register denoted by bits 5:3.
-    RegSelReg8Dest
+    RegSelReg8Dest,
+    /// HL registers: Reg 1 will be H, Reg 2 will be L.
+    RegSelHL
 } reg_sel_e;
 
 /// Control signal: register write data source.
@@ -46,6 +48,16 @@ typedef enum logic [0:0] {
     AluSelBReg2
 } alu_sel_b_e;
 
+/// Control signal: where the memory load/store address comes from.
+typedef enum logic [1:0] {
+    /// PC
+    MemAddrSelPc,
+    /// HL Register
+    MemAddrSelHl,
+    /// Register 1 and Register 2 (HI + LO)
+    MemAddrSelReg
+} mem_addr_sel_e;
+
 /// GameBoy CPU - Sharp SM83
 module cpu (
     /// Clock (normally 4 MHz)
@@ -54,15 +66,15 @@ module cpu (
     input reset,
 
     /// System bus address selection.
-    output [15:0] mem_addr,
+    output logic [15:0] mem_addr,
     /// System bus access enable.
-    output        mem_enable,
+    output logic        mem_enable,
     /// System bus write enable.
-    output        mem_write,
+    output logic        mem_write,
     /// System bus data in.
-    input  [7:0]  mem_data_in,
+    input        [7:0]  mem_data_in,
     /// System bus data out.
-    output [7:0]  mem_data_out
+    output logic [7:0]  mem_data_out
 );
     //////////////////////////////////////// Clocking: T-Cycles
     logic [1:0] t_cycle = 0;
@@ -84,6 +96,7 @@ module cpu (
     alu_op_e alu_op;
     alu_sel_a_e alu_sel_a;
     alu_sel_b_e alu_sel_b;
+    mem_addr_sel_e mem_addr_sel;
     // Holds the current instruction. Used to address registers, etc.
     logic [7:0] instruction_register = 0;
     cpu_control control (
@@ -102,7 +115,8 @@ module cpu (
         .alu_sel_a,
         .alu_sel_b,
         .mem_enable,
-        .mem_write
+        .mem_write,
+        .mem_addr_sel
     );
     always_ff @(posedge clk) begin
         // Handle instruction register.
@@ -156,11 +170,13 @@ module cpu (
             RegSelA: reg_read1_index = 7;
             RegSelReg8Src: reg_read1_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read1_index = {1'b0, instruction_register[5:3]};
+            RegSelHL: reg_read1_index = 4;
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
             RegSelReg8Src: reg_read2_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read2_index = {1'b0, instruction_register[5:3]};
+            RegSelHL: reg_read1_index = 5;
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
@@ -187,10 +203,17 @@ module cpu (
         end
     end
 
-    /// Stubbed signals.
-    assign mem_addr = pc;
-    assign mem_data_out = 8'd0;
+    //////////////////////////////////////// Memory Accesses
+    assign mem_data_out = alu_out; // TODO support other places?
+    always_comb begin
+        case (mem_addr_sel)
+            MemAddrSelPc: mem_addr = pc;
+            MemAddrSelHl: mem_addr = {registers[4], registers[5]};
+            MemAddrSelReg: mem_addr = {reg_read1_out, reg_read2_out};
+        endcase
+    end
 
+    //////////////////////////////////////// Misc.
     `ifdef COCOTB_SIM
     initial begin
         $dumpfile ("cpu.vcd");
