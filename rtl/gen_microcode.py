@@ -5,6 +5,8 @@ import math
 BINARY = {"Yes": "1", "No": "0"}
 REG_SELECT = {
     "A": "RegSelA",
+    "W": "RegSelW",
+    "Z": "RegSelZ",
     "Reg8Src": "RegSelReg8Src",
     "Reg8Dest": "RegSelReg8Dest",
     "HL": "RegSelHL",
@@ -81,7 +83,7 @@ class State:
                 "InstLoad": "Yes",
             }
             for k, v in forced.items():
-                assert self.data.get(k, "-") == "-"
+                assert self.data.get(k, "-") == "-", f"{k} must be '-' w/ Fetch"
                 self.data[k] = v
         else:
             self.data["InstLoad"] = "No"

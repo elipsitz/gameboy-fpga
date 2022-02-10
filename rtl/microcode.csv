@@ -6,6 +6,9 @@ HALT,,01110110,Same,-,-,-,None,-,-,-,No,No,-,Jump,HALT
 ,,,-,-,-,-,None,-,-,-,-,-,-,Fetch,-
 "LD (HL), r",,01110???,Same,Reg8Src,-,-,None,CopyA,Reg1,-,Yes,Yes,HL,Next,-
 ,,,-,-,-,-,None,-,-,-,-,-,-,Fetch,-
+"LD (HL),n",,00110110,Inc,-,-,W,WriteMem,-,-,-,Yes,No,PC,Next,-
+,,,Same,W,-,-,None,CopyA,Reg1,-,Yes,Yes,HL,Next,-
+,,,-,-,-,-,None,-,-,-,-,-,-,Fetch,-
 "LD r,r",,01??????,-,Reg8Src,-,Reg8Dest,WriteAlu,CopyA,Reg1,-,-,-,-,Fetch,-
 "LD r,n",,00???110,Inc,-,-,Reg8Dest,WriteMem,-,-,-,Yes,No,PC,Next,-
 ,,,-,-,-,-,None,-,-,-,-,-,-,Fetch,-

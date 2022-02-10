@@ -37,7 +37,7 @@ module cpu_control (
     output alu_sel_b_e alu_sel_b,
     /// Control signal: whether we're accessing memory.
     output logic mem_enable,
-    /// Control signal: whether we're writing to memory (if `mem_enable`).
+    /// Control signal: whether we're writing to memory (if `mem_enable`). 
     output logic mem_write,
     /// Control signal: where the memory address comes from.
     output mem_addr_sel_e mem_addr_sel

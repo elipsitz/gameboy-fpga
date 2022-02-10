@@ -9,9 +9,13 @@ typedef enum logic [0:0] {
 } pc_next_e;
 
 /// Control signal: 8-bit register select.
-typedef enum logic [1:0] {
+typedef enum logic [2:0] {
     /// The accumulator register.
     RegSelA,
+    /// Temp register W.
+    RegSelW,
+    /// Temp register Z.
+    RegSelZ,
     /// The 8-bit register denoted by bits 2:0.
     RegSelReg8Src,
     /// The 8-bit register denoted by bits 5:3.
@@ -171,18 +175,24 @@ module cpu (
     always @(*) begin
         case (reg_read1_sel)
             RegSelA: reg_read1_index = 7;
+            RegSelW: reg_read1_index = 10;
+            RegSelZ: reg_read1_index = 11;
             RegSelReg8Src: reg_read1_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read1_index = {1'b0, instruction_register[5:3]};
             RegSelHL: reg_read1_index = 4;
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
+            RegSelW: reg_read2_index = 10;
+            RegSelZ: reg_read2_index = 11;
             RegSelReg8Src: reg_read2_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read2_index = {1'b0, instruction_register[5:3]};
             RegSelHL: reg_read1_index = 5;
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
+            RegSelW: reg_write_index = 10;
+            RegSelZ: reg_write_index = 11;
             RegSelReg8Src: reg_write_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_write_index = {1'b0, instruction_register[5:3]};
         endcase

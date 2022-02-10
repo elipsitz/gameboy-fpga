@@ -73,6 +73,8 @@ async def test_load(dut):
         0x2e, 0x00, # ld L, 0x00
         0x72,       # ld (HL), D
         0x5e,       # ld E, (HL)
+        0x36, 0x99, # ld (HL), 0x99
+        0x7e,       # ld A, (HL)
         0x00,       # NOP
     ]
     await run_program(dut, bytes(program))
@@ -81,4 +83,5 @@ async def test_load(dut):
     assert get_register(dut, "D") == 0x06
     assert get_register(dut, "E") == 0x06
     assert get_register(dut, "HL") == 0xC0_00
+    assert get_register(dut, "A") == 0x99
         
