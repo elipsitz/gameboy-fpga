@@ -2,6 +2,17 @@ import cocotb
 from cocotb.triggers import Timer
 from cocotb.clock import Clock
 
+def get_register(dut, name):
+    """Get the register value from the CPU."""
+    registers = "BCDEHLFASPWZ"
+    if len(name) == 1:
+        index = registers.index(name)
+        return dut.registers[index].value.integer
+    if len(name) == 2:
+        hi = dut.registers[registers.index(name[0])].value.integer
+        lo = dut.registers[registers.index(name[1])].value.integer
+        return (hi << 8) | lo
+
 async def run_program(dut, program, max_steps=10):
     clk = await cocotb.start(Clock(dut.clk, 1, "ns").start())
     dut.reset.value = 1
@@ -18,7 +29,7 @@ async def run_program(dut, program, max_steps=10):
 
         if steps >= max_steps:
             raise Exception("Execution hit max steps")
-        dut._log.info(f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer} | t={dut.t_cycle.value.integer}")
+        dut._log.info(f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer}")
 
         if dut.mem_enable.value:
             address = dut.mem_addr.value.integer
@@ -44,7 +55,6 @@ async def run_program(dut, program, max_steps=10):
         await Timer(2, units="ns")
         steps += 1
 
-
 @cocotb.test()
 async def nop_slide(dut):
     """Execute a bunch of NOPs."""
@@ -53,8 +63,13 @@ async def nop_slide(dut):
 
 @cocotb.test()
 async def reg_load(dut):
-    """Execute ld b, 0xAB."""
-    program = b"\x06\xAB\x00"
-    await run_program(dut, program)
-    assert dut.registers[0].value == 0xAB
+    """Load an immediate value, and then copy it to another register."""
+    program = [
+        0x06, 0xAB, # ld B, 0xAB
+        0x48,       # ld C, B
+        0x00,       # NOP
+    ]
+    await run_program(dut, bytes(program))
+    assert get_register(dut, "B") == 0xAB
+    assert get_register(dut, "C") == 0xAB
         

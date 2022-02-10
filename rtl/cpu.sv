@@ -26,6 +26,26 @@ typedef enum logic [0:0] {
     RegInputMem
 } reg_input_e;
 
+/// Control signal: ALU operation.
+typedef enum logic [0:0] {
+    /// Output = A
+    AluOpCopyA,
+    /// Output = A + 1
+    AluOpIncA
+} alu_op_e;
+
+/// Control signal: ALU operand A source.
+typedef enum logic [0:0] {
+    /// A = Register Read 1
+    AluSelAReg1
+} alu_sel_a_e;
+
+/// Control signal: ALU operand B source.
+typedef enum logic [0:0] {
+    /// B = Register Read 2
+    AluSelBReg2
+} alu_sel_b_e;
+
 /// GameBoy CPU - Sharp SM83
 module cpu (
     /// Clock (normally 4 MHz)
@@ -61,6 +81,9 @@ module cpu (
     reg_sel_e reg_write_sel;
     logic reg_write_enable;
     reg_input_e reg_write_input;
+    alu_op_e alu_op;
+    alu_sel_a_e alu_sel_a;
+    alu_sel_b_e alu_sel_b;
     // Holds the current instruction. Used to address registers, etc.
     logic [7:0] instruction_register = 0;
     cpu_control control (
@@ -75,6 +98,9 @@ module cpu (
         .reg_write_sel,
         .reg_write_enable,
         .reg_write_input,
+        .alu_op,
+        .alu_sel_a,
+        .alu_sel_b,
         .mem_enable,
         .mem_write
     );
@@ -91,6 +117,28 @@ module cpu (
         else if (t_cycle == 3) begin
             if (pc_next == PcNextInc) pc <= pc + 16'd1;
         end
+    end
+
+    //////////////////////////////////////// ALU
+    logic [7:0] alu_out;
+    logic [7:0] alu_input_a;
+    logic [7:0] alu_input_b;
+    always_comb begin
+        // Select ALU input A.
+        case (alu_sel_a) 
+            AluSelAReg1: alu_input_a = reg_read1_out;
+        endcase
+
+        // Select ALU input B.
+        case (alu_sel_b)
+            AluSelBReg2: alu_input_b = reg_read2_out;
+        endcase
+
+        // Compute ALU output.
+        case (alu_op)
+            AluOpCopyA: alu_out = alu_input_a;
+            AluOpIncA: alu_out = alu_input_a + 1;
+        endcase
     end
 
     //////////////////////////////////////// Register File
@@ -122,7 +170,7 @@ module cpu (
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
         case (reg_write_input)
-            RegInputAlu: reg_write_data = 0; // TODO: do ALU.
+            RegInputAlu: reg_write_data = alu_out;
             RegInputMem: reg_write_data = mem_data_in;
         endcase
     end

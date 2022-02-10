@@ -31,6 +31,12 @@ module cpu_control (
     output logic reg_write_enable,
     /// Control signal: where the data for the write register comes from.
     output reg_input_e reg_write_input,
+    /// Control signal: ALU operation.
+    output alu_op_e alu_op,
+    /// Control signal: ALU select A.
+    output alu_sel_a_e alu_sel_a,
+    /// Control signal: ALU select B.
+    output alu_sel_b_e alu_sel_b,
     /// Control signal: whether we're accessing memory.
     output logic mem_enable,
     /// Control signal: whether we're writing to memory (if `mem_enable`).
@@ -50,6 +56,9 @@ module cpu_control (
         reg_write_sel = RegSelA;
         reg_write_enable = 0;
         reg_write_input = RegInputAlu;
+        alu_op = AluOpCopyA;
+        alu_sel_a = AluSelAReg1;
+        alu_sel_b = AluSelBReg2;
         mem_enable = 0;
         mem_write = 0;
         microbranch = MicroBranchNext;

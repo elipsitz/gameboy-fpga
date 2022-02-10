@@ -24,6 +24,16 @@ SIGNALS = {
         "Mem": "RegInputMem",
     },
     "RegWriteEn": BINARY,
+    "AluOp": {
+        "CopyA": "AluOpCopyA",
+        "IncA": "AluOpIncA",
+    },
+    "AluSelA": {
+        "Reg1": "AluSelAReg1",
+    },
+    "AluSelB": {
+        "Reg2": "AluSelBReg2",
+    },
     "MemEn": BINARY,
     "MemWr": BINARY,
     "MicroBranch": {
@@ -114,8 +124,11 @@ if __name__ == "__main__":
             simple_signal(f, s, "RegRead1Sel", "reg_read1_sel")
             simple_signal(f, s, "RegRead2Sel", "reg_read2_sel")
             simple_signal(f, s, "RegWriteSel", "reg_write_sel")
-            simple_signal(f, s, "RegWriteInput", "reg_write_enable")
-            simple_signal(f, s, "RegWriteEn", "reg_write_input")
+            simple_signal(f, s, "RegWriteEn", "reg_write_enable")
+            simple_signal(f, s, "RegWriteInput", "reg_write_input")
+            simple_signal(f, s, "AluOp", "alu_op")
+            simple_signal(f, s, "AluSelA", "alu_sel_a")
+            simple_signal(f, s, "AluSelB", "alu_sel_b")
             if s.next_state is not None:
                 f.write(f"    next_state = {s.next_state};\n")
             f.write("end\n")
