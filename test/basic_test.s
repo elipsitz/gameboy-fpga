@@ -38,6 +38,14 @@ SECTION "ROM0", ROM0
     ;
     cp a, $0D
     ldi [hl], a
+    ;
+    ld [hl], $40
+    add a, [hl]
+    ldi [hl], a
+    ;
+    ld b, $1D
+    sub a, b
+    ldi [hl], a
     
     ; End the test.
     halt

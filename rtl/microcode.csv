@@ -16,5 +16,8 @@ HALT,,01110110,Same,-,-,-,None,-,-,-,No,No,No,-,Jump,HALT
 "ldd (HL),A",,00110010,Same,A,-,-,DecHL,-,-,-,No,Yes,Yes,HL,Jump,NOP
 "ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,-,-,-,No,Yes,No,HL,Next,-
 ,,,-,-,-,-,DecHL,-,-,-,No,-,-,-,Fetch,-
-"ALU a, u8",,11???110,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+"ALU A, n",,11???110,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
 ,,,-,A,W,A,WriteAlu,InstAlu,Reg1,Reg2,Yes,-,-,-,Fetch,-
+"ALU A, (HL)",,10???110,Same,-,-,W,WriteMem,-,-,-,No,Yes,No,HL,Next,-
+,,,-,A,W,A,WriteAlu,InstAlu,Reg1,Reg2,Yes,-,-,-,Fetch,-
+"ALU A, r",,10??????,-,A,Reg8Src,A,WriteAlu,InstAlu,Reg1,Reg2,Yes,-,-,-,Fetch,-

@@ -84,7 +84,6 @@ async def test_load(dut):
     """Load values around between registers and memory."""
     program = open("basic_test.gb", "rb").read()
     memory = await run_program(dut, bytes(program))
-    assert get_register(dut, "B") == 0xAB
     assert get_register(dut, "C") == 0xAB
     assert get_register(dut, "D") == 0x06
     assert get_register(dut, "E") == 0x06
@@ -95,3 +94,5 @@ async def test_load(dut):
     assert memory[4] == 0x10
     assert memory[5] == 0x0D
     assert memory[6] == 0x0D
+    assert memory[7] == 0x4D
+    assert memory[8] == 0x30
