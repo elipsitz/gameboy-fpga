@@ -23,10 +23,13 @@ async def run_program(dut, program, max_steps=100):
     memory = [0] * (8 * 1024)
     steps = 0
 
-    # Execute until PC hits the end of the program.
-    while dut.pc.value.integer < len(program):
+    # Execute until we hit a HALT instruction.
+    while True:
         await Timer(2, units="ns")
 
+        if dut.instruction_register.value.integer == 0x76:
+            # HALT -- exit.
+            break
         if steps >= max_steps:
             raise Exception("Execution hit max steps")
         dut._log.info(f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer}")
@@ -59,24 +62,13 @@ async def run_program(dut, program, max_steps=100):
 @cocotb.test()
 async def test_nop(dut):
     """Execute a bunch of NOPs."""
-    program = b"\x00\x00\x00\x00\x00"
+    program = b"\x00\x00\x00\x00\x00\x76"
     await run_program(dut, program)
 
 @cocotb.test()
 async def test_load(dut):
     """Load values around between registers and memory."""
-    program = [
-        0x06, 0xAB, # ld B, 0xAB
-        0x48,       # ld C, B
-        0x56,       # ld D, (HL)
-        0x26, 0xC0, # ld H, 0xC0
-        0x2e, 0x00, # ld L, 0x00
-        0x72,       # ld (HL), D
-        0x5e,       # ld E, (HL)
-        0x36, 0x99, # ld (HL), 0x99
-        0x7e,       # ld A, (HL)
-        0x00,       # NOP
-    ]
+    program = open("basic_test.gb", "rb").read()
     await run_program(dut, bytes(program))
     assert get_register(dut, "B") == 0xAB
     assert get_register(dut, "C") == 0xAB

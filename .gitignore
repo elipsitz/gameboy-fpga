@@ -2,3 +2,4 @@ __pycache__
 /test/sim_build
 results.xml
 *.vcd
+*.gb
