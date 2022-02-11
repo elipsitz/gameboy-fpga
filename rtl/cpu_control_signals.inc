@@ -9,7 +9,7 @@
     reg_op = RegOpNone;
 end
 1: begin
-    // INVALID
+    // _INVALID
     pc_next = PcNextSame;
     inst_load = 0;
     mem_enable = 0;
@@ -35,42 +35,26 @@ end
     mem_enable = 1;
     mem_write = 0;
     mem_addr_sel = MemAddrSelHl;
-    microbranch = MicroBranchNext;
+    microbranch = MicroBranchJump;
     reg_write_sel = RegSelReg8Dest;
     reg_op = RegOpWriteMem;
+    next_state = 0;
 end
 4: begin
-    pc_next = PcNextInc;
-    inst_load = 1;
-    mem_enable = 1;
-    mem_write = 0;
-    mem_addr_sel = MemAddrSelPc;
-    microbranch = MicroBranchDispatch;
-    reg_op = RegOpNone;
-end
-5: begin
     // LD (HL), r
     pc_next = PcNextSame;
     inst_load = 0;
     mem_enable = 1;
     mem_write = 1;
     mem_addr_sel = MemAddrSelHl;
-    microbranch = MicroBranchNext;
+    microbranch = MicroBranchJump;
     reg_read1_sel = RegSelReg8Src;
     reg_op = RegOpNone;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelAReg1;
+    next_state = 0;
 end
-6: begin
-    pc_next = PcNextInc;
-    inst_load = 1;
-    mem_enable = 1;
-    mem_write = 0;
-    mem_addr_sel = MemAddrSelPc;
-    microbranch = MicroBranchDispatch;
-    reg_op = RegOpNone;
-end
-7: begin
+5: begin
     // LD (HL),n
     pc_next = PcNextInc;
     inst_load = 0;
@@ -81,28 +65,20 @@ end
     reg_write_sel = RegSelW;
     reg_op = RegOpWriteMem;
 end
-8: begin
+6: begin
     pc_next = PcNextSame;
     inst_load = 0;
     mem_enable = 1;
     mem_write = 1;
     mem_addr_sel = MemAddrSelHl;
-    microbranch = MicroBranchNext;
+    microbranch = MicroBranchJump;
     reg_read1_sel = RegSelW;
     reg_op = RegOpNone;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelAReg1;
+    next_state = 0;
 end
-9: begin
-    pc_next = PcNextInc;
-    inst_load = 1;
-    mem_enable = 1;
-    mem_write = 0;
-    mem_addr_sel = MemAddrSelPc;
-    microbranch = MicroBranchDispatch;
-    reg_op = RegOpNone;
-end
-10: begin
+7: begin
     // LD r,r
     pc_next = PcNextInc;
     inst_load = 1;
@@ -116,23 +92,101 @@ end
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelAReg1;
 end
-11: begin
+8: begin
     // LD r,n
     pc_next = PcNextInc;
     inst_load = 0;
     mem_enable = 1;
     mem_write = 0;
     mem_addr_sel = MemAddrSelPc;
-    microbranch = MicroBranchNext;
+    microbranch = MicroBranchJump;
     reg_write_sel = RegSelReg8Dest;
     reg_op = RegOpWriteMem;
+    next_state = 0;
+end
+9: begin
+    // LD rr,nn
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelReg16Lo;
+    reg_op = RegOpWriteMem;
+end
+10: begin
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchJump;
+    reg_write_sel = RegSelReg16Hi;
+    reg_op = RegOpWriteMem;
+    next_state = 0;
+end
+11: begin
+    // ldi (HL),A
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelHl;
+    microbranch = MicroBranchJump;
+    reg_read1_sel = RegSelA;
+    reg_op = RegOpIncHl;
+    next_state = 0;
 end
 12: begin
+    // ldi A,(HL)
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelHl;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelA;
+    reg_op = RegOpWriteMem;
+end
+13: begin
     pc_next = PcNextInc;
     inst_load = 1;
     mem_enable = 1;
     mem_write = 0;
     mem_addr_sel = MemAddrSelPc;
     microbranch = MicroBranchDispatch;
-    reg_op = RegOpNone;
+    reg_op = RegOpIncHl;
+end
+14: begin
+    // ldd (HL),A
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelHl;
+    microbranch = MicroBranchJump;
+    reg_read1_sel = RegSelA;
+    reg_op = RegOpDecHl;
+    next_state = 0;
+end
+15: begin
+    // ldd A,(HL)
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelHl;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelA;
+    reg_op = RegOpWriteMem;
+end
+16: begin
+    pc_next = PcNextInc;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchDispatch;
+    reg_op = RegOpDecHl;
 end

@@ -21,7 +21,11 @@ typedef enum logic [2:0] {
     /// The 8-bit register denoted by bits 5:3.
     RegSelReg8Dest,
     /// HL registers: Reg 1 will be H, Reg 2 will be L.
-    RegSelHL
+    RegSelHL,
+    /// The high part of the 16-bit register denoted by bits 5:4.
+    RegSelReg16Hi,
+    /// The low part of the 16-bit register denoted by bits 5:4.
+    RegSelReg16Lo
 } reg_sel_e;
 
 /// Control signal: register write operation.
@@ -172,7 +176,22 @@ module cpu (
     logic [3:0] reg_read1_index; // The index of the first register to read.
     logic [3:0] reg_read2_index; // The index of the second register to read.
     logic [3:0] reg_write_index; // The index of the register to write.
+    logic [3:0] reg_r16_hi; // The instruction register r16 interpreted high.
+    logic [3:0] reg_r16_lo; // The instruction register r16 interpreted low.
     always @(*) begin
+        case (instruction_register[5:4])
+            2'b00: reg_r16_hi = 0;
+            2'b01: reg_r16_hi = 2;
+            2'b10: reg_r16_hi = 4;
+            2'b11: reg_r16_hi = 8;
+        endcase
+        case (instruction_register[5:4])
+            2'b00: reg_r16_lo = 1;
+            2'b01: reg_r16_lo = 3;
+            2'b10: reg_r16_lo = 5;
+            2'b11: reg_r16_lo = 9;
+        endcase
+
         case (reg_read1_sel)
             RegSelA: reg_read1_index = 7;
             RegSelW: reg_read1_index = 10;
@@ -180,6 +199,8 @@ module cpu (
             RegSelReg8Src: reg_read1_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read1_index = {1'b0, instruction_register[5:3]};
             RegSelHL: reg_read1_index = 4;
+            RegSelReg16Hi: reg_read1_index = reg_r16_hi;
+            RegSelReg16Lo: reg_read1_index = reg_r16_lo;
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
@@ -187,7 +208,9 @@ module cpu (
             RegSelZ: reg_read2_index = 11;
             RegSelReg8Src: reg_read2_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read2_index = {1'b0, instruction_register[5:3]};
-            RegSelHL: reg_read1_index = 5;
+            RegSelHL: reg_read2_index = 5;
+            RegSelReg16Hi: reg_read2_index = reg_r16_hi;
+            RegSelReg16Lo: reg_read2_index = reg_r16_lo;
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
@@ -195,6 +218,9 @@ module cpu (
             RegSelZ: reg_write_index = 11;
             RegSelReg8Src: reg_write_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_write_index = {1'b0, instruction_register[5:3]};
+            RegSelHL: reg_write_index = 4;
+            RegSelReg16Hi: reg_write_index = reg_r16_hi;
+            RegSelReg16Lo: reg_write_index = reg_r16_lo;
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];

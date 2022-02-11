@@ -14,6 +14,12 @@ def get_register(dut, name):
         return (hi << 8) | lo
 
 async def run_program(dut, program, max_steps=100):
+    """
+    Run a program, starting at PC=0x0000, until we hit a HALT instruction
+    or the max number of cycles.
+
+    Returns the resulting RAM.
+    """
     clk = await cocotb.start(Clock(dut.clk, 1, "ns").start())
     dut.reset.value = 1
     dut.mem_data_in.value = 0
@@ -59,6 +65,8 @@ async def run_program(dut, program, max_steps=100):
         await Timer(2, units="ns")
         steps += 1
 
+    return memory
+
 @cocotb.test()
 async def test_nop(dut):
     """Execute a bunch of NOPs."""
@@ -69,11 +77,14 @@ async def test_nop(dut):
 async def test_load(dut):
     """Load values around between registers and memory."""
     program = open("basic_test.gb", "rb").read()
-    await run_program(dut, bytes(program))
+    memory = await run_program(dut, bytes(program))
     assert get_register(dut, "B") == 0xAB
     assert get_register(dut, "C") == 0xAB
     assert get_register(dut, "D") == 0x06
     assert get_register(dut, "E") == 0x06
-    assert get_register(dut, "HL") == 0xC0_00
-    assert get_register(dut, "A") == 0x99
-        
+    assert get_register(dut, "HL") == 0xC0_01
+    assert get_register(dut, "A") == 0x50
+    assert memory[0] == 0x50
+    assert memory[1] == 0x51
+    assert memory[2] == 0x52
+    assert memory[3] == 0x53

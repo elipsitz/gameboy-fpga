@@ -10,6 +10,8 @@ REG_SELECT = {
     "Reg8Src": "RegSelReg8Src",
     "Reg8Dest": "RegSelReg8Dest",
     "HL": "RegSelHL",
+    "Reg16Hi": "RegSelReg16Hi",
+    "Reg16Lo": "RegSelReg16Lo",
 }
 SIGNALS = {
     "Label": None,
@@ -27,8 +29,8 @@ SIGNALS = {
         "None": "RegOpNone",
         "WriteAlu": "RegOpWriteAlu",
         "WriteMem": "RegOpWriteMem",
-        "IncHL": "RegOpIncHL",
-        "DecHl": "RegOpDecHL",
+        "IncHL": "RegOpIncHl",
+        "DecHL": "RegOpDecHl",
     },
     "AluOp": {
         "CopyA": "AluOpCopyA",
