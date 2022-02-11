@@ -35,6 +35,7 @@ SIGNALS = {
     "AluOp": {
         "CopyA": "AluOpCopyA",
         "IncA": "AluOpIncA",
+        "InstAlu": "AluOpInstAlu",
     },
     "AluSelA": {
         "Reg1": "AluSelAReg1",
@@ -42,6 +43,7 @@ SIGNALS = {
     "AluSelB": {
         "Reg2": "AluSelBReg2",
     },
+    "AluFlags": BINARY,
     "MemEn": BINARY,
     "MemWr": BINARY,
     "MemAddrSel": {
@@ -58,6 +60,7 @@ SIGNALS = {
     "InstLoad": BINARY,
 }
 
+
 class State:
     def __init__(self, i, row):
         self.i = i
@@ -73,7 +76,6 @@ class State:
                 raise Exception(f"Error on row {i}: Invalid value '{v}' for key '{k}'")
         if self.data["Encoding"] and len(self.data["Encoding"]) != 8:
             raise Exception(f"Error on row {i}: bad 'Encoding'")
-
 
         if self.data["MicroBranch"] == "Fetch":
             forced = {
@@ -99,6 +101,7 @@ class State:
 def simple_signal(f, state, key, wire_name):
     if (val := state.get(key)) is not None:
         f.write(f"    {wire_name} = {val};\n")
+
 
 if __name__ == "__main__":
     states = []
@@ -143,6 +146,7 @@ if __name__ == "__main__":
             simple_signal(f, s, "AluOp", "alu_op")
             simple_signal(f, s, "AluSelA", "alu_sel_a")
             simple_signal(f, s, "AluSelB", "alu_sel_b")
+            simple_signal(f, s, "AluFlags", "alu_write_flags")
             if s.next_state is not None:
                 f.write(f"    next_state = {s.next_state};\n")
             f.write("end\n")
@@ -153,4 +157,3 @@ if __name__ == "__main__":
         for s in states:
             if encoding := s.data["Encoding"]:
                 f.write(f"8'b{encoding}: state <= {s.i};\n")
-

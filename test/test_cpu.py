@@ -2,6 +2,7 @@ import cocotb
 from cocotb.triggers import Timer
 from cocotb.clock import Clock
 
+
 def get_register(dut, name):
     """Get the register value from the CPU."""
     registers = "BCDEHLFASPWZ"
@@ -12,6 +13,7 @@ def get_register(dut, name):
         hi = dut.registers[registers.index(name[0])].value.integer
         lo = dut.registers[registers.index(name[1])].value.integer
         return (hi << 8) | lo
+
 
 async def run_program(dut, program, max_steps=100):
     """
@@ -38,7 +40,9 @@ async def run_program(dut, program, max_steps=100):
             break
         if steps >= max_steps:
             raise Exception("Execution hit max steps")
-        dut._log.info(f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer}")
+        dut._log.info(
+            f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer}"
+        )
 
         if dut.mem_enable.value:
             address = dut.mem_addr.value.integer
@@ -67,11 +71,13 @@ async def run_program(dut, program, max_steps=100):
 
     return memory
 
+
 @cocotb.test()
 async def test_nop(dut):
     """Execute a bunch of NOPs."""
     program = b"\x00\x00\x00\x00\x00\x76"
     await run_program(dut, program)
+
 
 @cocotb.test()
 async def test_load(dut):
@@ -82,9 +88,10 @@ async def test_load(dut):
     assert get_register(dut, "C") == 0xAB
     assert get_register(dut, "D") == 0x06
     assert get_register(dut, "E") == 0x06
-    assert get_register(dut, "HL") == 0xC0_01
-    assert get_register(dut, "A") == 0x50
     assert memory[0] == 0x50
     assert memory[1] == 0x51
     assert memory[2] == 0x52
     assert memory[3] == 0x53
+    assert memory[4] == 0x10
+    assert memory[5] == 0x0D
+    assert memory[6] == 0x0D

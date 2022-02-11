@@ -25,6 +25,19 @@ SECTION "ROM0", ROM0
 
     ld hl, $C000
     ldi a, [hl]
+
+    ; Test ALU
+    ld hl, $C004
+    ld a, $00
+    ;
+    add a, $10
+    ldi [hl], a
+    ;
+    sub a, $03
+    ldi [hl], a
+    ;
+    cp a, $0D
+    ldi [hl], a
     
     ; End the test.
     halt

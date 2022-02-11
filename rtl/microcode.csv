@@ -1,18 +1,20 @@
-Label,Comment,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegOp,AluOp,AluSelA,AluSelB,MemEn,MemWr,MemAddrSel,MicroBranch,NextState
-NOP,,00000000,-,-,-,-,None,-,-,-,-,-,-,Fetch,-
-_INVALID,,,Same,-,-,-,None,-,-,-,No,No,-,Jump,_INVALID
-HALT,,01110110,Same,-,-,-,None,-,-,-,No,No,-,Jump,HALT
-"LD r, (HL)",,01???110,Same,-,-,Reg8Dest,WriteMem,-,-,-,Yes,No,HL,Jump,NOP
-"LD (HL), r",,01110???,Same,Reg8Src,-,-,None,CopyA,Reg1,-,Yes,Yes,HL,Jump,NOP
-"LD (HL),n",,00110110,Inc,-,-,W,WriteMem,-,-,-,Yes,No,PC,Next,-
-,,,Same,W,-,-,None,CopyA,Reg1,-,Yes,Yes,HL,Jump,NOP
-"LD r,r",,01??????,-,Reg8Src,-,Reg8Dest,WriteAlu,CopyA,Reg1,-,-,-,-,Fetch,-
-"LD r,n",,00???110,Inc,-,-,Reg8Dest,WriteMem,-,-,-,Yes,No,PC,Jump,NOP
-"LD rr,nn",,00??0001,Inc,-,-,Reg16Lo,WriteMem,-,-,-,Yes,No,PC,Next,-
-,,,Inc,-,-,Reg16Hi,WriteMem,-,-,-,Yes,No,PC,Jump,NOP
-"ldi (HL),A",,00100010,Same,A,-,-,IncHL,-,-,-,Yes,Yes,HL,Jump,NOP
-"ldi A,(HL)",,00101010,Same,-,-,A,WriteMem,-,-,-,Yes,No,HL,Next,-
-,,,-,-,-,-,IncHL,-,-,-,-,-,-,Fetch,-
-"ldd (HL),A",,00110010,Same,A,-,-,DecHL,-,-,-,Yes,Yes,HL,Jump,NOP
-"ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,-,-,-,Yes,No,HL,Next,-
-,,,-,-,-,-,DecHL,-,-,-,-,-,-,Fetch,-
+Label,Comment,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegOp,AluOp,AluSelA,AluSelB,AluFlags,MemEn,MemWr,MemAddrSel,MicroBranch,NextState
+NOP,,00000000,-,-,-,-,None,-,-,-,No,-,-,-,Fetch,-
+_INVALID,,,Same,-,-,-,None,-,-,-,No,No,No,-,Jump,_INVALID
+HALT,,01110110,Same,-,-,-,None,-,-,-,No,No,No,-,Jump,HALT
+"LD r, (HL)",,01???110,Same,-,-,Reg8Dest,WriteMem,-,-,-,No,Yes,No,HL,Jump,NOP
+"LD (HL), r",,01110???,Same,Reg8Src,-,-,None,CopyA,Reg1,-,No,Yes,Yes,HL,Jump,NOP
+"LD (HL),n",,00110110,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,Same,W,-,-,None,CopyA,Reg1,-,No,Yes,Yes,HL,Jump,NOP
+"LD r,r",,01??????,-,Reg8Src,-,Reg8Dest,WriteAlu,CopyA,Reg1,-,No,-,-,-,Fetch,-
+"LD r,n",,00???110,Inc,-,-,Reg8Dest,WriteMem,-,-,-,No,Yes,No,PC,Jump,NOP
+"LD rr,nn",,00??0001,Inc,-,-,Reg16Lo,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,Inc,-,-,Reg16Hi,WriteMem,-,-,-,No,Yes,No,PC,Jump,NOP
+"ldi (HL),A",,00100010,Same,A,-,-,IncHL,-,-,-,No,Yes,Yes,HL,Jump,NOP
+"ldi A,(HL)",,00101010,Same,-,-,A,WriteMem,-,-,-,No,Yes,No,HL,Next,-
+,,,-,-,-,-,IncHL,-,-,-,No,-,-,-,Fetch,-
+"ldd (HL),A",,00110010,Same,A,-,-,DecHL,-,-,-,No,Yes,Yes,HL,Jump,NOP
+"ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,-,-,-,No,Yes,No,HL,Next,-
+,,,-,-,-,-,DecHL,-,-,-,No,-,-,-,Fetch,-
+"ALU a, u8",,11???110,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,-,A,W,A,WriteAlu,InstAlu,Reg1,Reg2,Yes,-,-,-,Fetch,-

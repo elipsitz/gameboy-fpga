@@ -43,11 +43,13 @@ typedef enum logic [2:0] {
 } reg_op_e;
 
 /// Control signal: ALU operation.
-typedef enum logic [0:0] {
+typedef enum logic [1:0] {
     /// Output = A
     AluOpCopyA,
     /// Output = A + 1
-    AluOpIncA
+    AluOpIncA,
+    /// Use the "ALU opcode" from the instruction (ADD/ADC/SUB/SBC/AND/XOR/OR/CP).
+    AluOpInstAlu
 } alu_op_e;
 
 /// Control signal: ALU operand A source.
@@ -110,6 +112,7 @@ module cpu (
     alu_sel_a_e alu_sel_a;
     alu_sel_b_e alu_sel_b;
     mem_addr_sel_e mem_addr_sel;
+    logic alu_write_flags;
     // Holds the current instruction. Used to address registers, etc.
     logic [7:0] instruction_register = 0;
     cpu_control control (
@@ -126,6 +129,7 @@ module cpu (
         .alu_op,
         .alu_sel_a,
         .alu_sel_b,
+        .alu_write_flags,
         .mem_enable,
         .mem_write,
         .mem_addr_sel
@@ -146,24 +150,73 @@ module cpu (
     end
 
     //////////////////////////////////////// ALU
+    localparam FLAG_C = 2'd0;
+    localparam FLAG_H = 2'd1;
+    localparam FLAG_N = 2'd2;
+    localparam FLAG_Z = 2'd3;
     logic [7:0] alu_out;
-    logic [7:0] alu_input_a;
-    logic [7:0] alu_input_b;
-    always_comb begin
+    logic [7:0] alu_a;
+    logic [7:0] alu_b;
+    logic [3:0] alu_flag_out;
+    logic [3:0] alu_flag_in;
+    logic [2:0] alu_inst_opcode;
+    always @(*) begin
         // Select ALU input A.
         case (alu_sel_a) 
-            AluSelAReg1: alu_input_a = reg_read1_out;
+            AluSelAReg1: alu_a = reg_read1_out;
         endcase
 
         // Select ALU input B.
         case (alu_sel_b)
-            AluSelBReg2: alu_input_b = reg_read2_out;
+            AluSelBReg2: alu_b = reg_read2_out;
         endcase
 
         // Compute ALU output.
+        alu_inst_opcode = instruction_register[5:3];
+        alu_flag_out = alu_flag_in;
         case (alu_op)
-            AluOpCopyA: alu_out = alu_input_a;
-            AluOpIncA: alu_out = alu_input_a + 1;
+            AluOpCopyA: alu_out = alu_a;
+            AluOpIncA: alu_out = alu_a + 1;
+            AluOpInstAlu: begin
+                logic carry;
+                logic [4:0] result_lo;
+                logic [4:0] result_hi;
+                alu_flag_out = 4'b0000;
+                case (alu_inst_opcode)
+                    0, 1: begin // ADD, ADC
+                        carry = (alu_inst_opcode == 1) ? alu_flag_in[FLAG_C] : 1'b0;
+                        result_lo = {1'b0, alu_a[3:0]} + {1'b0, alu_b[3:0]} + {4'b0, carry};
+                        result_hi = {1'b0, alu_a[7:4]} + {1'b0, alu_b[7:4]} + {4'b0, result_lo[4]};
+                        alu_out = {result_hi[3:0], result_lo[3:0]};
+                        alu_flag_out[FLAG_C] = result_hi[4];
+                        alu_flag_out[FLAG_H] = result_lo[4];
+                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
+                    end
+                    2, 3, 7: begin // SUB, SBC, CP
+                        carry = (alu_inst_opcode == 3) ? alu_flag_in[FLAG_C] : 1'b0;
+                        result_lo = {1'b0, alu_a[3:0]} + ~({1'b0, alu_b[3:0]}) + {4'b0, ~carry};
+                        result_hi = {1'b0, alu_a[7:4]} + ~({1'b0, alu_b[7:4]}) + {4'b0, ~result_lo[4]};
+                        alu_out = (alu_inst_opcode == 7) ? alu_a : {result_hi[3:0], result_lo[3:0]};
+                        alu_flag_out[FLAG_C] = result_hi[4];
+                        alu_flag_out[FLAG_H] = result_lo[4];
+                        alu_flag_out[FLAG_Z] = (({result_hi[3:0], result_lo[3:0]}) == 8'd0);
+                        alu_flag_out[FLAG_N] = 1'b1;
+                    end
+                    4: begin // AND
+                        alu_out = alu_a & alu_b;
+                        alu_flag_out[FLAG_H] = result_lo[4];
+                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
+                    end
+                    5: begin // XOR
+                        alu_out = alu_a ^ alu_b;
+                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
+                    end
+                    6: begin // OR
+                        alu_out = alu_a | alu_b;
+                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
+                    end
+                endcase
+            end
         endcase
     end
 
@@ -224,6 +277,7 @@ module cpu (
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
+        alu_flag_in = registers[6][7:4];
     end
     int i;
     initial begin
@@ -237,9 +291,12 @@ module cpu (
             case (reg_op)
                 RegOpWriteAlu: registers[reg_write_index] <= alu_out;
                 RegOpWriteMem: registers[reg_write_index] <= mem_data_in;
-                RegOpIncHl: {registers[4], registers[5]} = ({registers[4], registers[5]} + 1);
-                RegOpDecHl: {registers[4], registers[5]} = ({registers[4], registers[5]} - 1);
+                RegOpIncHl: {registers[4], registers[5]} <= ({registers[4], registers[5]} + 1);
+                RegOpDecHl: {registers[4], registers[5]} <= ({registers[4], registers[5]} - 1);
             endcase
+            if (alu_write_flags) begin
+                registers[6] <= {alu_flag_out, 4'b0000};
+            end
         end
     end
 
