@@ -21,6 +21,7 @@ SIGNALS = {
     "PcNext": {
         "Same": "PcNextSame",
         "Inc": "PcNextInc",
+        "Reg": "PcNextReg",
     },
     "RegRead1Sel": REG_SELECT,
     "RegRead2Sel": REG_SELECT,

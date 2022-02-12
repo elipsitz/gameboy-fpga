@@ -1,11 +1,13 @@
 `timescale 1ns/1ns
 
 /// Control signal: how PC should be updated on an M-cycle.
-typedef enum logic [0:0] {
+typedef enum logic [1:0] {
     /// Do not change PC.
     PcNextSame,
     /// Increment PC by 1.
-    PcNextInc
+    PcNextInc,
+    /// PC = {Reg 1, Reg 2}
+    PcNextReg
 } pc_next_e;
 
 /// Control signal: 8-bit register select.
@@ -102,7 +104,7 @@ module cpu (
     end
 
     //////////////////////////////////////// Control Unit
-    logic pc_next;
+    pc_next_e pc_next;
     logic inst_load;
     reg_sel_e reg_read1_sel;
     reg_sel_e reg_read2_sel;
@@ -146,6 +148,7 @@ module cpu (
         if (reset) pc <= 0;
         else if (t_cycle == 3) begin
             if (pc_next == PcNextInc) pc <= pc + 16'd1;
+            else if (pc_next == PcNextReg) pc <= {reg_read1_out, reg_read2_out};
         end
     end
 

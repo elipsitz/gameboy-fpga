@@ -87,6 +87,7 @@ async def test_load(dut):
     assert get_register(dut, "C") == 0xAB
     assert get_register(dut, "D") == 0x06
     assert get_register(dut, "E") == 0x06
+    assert get_register(dut, "A") == 0xA1
     assert memory[0] == 0x50
     assert memory[1] == 0x51
     assert memory[2] == 0x52
