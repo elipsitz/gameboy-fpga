@@ -78,6 +78,20 @@ async def test_nop(dut):
     program = b"\x00\x00\x00\x00\x00\x76"
     await run_program(dut, program)
 
+@cocotb.test()
+async def test_sanity(dut):
+    """
+    Test basic operations (load immediate, compare, jump, jump conditional)
+    to make sure that more complex tests can work.
+    """
+    program = open("sanity_test.gb", "rb").read()
+    memory = await run_program(dut, bytes(program))
+    assert get_register(dut, "A") == 0x22
+    assert get_register(dut, "B") == 0xBB
+    assert get_register(dut, "C") == 0xCC
+    assert get_register(dut, "D") == 0xDD
+    assert get_register(dut, "E") == 0xEE
+    assert memory[0] == 0x2B
 
 @cocotb.test()
 async def test_load(dut):
