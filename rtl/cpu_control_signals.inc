@@ -312,3 +312,16 @@ end
     alu_write_flags = 0;
     next_state = 0;
 end
+25: begin
+    // JP HL
+    pc_next = PcNextRegInc;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelHl;
+    microbranch = MicroBranchDispatch;
+    reg_read1_sel = RegSelHL;
+    reg_read2_sel = RegSelHL;
+    reg_op = RegOpNone;
+    alu_write_flags = 0;
+end

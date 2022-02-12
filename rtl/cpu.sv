@@ -7,7 +7,9 @@ typedef enum logic [1:0] {
     /// Increment PC by 1.
     PcNextInc,
     /// PC = {Reg 1, Reg 2}
-    PcNextReg
+    PcNextReg,
+    /// PC = {Reg 1, Reg 2} + 1
+    PcNextRegInc
 } pc_next_e;
 
 /// Control signal: 8-bit register select.
@@ -147,8 +149,11 @@ module cpu (
     always_ff @(posedge clk) begin
         if (reset) pc <= 0;
         else if (t_cycle == 3) begin
-            if (pc_next == PcNextInc) pc <= pc + 16'd1;
-            else if (pc_next == PcNextReg) pc <= {reg_read1_out, reg_read2_out};
+            case (pc_next)
+                PcNextInc: pc <= pc + 16'd1;
+                PcNextReg:  pc <= {reg_read1_out, reg_read2_out};
+                PcNextRegInc:  pc <= ({reg_read1_out, reg_read2_out}) + 16'd1;
+            endcase
         end
     end
 

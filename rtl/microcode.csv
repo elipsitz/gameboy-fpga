@@ -24,3 +24,4 @@ HALT,,01110110,Same,-,-,-,None,-,-,-,No,No,-,-,Jump,HALT
 JP nn,little endian address,11000011,Inc,-,-,Z,WriteMem,-,-,-,No,Yes,No,PC,Next,-
 ,,,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
 ,,,Reg,W,Z,-,None,-,-,-,No,No,-,-,Jump,NOP
+JP HL,,11101001,RegInc,HL,HL,-,None,-,-,-,No,-,-,HL,Fetch*,-

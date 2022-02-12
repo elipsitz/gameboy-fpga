@@ -22,6 +22,7 @@ SIGNALS = {
         "Same": "PcNextSame",
         "Inc": "PcNextInc",
         "Reg": "PcNextReg",
+        "RegInc": "PcNextRegInc",
     },
     "RegRead1Sel": REG_SELECT,
     "RegRead2Sel": REG_SELECT,
@@ -57,6 +58,7 @@ SIGNALS = {
         "Jump": "MicroBranchJump",
         "Cond": "MicroBranchCond",
         "Fetch": "MicroBranchDispatch",
+        "Fetch*": "MicroBranchDispatch", # Fetch, but don't force all of the fields
     },
     "InstLoad": BINARY,
 }
@@ -78,7 +80,7 @@ class State:
         if self.data["Encoding"] and len(self.data["Encoding"]) != 8:
             raise Exception(f"Error on row {i}: bad 'Encoding'")
 
-        if self.data["MicroBranch"] == "Fetch":
+        if self.data["MicroBranch"] in ("Fetch", "Fetch*"):
             forced = {
                 "PcNext": "Inc",
                 "MemEn": "Yes",
@@ -88,8 +90,10 @@ class State:
                 "InstLoad": "Yes",
             }
             for k, v in forced.items():
-                assert self.data.get(k, "-") == "-", f"{k} must be '-' w/ Fetch"
-                self.data[k] = v
+                if self.data.get(k, "-") == "-":
+                    self.data[k] = v
+                elif self.data["MicroBranch"] == "Fetch":
+                    raise Exception(f"Error on row {i}: {k} must be '-' w/ Fetch")
         else:
             self.data["InstLoad"] = "No"
 

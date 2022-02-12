@@ -53,6 +53,13 @@ SECTION "ROM0", ROM0
     halt
 skip1:
     add a, $01
+    ld hl, skip2
+    jp hl
+    ld a, $B1
+    halt
+skip2:
+    add a, $01
+
     
     ; End the test.
     halt
