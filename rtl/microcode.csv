@@ -23,5 +23,8 @@ HALT,,01110110,Same,-,-,-,None,-,-,-,No,No,-,-,Jump,HALT
 "ALU A, r",,10??????,-,A,Reg8Src,A,WriteAlu,InstAlu,Reg1,Reg2,Yes,-,-,-,Fetch,-
 JP nn,little endian address,11000011,Inc,-,-,Z,WriteMem,-,-,-,No,Yes,No,PC,Next,-
 ,,,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
-,,,Reg,W,Z,-,None,-,-,-,No,No,-,-,Jump,NOP
+#PC=WZ,,,Reg,W,Z,-,None,-,-,-,No,No,-,-,Jump,NOP
 JP HL,,11101001,RegInc,HL,HL,-,None,-,-,-,No,-,-,HL,Fetch*,-
+"JP f,nn",Conditional,110??010,Inc,-,-,Z,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Cond,#PC=WZ
+,,,-,-,-,-,None,-,-,-,No,-,-,-,Fetch,-

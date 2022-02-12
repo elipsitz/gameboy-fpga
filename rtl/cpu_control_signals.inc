@@ -302,6 +302,7 @@ end
     alu_write_flags = 0;
 end
 24: begin
+    // #PC=WZ
     pc_next = PcNextReg;
     inst_load = 0;
     mem_enable = 0;
@@ -322,6 +323,40 @@ end
     microbranch = MicroBranchDispatch;
     reg_read1_sel = RegSelHL;
     reg_read2_sel = RegSelHL;
+    reg_op = RegOpNone;
+    alu_write_flags = 0;
+end
+26: begin
+    // JP f,nn
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelZ;
+    reg_op = RegOpWriteMem;
+    alu_write_flags = 0;
+end
+27: begin
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchCond;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    alu_write_flags = 0;
+    next_state = 24;
+end
+28: begin
+    pc_next = PcNextInc;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchDispatch;
     reg_op = RegOpNone;
     alu_write_flags = 0;
 end

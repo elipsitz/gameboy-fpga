@@ -16,6 +16,8 @@ module cpu_control (
 
     /// Current memory data in.
     input [7:0] mem_data_in,
+    /// Whether the current condition (in instruction register) is satisfied (based on flags)
+    input condition,
 
     /// Control signal: how PC should be updated.
     output pc_next_e pc_next,
@@ -84,10 +86,7 @@ module cpu_control (
                     default: state <= 1; // "INVALID" state.
                 endcase
             end else if (microbranch == MicroBranchJump) state <= next_state;
-            else if (microbranch == MicroBranchCond) begin
-                // TODO: check condition 
-                state <= next_state;
-            end
+            else if (microbranch == MicroBranchCond) state <= (condition ? next_state : (state + 1));
         end
     end
 

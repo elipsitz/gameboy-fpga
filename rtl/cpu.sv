@@ -106,6 +106,7 @@ module cpu (
     end
 
     //////////////////////////////////////// Control Unit
+    logic condition;
     pc_next_e pc_next;
     logic inst_load;
     reg_sel_e reg_read1_sel;
@@ -124,6 +125,7 @@ module cpu (
         .t_cycle,
         .reset,
         .mem_data_in,
+        .condition,
         .pc_next,
         .inst_load,
         .reg_read1_sel,
@@ -306,6 +308,16 @@ module cpu (
                 registers[6] <= {alu_flag_out, 4'b0000};
             end
         end
+    end
+
+    //////////////////////////////////////// Condition Code Checking
+    always @(*) begin
+        case (instruction_register[4:3])
+            0: condition = !alu_flag_in[FLAG_Z];
+            1: condition = alu_flag_in[FLAG_Z];
+            2: condition = !alu_flag_in[FLAG_C];
+            3: condition = alu_flag_in[FLAG_C];
+        endcase
     end
 
     //////////////////////////////////////// Memory Accesses

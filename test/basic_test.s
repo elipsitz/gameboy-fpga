@@ -59,7 +59,20 @@ skip1:
     halt
 skip2:
     add a, $01
-
+    cp a, $A2 ; set z
+    jp z, skip3
+    ld a, $B2
+    halt
+skip3:
+    add a, $01
+    cp a, $99 ; UNset z
+    jp z, fail1
+    jp skip4
+fail1:
+    ld a, $B3
+    halt
+skip4:
+    nop
     
     ; End the test.
     halt
