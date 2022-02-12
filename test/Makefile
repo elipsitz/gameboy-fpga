@@ -13,6 +13,7 @@ CUSTOM_COMPILE_DEPS += $(PWD)/../rtl/cpu_control_signals.inc
 CUSTOM_COMPILE_DEPS += $(PWD)/../rtl/cpu_control_dispatch.inc
 CUSTOM_COMPILE_DEPS += basic_test.gb
 CUSTOM_COMPILE_DEPS += sanity_test.gb
+CUSTOM_COMPILE_DEPS += complete_test.gb
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
 TOPLEVEL = cpu

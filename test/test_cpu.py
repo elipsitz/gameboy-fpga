@@ -35,21 +35,25 @@ async def run_program(dut, program, max_steps=1000):
     while True:
         await Timer(2, units="ns")
 
-        if dut.instruction_register.value.integer == 0x76:
+        instruction = dut.instruction_register.value.integer
+        if instruction == 0x76:
             # HALT -- exit.
             break
+        if dut.control.state.value.integer == 1:
+            # Hit "INVALID" control state.
+            raise Exception(f"Hit INVALID state, instruction={instruction:02X}")
         if steps >= max_steps:
             raise Exception("Execution hit max steps")
-        dut._log.info(
-            f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer}"
-        )
+        # dut._log.info(
+        #    f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer}"
+        # )
 
         if dut.mem_enable.value:
             address = dut.mem_addr.value.integer
             if dut.mem_write.value:
                 # Write
                 data = dut.mem_data_out.value.integer
-                dut._log.info(f"    mem write at {address:04X} <- {data:02X}   |  ")
+                # dut._log.info(f"    mem write at {address:04X} <- {data:02X}   |  ")
                 if address >= 0xC000 and address <= 0xDFFF:
                     memory[address - 0xC000] = data
             else:
@@ -63,7 +67,7 @@ async def run_program(dut, program, max_steps=1000):
                     # RAM read
                     output = memory[address - 0xC000]
 
-                dut._log.info(f"    mem read at {address:04X} -> {output:02X}   |  ")
+                # dut._log.info(f"    mem read at {address:04X} -> {output:02X}   |  ")
                 dut.mem_data_in.value = output
 
         await Timer(2, units="ns")
@@ -77,6 +81,7 @@ async def test_nop(dut):
     """Execute a bunch of NOPs."""
     program = b"\x00\x00\x00\x00\x00\x76"
     await run_program(dut, program)
+
 
 @cocotb.test()
 async def test_sanity(dut):
@@ -92,6 +97,22 @@ async def test_sanity(dut):
     assert get_register(dut, "D") == 0xDD
     assert get_register(dut, "E") == 0xEE
     assert memory[0] == 0x2B
+
+
+@cocotb.test()
+async def test_complete(dut):
+    """
+    Run the 'complete' test.
+
+    At the end, checks the HL register. If it's 0, all tests pass.
+    Otherwise, it contains the ID of the failed test.
+    """
+    program = open("complete_test.gb", "rb").read()
+    memory = await run_program(dut, bytes(program))
+    test_result = get_register(dut, "HL")
+    if test_result != 0:
+        raise Exception(f"Complete test failed! ID = {test_result}")
+
 
 @cocotb.test()
 async def test_load(dut):

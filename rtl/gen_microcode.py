@@ -58,7 +58,7 @@ SIGNALS = {
         "Jump": "MicroBranchJump",
         "Cond": "MicroBranchCond",
         "Fetch": "MicroBranchDispatch",
-        "Fetch*": "MicroBranchDispatch", # Fetch, but don't force all of the fields
+        "Fetch*": "MicroBranchDispatch",  # Fetch, but don't force all of the fields
     },
     "InstLoad": BINARY,
 }
