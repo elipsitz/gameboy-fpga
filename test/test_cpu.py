@@ -104,13 +104,16 @@ async def test_complete(dut):
     """
     Run the 'complete' test.
 
-    At the end, checks the HL register. If it's 0, all tests pass.
+    At the end, checks the last byte of memory. If it's 0, all tests pass.
     Otherwise, it contains the ID of the failed test.
     """
     program = open("complete_test.gb", "rb").read()
     memory = await run_program(dut, bytes(program))
-    test_result = get_register(dut, "HL")
+    test_result = memory[-1]
     if test_result != 0:
+        print("#" * 80)
+        print(f"Complete Test failed: {test_result}")
+        print("#" * 80)
         raise Exception(f"Complete test failed! ID = {test_result}")
 
 
