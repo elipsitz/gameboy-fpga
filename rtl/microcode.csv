@@ -30,3 +30,9 @@ JP HL,,11101001,RegInc,HL,HL,-,None,-,-,-,No,-,-,HL,Fetch*,-
 ,,,-,-,-,-,None,-,-,-,No,-,-,-,Fetch,-
 "LD (rr), A",,00??0010,Same,Reg16Hi,Reg16Lo,-,None,CopyA,A,-,No,Yes,Yes,Reg,Jump,NOP
 "LD A, (rr)",,00??1010,Same,Reg16Hi,Reg16Lo,A,WriteMem,-,-,-,No,Yes,No,Reg,Jump,NOP
+"LD (nn), A",,11101010,Inc,-,-,Z,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,Same,W,Z,-,None,CopyA,A,-,No,Yes,Yes,Reg,Jump,NOP
+"LD A, (nn)",,11111010,Inc,-,-,Z,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Next,-
+,,,Same,W,Z,A,WriteMem,-,-,-,No,Yes,No,Reg,Jump,NOP

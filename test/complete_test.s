@@ -145,6 +145,14 @@ SECTION "ROM0", ROM0
     ld hl, $C000
     AssertEquals [hl]
 
+    ; ######### Test 8: Load to/from A with immediate address
+    SetTestID 7
+    ld a, [data_2b]
+    AssertEquals $2B
+    ld a, [$C101]
+    ld hl, $C101
+    AssertEquals [hl]
+
 
     ; ========================================
     ; If we made it here, suite is successful.
