@@ -11,11 +11,9 @@ HALT,,01110110,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,HALT
 "LD rr,nn",,00??0001,Inc,-,-,Reg16Lo,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
 ,,,Inc,-,-,Reg16Hi,WriteMem,No,-,-,-,-,No,Yes,No,PC,Jump,NOP
 "ldi (HL),A",,00100010,Same,-,-,-,None,Inc,HL,CopyA,A,-,No,Yes,Yes,HL,Jump,NOP
-"ldi A,(HL)",,00101010,Same,-,-,A,WriteMem,No,-,-,-,-,No,Yes,No,HL,Next,-
-,,,-,-,-,-,None,Inc,HL,-,-,-,No,-,-,-,Fetch,-
+"ldi A,(HL)",,00101010,Same,-,-,A,WriteMem,Inc,HL,-,-,-,No,Yes,No,HL,Jump,NOP
 "ldd (HL),A",,00110010,Same,-,-,-,None,Dec,HL,CopyA,A,-,No,Yes,Yes,HL,Jump,NOP
-"ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,No,-,-,-,-,No,Yes,No,HL,Next,-
-,,,-,-,-,-,None,Dec,HL,-,-,-,No,-,-,-,Fetch,-
+"ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,Dec,HL,-,-,-,No,Yes,No,HL,Jump,NOP
 "ALU A, n",,11???110,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
 ,,,-,-,W,A,WriteAlu,No,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
 "ALU A, (HL)",,10???110,Same,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,HL,Next,-
