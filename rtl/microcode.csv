@@ -44,3 +44,7 @@ JP HL,,11101001,RegInc,HL,HL,-,None,No,-,-,-,-,No,-,-,HL,Fetch*,-
 "LD A, (FF00 + C)",,11110010,Same,-,C,A,WriteMem,No,-,-,-,-,No,Yes,No,High,Jump,NOP
 INC rr,,00??0011,Same,-,-,-,None,Inc,Inst16,-,-,-,No,No,-,-,Jump,NOP
 DEC rr,,00??1011,Same,-,-,-,None,Dec,Inst16,-,-,-,No,No,-,-,Jump,NOP
+"LD (nn), SP",,00001000,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
+,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
+,,,Same,-,SP_Lo,-,None,Inc,WZ,CopyB,-,-,No,Yes,Yes,Incrementer,Next,-
+,,,Same,-,SP_Hi,-,None,Inc,WZ,CopyB,-,-,No,Yes,Yes,Incrementer,Jump,NOP

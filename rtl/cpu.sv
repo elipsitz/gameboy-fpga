@@ -31,7 +31,11 @@ typedef enum logic [3:0] {
     /// The high part of the 16-bit register denoted by bits 5:4.
     RegSelReg16Hi,
     /// The low part of the 16-bit register denoted by bits 5:4.
-    RegSelReg16Lo
+    RegSelReg16Lo,
+    /// High byte of SP register.
+    RegSPHi,
+    /// Low byte of SP register.
+    RegSPLo
 } reg_sel_e;
 
 /// Control signal: register write operation.
@@ -96,7 +100,7 @@ typedef enum logic [1:0] {
     MemAddrSelPc,
     /// HL Register
     MemAddrSelHl,
-    /// Output from the register incrementer.
+    /// **INPUT** to the register incrementer (not output).
     MemAddrSelIncrementer,
     /// High address: 0xFF00 | (Register 2)
     MemAddrSelHigh
@@ -309,6 +313,8 @@ module cpu (
             RegSelHL: reg_read1_index = 4;
             RegSelReg16Hi: reg_read1_index = reg_r16_hi;
             RegSelReg16Lo: reg_read1_index = reg_r16_lo;
+            RegSPHi: reg_read1_index = 8;
+            RegSPLo: reg_read1_index = 9;
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
@@ -320,6 +326,8 @@ module cpu (
             RegSelHL: reg_read2_index = 5;
             RegSelReg16Hi: reg_read2_index = reg_r16_hi;
             RegSelReg16Lo: reg_read2_index = reg_r16_lo;
+            RegSPHi: reg_read2_index = 8;
+            RegSPLo: reg_read2_index = 9;
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
@@ -331,6 +339,8 @@ module cpu (
             RegSelHL: reg_write_index = 4;
             RegSelReg16Hi: reg_write_index = reg_r16_hi;
             RegSelReg16Lo: reg_write_index = reg_r16_lo;
+            RegSPHi: reg_write_index = 8;
+            RegSPLo: reg_write_index = 9;
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
@@ -378,7 +388,7 @@ module cpu (
         case (mem_addr_sel)
             MemAddrSelPc: mem_addr = pc;
             MemAddrSelHl: mem_addr = {registers[4], registers[5]};
-            MemAddrSelIncrementer: mem_addr = inc_out;
+            MemAddrSelIncrementer: mem_addr = inc_in; // ### 
             MemAddrSelHigh: mem_addr = {8'hFF, reg_read2_out};
         endcase
     end

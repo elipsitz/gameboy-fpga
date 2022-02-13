@@ -612,3 +612,57 @@ end
     alu_write_flags = 0;
     next_state = 0;
 end
+45: begin
+    // LD (nn), SP
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelZ;
+    reg_op = RegOpWriteMem;
+    inc_op = IncOpNone;
+    alu_write_flags = 0;
+end
+46: begin
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    inc_op = IncOpNone;
+    alu_write_flags = 0;
+end
+47: begin
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchNext;
+    reg_read2_sel = RegSPLo;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegWZ;
+    alu_op = AluOpCopyB;
+    alu_write_flags = 0;
+end
+48: begin
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchJump;
+    reg_read2_sel = RegSPHi;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegWZ;
+    alu_op = AluOpCopyB;
+    alu_write_flags = 0;
+    next_state = 0;
+end

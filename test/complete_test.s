@@ -200,6 +200,17 @@ SECTION "ROM0", ROM0
     AssertEquals b
     AssertEquals c
 
+    ; ######### Test 11: LD (nn), SP
+    SetTestID 11
+    ld sp, $1234
+    ld [$C000], sp
+    ld hl, $C000
+    ldi a, [hl]
+    AssertEquals $34
+    ldi a, [hl]
+    AssertEquals $12
+
+
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0

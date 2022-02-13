@@ -13,6 +13,8 @@ REG_SELECT = {
     "HL": "RegSelHL",
     "Reg16Hi": "RegSelReg16Hi",
     "Reg16Lo": "RegSelReg16Lo",
+    "SP_Hi": "RegSPHi",
+    "SP_Lo": "RegSPLo",
 }
 SIGNALS = {
     "Label": None,
@@ -94,7 +96,7 @@ class State:
         if self.data["MemWr"] == "Yes" and self.data["AluOp"] == "-":
             raise Exception(f"Row {i}: AluOp must be set if MemWr is Yes")
         if self.data["MemAddrSel"] == "Incrementer" and self.data["IncReg"] == "-":
-             raise Exception(f"Row {i}: IncReg must be set if MemAddrSel is Incrementer")
+            raise Exception(f"Row {i}: IncReg must be set if MemAddrSel is Incrementer")
 
         if self.data["MicroBranch"] in ("Fetch", "Fetch*"):
             forced = {
