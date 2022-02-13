@@ -129,6 +129,22 @@ SECTION "ROM0", ROM0
     add a, [hl] 
     AssertEquals $BA
 
+    ; ######### Test 7: Loads with register-defined memory addresses
+    SetTestID 7
+    ld hl, 0
+    ld bc, data_40
+    ld a, 0
+    ld a, [bc]
+    AssertEquals $40
+    ld de, data_42
+    ld a, [de]
+    AssertEquals $42
+    ld bc, $C000
+    ld a, $77
+    ld [bc], a
+    ld hl, $C000
+    AssertEquals [hl]
+
 
     ; ========================================
     ; If we made it here, suite is successful.
@@ -138,3 +154,7 @@ suite_end:
 
 data_2b:
     db $2b
+data_40:
+    db $40
+data_42:
+    db $42

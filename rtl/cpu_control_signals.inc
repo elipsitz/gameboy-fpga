@@ -145,6 +145,7 @@ end
     microbranch = MicroBranchJump;
     reg_op = RegOpIncHl;
     alu_op = AluOpCopyA;
+    alu_sel_a = AluSelARegA;
     alu_write_flags = 0;
     next_state = 0;
 end
@@ -180,6 +181,7 @@ end
     microbranch = MicroBranchJump;
     reg_op = RegOpDecHl;
     alu_op = AluOpCopyA;
+    alu_sel_a = AluSelARegA;
     alu_write_flags = 0;
     next_state = 0;
 end
@@ -356,4 +358,35 @@ end
     microbranch = MicroBranchDispatch;
     reg_op = RegOpNone;
     alu_write_flags = 0;
+end
+29: begin
+    // LD (rr), A
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelReg;
+    microbranch = MicroBranchJump;
+    reg_read1_sel = RegSelReg16Hi;
+    reg_read2_sel = RegSelReg16Lo;
+    reg_op = RegOpNone;
+    alu_op = AluOpCopyA;
+    alu_sel_a = AluSelARegA;
+    alu_write_flags = 0;
+    next_state = 0;
+end
+30: begin
+    // LD A, (rr)
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelReg;
+    microbranch = MicroBranchJump;
+    reg_read1_sel = RegSelReg16Hi;
+    reg_read2_sel = RegSelReg16Lo;
+    reg_write_sel = RegSelA;
+    reg_op = RegOpWriteMem;
+    alu_write_flags = 0;
+    next_state = 0;
 end

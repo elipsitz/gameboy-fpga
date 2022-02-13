@@ -28,3 +28,5 @@ JP HL,,11101001,RegInc,HL,HL,-,None,-,-,-,No,-,-,HL,Fetch*,-
 "JP f,nn",Conditional,110??010,Inc,-,-,Z,WriteMem,-,-,-,No,Yes,No,PC,Next,-
 ,,,Inc,-,-,W,WriteMem,-,-,-,No,Yes,No,PC,Cond,#PC=WZ
 ,,,-,-,-,-,None,-,-,-,No,-,-,-,Fetch,-
+"LD (rr), A",,00??0010,Same,Reg16Hi,Reg16Lo,-,None,CopyA,A,-,No,Yes,Yes,Reg,Jump,NOP
+"LD A, (rr)",,00??1010,Same,Reg16Hi,Reg16Lo,A,WriteMem,-,-,-,No,Yes,No,Reg,Jump,NOP
