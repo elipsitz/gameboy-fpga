@@ -36,11 +36,12 @@ SIGNALS = {
     },
     "AluOp": {
         "CopyA": "AluOpCopyA",
+        "CopyB": "AluOpCopyB",
         "IncA": "AluOpIncA",
         "InstAlu": "AluOpInstAlu",
     },
     "AluSelA": {
-        "Reg1": "AluSelAReg1",
+        "A": "AluSelARegA",
     },
     "AluSelB": {
         "Reg2": "AluSelBReg2",
@@ -79,6 +80,9 @@ class State:
                 raise Exception(f"Error on row {i}: Invalid value '{v}' for key '{k}'")
         if self.data["Encoding"] and len(self.data["Encoding"]) != 8:
             raise Exception(f"Error on row {i}: bad 'Encoding'")
+        if self.data["MemWr"] == "Yes" and self.data["AluOp"] == "-":
+            print(self.data)
+            raise Exception(f"Row {i}: AluOp must be set if MemWr is Yes")
 
         if self.data["MicroBranch"] in ("Fetch", "Fetch*"):
             forced = {

@@ -50,6 +50,8 @@ typedef enum logic [2:0] {
 typedef enum logic [1:0] {
     /// Output = A
     AluOpCopyA,
+    /// Output = B
+    AluOpCopyB,
     /// Output = A + 1
     AluOpIncA,
     /// Use the "ALU opcode" from the instruction (ADD/ADC/SUB/SBC/AND/XOR/OR/CP).
@@ -58,8 +60,8 @@ typedef enum logic [1:0] {
 
 /// Control signal: ALU operand A source.
 typedef enum logic [0:0] {
-    /// A = Register Read 1
-    AluSelAReg1
+    /// A = Accumulator register
+    AluSelARegA
 } alu_sel_a_e;
 
 /// Control signal: ALU operand B source.
@@ -173,7 +175,7 @@ module cpu (
     always @(*) begin
         // Select ALU input A.
         case (alu_sel_a) 
-            AluSelAReg1: alu_a = reg_read1_out;
+            AluSelARegA: alu_a = registers[7];
         endcase
 
         // Select ALU input B.
@@ -186,6 +188,7 @@ module cpu (
         alu_flag_out = alu_flag_in;
         case (alu_op)
             AluOpCopyA: alu_out = alu_a;
+            AluOpCopyB: alu_out = alu_b;
             AluOpIncA: alu_out = alu_a + 1;
             AluOpInstAlu: begin
                 logic carry;

@@ -31,6 +31,12 @@ SECTION "ROM0", ROM0
     ld a, $00
     ld a, [hl]
     AssertEquals $60
+    ld b, $70
+    ld [hl], b
+    ld c, $00
+    ld c, [hl]
+    ld a, c
+    AssertEquals $70
 
     ; ######### Test 3: Load increment/decrement (with HL)
     SetTestID 3

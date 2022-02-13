@@ -60,7 +60,7 @@ module cpu_control (
         reg_write_sel = RegSelA;
         reg_op = RegOpNone;
         alu_op = AluOpCopyA;
-        alu_sel_a = AluSelAReg1;
+        alu_sel_a = AluSelARegA;
         alu_sel_b = AluSelBReg2;
         alu_write_flags = 0;
         mem_enable = 0;
