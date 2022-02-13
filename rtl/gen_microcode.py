@@ -32,8 +32,17 @@ SIGNALS = {
         "None": "RegOpNone",
         "WriteAlu": "RegOpWriteAlu",
         "WriteMem": "RegOpWriteMem",
-        "IncHL": "RegOpIncHl",
-        "DecHL": "RegOpDecHl",
+    },
+    "IncOp": {
+        "No": "IncOpNone",
+        "Inc": "IncOpInc",
+        "Dec": "IncOpDec",
+    },
+    "IncReg": {
+        "HL": "IncRegHL",
+        "SP": "IncRegSP",
+        "WZ": "IncRegWZ",
+        "Inst16": "IncRegInst16",
     },
     "AluOp": {
         "CopyA": "AluOpCopyA",
@@ -53,7 +62,7 @@ SIGNALS = {
     "MemAddrSel": {
         "PC": "MemAddrSelPc",
         "HL": "MemAddrSelHl",
-        "Reg": "MemAddrSelReg",
+        "Incrementer": "MemAddrSelIncrementer",
         "High": "MemAddrSelHigh",
     },
     "MicroBranch": {
@@ -83,8 +92,9 @@ class State:
         if self.data["Encoding"] and len(self.data["Encoding"]) != 8:
             raise Exception(f"Error on row {i}: bad 'Encoding'")
         if self.data["MemWr"] == "Yes" and self.data["AluOp"] == "-":
-            print(self.data)
             raise Exception(f"Row {i}: AluOp must be set if MemWr is Yes")
+        if self.data["MemAddrSel"] == "Incrementer" and self.data["IncReg"] == "-":
+             raise Exception(f"Row {i}: IncReg must be set if MemAddrSel is Incrementer")
 
         if self.data["MicroBranch"] in ("Fetch", "Fetch*"):
             forced = {
@@ -154,6 +164,8 @@ if __name__ == "__main__":
             simple_signal(f, s, "RegRead2Sel", "reg_read2_sel")
             simple_signal(f, s, "RegWriteSel", "reg_write_sel")
             simple_signal(f, s, "RegOp", "reg_op")
+            simple_signal(f, s, "IncOp", "inc_op")
+            simple_signal(f, s, "IncReg", "inc_reg")
             simple_signal(f, s, "AluOp", "alu_op")
             simple_signal(f, s, "AluSelA", "alu_sel_a")
             simple_signal(f, s, "AluSelB", "alu_sel_b")

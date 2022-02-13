@@ -35,18 +35,36 @@ typedef enum logic [3:0] {
 } reg_sel_e;
 
 /// Control signal: register write operation.
-typedef enum logic [2:0] {
+typedef enum logic [1:0] {
     /// Do not write a register.
     RegOpNone,
     /// Write the output of the ALU.
     RegOpWriteAlu,
     /// Write the memory data input.
-    RegOpWriteMem,
-    /// Increment HL.
-    RegOpIncHl,
-    /// Decrement HL.
-    RegOpDecHl
+    RegOpWriteMem
 } reg_op_e;
+
+/// Control signal: register incrementer operation.
+typedef enum logic [1:0] {
+    /// Do nothing.
+    IncOpNone,
+    /// Increment.
+    IncOpInc,
+    /// Decrement.
+    IncOpDec
+} inc_op_e;
+
+/// Control signal: register incrementer target selector.
+typedef enum logic [1:0] {
+    /// HL register
+    IncRegHL,
+    /// SP register
+    IncRegSP,
+    /// WZ register
+    IncRegWZ,
+    /// 16-bit register selected by instruction register
+    IncRegInst16
+} inc_reg_e;
 
 /// Control signal: ALU operation.
 typedef enum logic [1:0] {
@@ -78,8 +96,8 @@ typedef enum logic [1:0] {
     MemAddrSelPc,
     /// HL Register
     MemAddrSelHl,
-    /// Register 1 and Register 2 (HI + LO)
-    MemAddrSelReg,
+    /// Output from the register incrementer.
+    MemAddrSelIncrementer,
     /// High address: 0xFF00 | (Register 2)
     MemAddrSelHigh
 } mem_addr_sel_e;
@@ -119,6 +137,8 @@ module cpu (
     reg_sel_e reg_read2_sel;
     reg_sel_e reg_write_sel;
     reg_op_e reg_op;
+    inc_op_e inc_op;
+    inc_reg_e inc_reg;
     alu_op_e alu_op;
     alu_sel_a_e alu_sel_a;
     alu_sel_b_e alu_sel_b;
@@ -138,6 +158,8 @@ module cpu (
         .reg_read2_sel,
         .reg_write_sel,
         .reg_op,
+        .inc_op,
+        .inc_reg,
         .alu_op,
         .alu_sel_a,
         .alu_sel_b,
@@ -238,6 +260,7 @@ module cpu (
     end
 
     //////////////////////////////////////// Register File
+    // Includes incrementer/decrementer.
     // 11 Registers: BC DE HL FA SP WZ
     //               01 23 45 67 89 AB
     logic [7:0] registers [0:11];
@@ -248,6 +271,8 @@ module cpu (
     logic [3:0] reg_write_index; // The index of the register to write.
     logic [3:0] reg_r16_hi; // The instruction register r16 interpreted high.
     logic [3:0] reg_r16_lo; // The instruction register r16 interpreted low.
+    logic [15:0] inc_in; // Input to the incrementer/decrementer.
+    logic [15:0] inc_out; // Output of the incrementer/decrementer.
     always @(*) begin
         case (instruction_register[5:4])
             2'b00: reg_r16_hi = 0;
@@ -260,6 +285,18 @@ module cpu (
             2'b01: reg_r16_lo = 3;
             2'b10: reg_r16_lo = 5;
             2'b11: reg_r16_lo = 9;
+        endcase
+        
+        case (inc_reg)
+            IncRegHL: inc_in = {registers[4], registers[5]};
+            IncRegSP: inc_in = {registers[8], registers[9]};
+            IncRegWZ: inc_in = {registers[10], registers[11]};
+            IncRegInst16: inc_in = {registers[reg_r16_hi], registers[reg_r16_lo]};
+        endcase
+        case (inc_op)
+            IncOpNone: inc_out = inc_in;
+            IncOpInc: inc_out = inc_in + 1;
+            IncOpDec: inc_out = inc_out - 1;
         endcase
 
         case (reg_read1_sel)
@@ -310,9 +347,15 @@ module cpu (
             case (reg_op)
                 RegOpWriteAlu: registers[reg_write_index] <= alu_out;
                 RegOpWriteMem: registers[reg_write_index] <= mem_data_in;
-                RegOpIncHl: {registers[4], registers[5]} <= ({registers[4], registers[5]} + 1);
-                RegOpDecHl: {registers[4], registers[5]} <= ({registers[4], registers[5]} - 1);
             endcase
+            if (inc_op == IncOpInc || inc_op == IncOpDec) begin
+                case (inc_reg)
+                    IncRegHL: {registers[4], registers[5]} <= inc_out;
+                    IncRegSP: {registers[8], registers[9]} <= inc_out;
+                    IncRegWZ: {registers[10], registers[11]} <= inc_out;
+                    IncRegInst16: {registers[reg_r16_hi], registers[reg_r16_lo]} <= inc_out;
+                endcase
+            end
             if (alu_write_flags) begin
                 registers[6] <= {alu_flag_out, 4'b0000};
             end
@@ -335,7 +378,7 @@ module cpu (
         case (mem_addr_sel)
             MemAddrSelPc: mem_addr = pc;
             MemAddrSelHl: mem_addr = {registers[4], registers[5]};
-            MemAddrSelReg: mem_addr = {reg_read1_out, reg_read2_out};
+            MemAddrSelIncrementer: mem_addr = inc_out;
             MemAddrSelHigh: mem_addr = {8'hFF, reg_read2_out};
         endcase
     end

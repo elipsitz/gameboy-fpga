@@ -31,6 +31,10 @@ module cpu_control (
     output reg_sel_e reg_write_sel,
     /// Control signal: register write operation to perform.
     output reg_op_e reg_op,
+    /// Control signal: incrementer/decrementer operation to perform.
+    output inc_op_e inc_op,
+    /// Control signal: incrementer/decrementer register target.
+    output inc_reg_e inc_reg,
     /// Control signal: ALU operation.
     output alu_op_e alu_op,
     /// Control signal: ALU select A.
