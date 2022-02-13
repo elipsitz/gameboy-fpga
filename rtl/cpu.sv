@@ -13,9 +13,11 @@ typedef enum logic [1:0] {
 } pc_next_e;
 
 /// Control signal: 8-bit register select.
-typedef enum logic [2:0] {
+typedef enum logic [3:0] {
     /// The accumulator register.
     RegSelA,
+    /// Register C.
+    RegSelC,
     /// Temp register W.
     RegSelW,
     /// Temp register Z.
@@ -77,7 +79,9 @@ typedef enum logic [1:0] {
     /// HL Register
     MemAddrSelHl,
     /// Register 1 and Register 2 (HI + LO)
-    MemAddrSelReg
+    MemAddrSelReg,
+    /// High address: 0xFF00 | (Register 2)
+    MemAddrSelHigh
 } mem_addr_sel_e;
 
 /// GameBoy CPU - Sharp SM83
@@ -260,6 +264,7 @@ module cpu (
 
         case (reg_read1_sel)
             RegSelA: reg_read1_index = 7;
+            RegSelC: reg_read1_index = 1;
             RegSelW: reg_read1_index = 10;
             RegSelZ: reg_read1_index = 11;
             RegSelReg8Src: reg_read1_index = {1'b0, instruction_register[2:0]};
@@ -270,6 +275,7 @@ module cpu (
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
+            RegSelC: reg_read2_index = 1;
             RegSelW: reg_read2_index = 10;
             RegSelZ: reg_read2_index = 11;
             RegSelReg8Src: reg_read2_index = {1'b0, instruction_register[2:0]};
@@ -280,6 +286,7 @@ module cpu (
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
+            RegSelC: reg_write_index = 1;
             RegSelW: reg_write_index = 10;
             RegSelZ: reg_write_index = 11;
             RegSelReg8Src: reg_write_index = {1'b0, instruction_register[2:0]};
@@ -300,7 +307,6 @@ module cpu (
         if (reset) begin
             for (i = 0; i < 12; i += 1) registers[i] <= 0;
         end else if (t_cycle == 3) begin
-            // TODO resolve conflict with writing to flags register.
             case (reg_op)
                 RegOpWriteAlu: registers[reg_write_index] <= alu_out;
                 RegOpWriteMem: registers[reg_write_index] <= mem_data_in;
@@ -330,6 +336,7 @@ module cpu (
             MemAddrSelPc: mem_addr = pc;
             MemAddrSelHl: mem_addr = {registers[4], registers[5]};
             MemAddrSelReg: mem_addr = {reg_read1_out, reg_read2_out};
+            MemAddrSelHigh: mem_addr = {8'hFF, reg_read2_out};
         endcase
     end
 

@@ -5,6 +5,7 @@ import math
 BINARY = {"Yes": "1", "No": "0"}
 REG_SELECT = {
     "A": "RegSelA",
+    "C": "RegSelC",
     "W": "RegSelW",
     "Z": "RegSelZ",
     "Reg8Src": "RegSelReg8Src",
@@ -53,6 +54,7 @@ SIGNALS = {
         "PC": "MemAddrSelPc",
         "HL": "MemAddrSelHl",
         "Reg": "MemAddrSelReg",
+        "High": "MemAddrSelHigh",
     },
     "MicroBranch": {
         "Next": "MicroBranchNext",

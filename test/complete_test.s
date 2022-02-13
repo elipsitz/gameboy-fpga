@@ -146,13 +146,34 @@ SECTION "ROM0", ROM0
     AssertEquals [hl]
 
     ; ######### Test 8: Load to/from A with immediate address
-    SetTestID 7
+    SetTestID 8
     ld a, [data_2b]
     AssertEquals $2B
     ld a, [$C101]
     ld hl, $C101
     AssertEquals [hl]
 
+    ; ######### Test 9: LDH (Read/write to 0xFFxx)
+    SetTestID 9
+    ld h, $ff
+    ld a, $65
+    ldh [$ff00+$80], a
+    ld l, $80
+    AssertEquals [hl]
+    ld l, $81
+    ld [hl], $99
+    ldh a, [$ff00+$81]
+    AssertEquals $99
+    ld c, $82
+    ld a, $55
+    ldh [$ff00+c], a
+    ld l, $82
+    AssertEquals [hl]
+    ld l, $83
+    ld [hl], $45
+    ld c, l
+    ldh a, [$ff00+c]
+    AssertEquals $45
 
     ; ========================================
     ; If we made it here, suite is successful.

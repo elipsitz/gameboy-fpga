@@ -20,7 +20,7 @@ async def run_program(dut, program, max_steps=1000):
     Run a program, starting at PC=0x0000, until we hit a HALT instruction
     or the max number of cycles.
 
-    Returns the resulting RAM.
+    Returns a tuple of (work ram, FF00 ram)
     """
     clk = await cocotb.start(Clock(dut.clk, 1, "ns").start())
     dut.reset.value = 1
@@ -29,6 +29,7 @@ async def run_program(dut, program, max_steps=1000):
     dut.reset.value = 0
 
     memory = [0] * (8 * 1024)
+    high_memory = [0] * 256
     steps = 0
 
     # Execute until we hit a HALT instruction.
@@ -56,6 +57,8 @@ async def run_program(dut, program, max_steps=1000):
                 # dut._log.info(f"    mem write at {address:04X} <- {data:02X}   |  ")
                 if address >= 0xC000 and address <= 0xDFFF:
                     memory[address - 0xC000] = data
+                elif address >= 0xFF00 and address <= 0xFFFF:
+                    high_memory[address - 0xFF00] = data
             else:
                 # Read
                 output = 0
@@ -66,6 +69,8 @@ async def run_program(dut, program, max_steps=1000):
                 elif address >= 0xC000 and address <= 0xDFFF:
                     # RAM read
                     output = memory[address - 0xC000]
+                elif address >= 0xFF00 and address <= 0xFFFF:
+                    output = high_memory[address - 0xFF00]
 
                 # dut._log.info(f"    mem read at {address:04X} -> {output:02X}   |  ")
                 dut.mem_data_in.value = output
@@ -73,7 +78,7 @@ async def run_program(dut, program, max_steps=1000):
         await Timer(2, units="ns")
         steps += 1
 
-    return memory
+    return (memory, high_memory)
 
 
 @cocotb.test()
@@ -90,7 +95,7 @@ async def test_sanity(dut):
     to make sure that more complex tests can work.
     """
     program = open("sanity_test.gb", "rb").read()
-    memory = await run_program(dut, bytes(program))
+    memory, _ = await run_program(dut, bytes(program))
     assert get_register(dut, "A") == 0x22
     assert get_register(dut, "B") == 0xBB
     assert get_register(dut, "C") == 0xCC
@@ -108,7 +113,7 @@ async def test_complete(dut):
     Otherwise, it contains the ID of the failed test.
     """
     program = open("complete_test.gb", "rb").read()
-    memory = await run_program(dut, bytes(program))
+    memory, _ = await run_program(dut, bytes(program))
     test_result = memory[-1]
     if test_result != 0:
         print("#" * 80)
@@ -121,7 +126,7 @@ async def test_complete(dut):
 async def test_load(dut):
     """Load values around between registers and memory."""
     program = open("basic_test.gb", "rb").read()
-    memory = await run_program(dut, bytes(program))
+    memory, _ = await run_program(dut, bytes(program))
     assert get_register(dut, "C") == 0xAB
     assert get_register(dut, "D") == 0x06
     assert get_register(dut, "E") == 0x06

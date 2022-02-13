@@ -465,3 +465,83 @@ end
     alu_write_flags = 0;
     next_state = 0;
 end
+37: begin
+    // LD (FF00 + n), A
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    alu_write_flags = 0;
+end
+38: begin
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelHigh;
+    microbranch = MicroBranchJump;
+    reg_read2_sel = RegSelW;
+    reg_op = RegOpNone;
+    alu_op = AluOpCopyA;
+    alu_sel_a = AluSelARegA;
+    alu_write_flags = 0;
+    next_state = 0;
+end
+39: begin
+    // LD (FF00 + C), A
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelHigh;
+    microbranch = MicroBranchJump;
+    reg_read2_sel = RegSelC;
+    reg_op = RegOpNone;
+    alu_op = AluOpCopyA;
+    alu_sel_a = AluSelARegA;
+    alu_write_flags = 0;
+    next_state = 0;
+end
+40: begin
+    // LD A, (FF00 + n)
+    pc_next = PcNextInc;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    alu_write_flags = 0;
+end
+41: begin
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelHigh;
+    microbranch = MicroBranchJump;
+    reg_read2_sel = RegSelW;
+    reg_write_sel = RegSelA;
+    reg_op = RegOpWriteMem;
+    alu_write_flags = 0;
+    next_state = 0;
+end
+42: begin
+    // LD A, (FF00 + C)
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelHigh;
+    microbranch = MicroBranchJump;
+    reg_read2_sel = RegSelC;
+    reg_write_sel = RegSelA;
+    reg_op = RegOpWriteMem;
+    alu_write_flags = 0;
+    next_state = 0;
+end
