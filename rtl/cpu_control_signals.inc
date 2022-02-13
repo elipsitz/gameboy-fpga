@@ -588,3 +588,27 @@ end
     alu_write_flags = 0;
     next_state = 0;
 end
+43: begin
+    // INC rr
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 0;
+    microbranch = MicroBranchJump;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegInst16;
+    alu_write_flags = 0;
+    next_state = 0;
+end
+44: begin
+    // DEC rr
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 0;
+    microbranch = MicroBranchJump;
+    reg_op = RegOpNone;
+    inc_op = IncOpDec;
+    inc_reg = IncRegInst16;
+    alu_write_flags = 0;
+    next_state = 0;
+end

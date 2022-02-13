@@ -175,6 +175,31 @@ SECTION "ROM0", ROM0
     ldh a, [$ff00+c]
     AssertEquals $45
 
+    ; ######### Test 10: 16-bit INC/DEC
+    SetTestID 10
+    ld bc, $0000
+    inc bc
+    ld a, $00
+    AssertEquals b
+    ld a, $01
+    AssertEquals c
+    ;
+    dec bc
+    ld a, $00
+    AssertEquals b
+    AssertEquals c
+    ;
+    ld bc, $FFFF
+    inc bc
+    ld a, $00
+    AssertEquals b
+    AssertEquals c
+    ;
+    dec bc
+    ld a, $FF
+    AssertEquals b
+    AssertEquals c
+
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0
