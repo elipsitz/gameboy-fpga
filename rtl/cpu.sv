@@ -302,7 +302,7 @@ module cpu (
         case (inc_op)
             IncOpNone: inc_out = inc_in;
             IncOpInc: inc_out = inc_in + 1;
-            IncOpDec: inc_out = inc_out - 1;
+            IncOpDec: inc_out = inc_in - 1;
         endcase
 
         case (reg_read1_sel)

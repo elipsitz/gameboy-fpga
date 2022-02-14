@@ -222,6 +222,35 @@ SECTION "ROM0", ROM0
     ldi a, [hl]
     AssertEquals $AA
 
+    ; ######### Test 13: PUSH, POP
+    SetTestID 13
+    ld bc, $7788
+    ld sp, $C002
+    push bc
+    ld [$C002], sp
+    ld hl, $C003
+    ldd a, [hl]
+    AssertEquals $C0
+    ldd a, [hl]
+    AssertEquals $00
+    ldd a, [hl]
+    AssertEquals $77
+    ldd a, [hl]
+    AssertEquals $88
+    ;
+    pop de
+    ld a, d
+    AssertEquals $77
+    ld a, e
+    AssertEquals $88
+    ld [$C010], sp
+    ld hl, $C011
+    ldd a, [hl]
+    AssertEquals $C0
+    ldd a, [hl]
+    AssertEquals $02
+
+
 
     ; ========================================
     ; If we made it here, suite is successful.

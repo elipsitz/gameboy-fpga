@@ -44,7 +44,14 @@ INC rr,,00??0011,Same,-,-,-,None,Inc,Inst16,-,-,-,No,No,-,-,Jump,NOP
 DEC rr,,00??1011,Same,-,-,-,None,Dec,Inst16,-,-,-,No,No,-,-,Jump,NOP
 "LD (nn), SP",,00001000,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
 ,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Same,-,SP_Lo,-,None,Inc,WZ,CopyB,-,-,No,Yes,Yes,Incrementer,Next,-
-,,,Same,-,SP_Hi,-,None,Inc,WZ,CopyB,-,-,No,Yes,Yes,Incrementer,Jump,NOP
-"LD SP, HL",,11111001,Same,-,L,SP_Lo,WriteAlu,No,-,CopyB,-,-,No,No,-,-,Next,-
-,,,-,-,H,SP_Hi,WriteAlu,No,-,CopyB,-,-,No,-,-,-,Fetch,-
+,,,Same,-,SP_Lo,-,None,Inc,WZ,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
+,,,Same,-,SP_Hi,-,None,Inc,WZ,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
+"LD SP, HL",,11111001,Same,-,L,SP_Lo,WriteAlu,No,-,CopyB,-,Reg2,No,No,-,-,Next,-
+,,,-,-,H,SP_Hi,WriteAlu,No,-,CopyB,-,Reg2,No,-,-,-,Fetch,-
+PUSH AF,TODO,11110101,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
+POP AF,TODO,11110001,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
+PUSH rr,,11??0101,Same,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
+,,,Same,-,Reg16Hi,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
+,,,Same,-,Reg16Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
+POP rr,,11??0001,Same,-,-,Reg16Lo,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Next,-
+,,,Same,-,-,Reg16Hi,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Jump,NOP

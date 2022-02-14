@@ -105,24 +105,6 @@ async def test_sanity(dut):
 
 
 @cocotb.test()
-async def test_complete(dut):
-    """
-    Run the 'complete' test.
-
-    At the end, checks the last byte of memory. If it's 0, all tests pass.
-    Otherwise, it contains the ID of the failed test.
-    """
-    program = open("complete_test.gb", "rb").read()
-    memory, _ = await run_program(dut, bytes(program))
-    test_result = memory[-1]
-    if test_result != 0:
-        print("#" * 80)
-        print(f"Complete Test failed: {test_result}")
-        print("#" * 80)
-        raise Exception(f"Complete test failed! ID = {test_result}")
-
-
-@cocotb.test()
 async def test_load(dut):
     """Load values around between registers and memory."""
     program = open("basic_test.gb", "rb").read()
@@ -140,3 +122,21 @@ async def test_load(dut):
     assert memory[6] == 0x0D
     assert memory[7] == 0x4D
     assert memory[8] == 0x30
+
+
+@cocotb.test()
+async def test_complete(dut):
+    """
+    Run the 'complete' test.
+
+    At the end, checks the last byte of memory. If it's 0, all tests pass.
+    Otherwise, it contains the ID of the failed test.
+    """
+    program = open("complete_test.gb", "rb").read()
+    memory, _ = await run_program(dut, bytes(program))
+    test_result = memory[-1]
+    if test_result != 0:
+        print("#" * 80)
+        print(f"Complete Test failed: {test_result}")
+        print("#" * 80)
+        raise Exception(f"Complete test failed! ID = {test_result}")
