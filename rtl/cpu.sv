@@ -22,12 +22,14 @@ typedef enum logic [3:0] {
     RegSelW,
     /// Temp register Z.
     RegSelZ,
+    /// Register H.
+    RegSelH,
+    /// Register L.
+    RegSelL,
     /// The 8-bit register denoted by bits 2:0.
     RegSelReg8Src,
     /// The 8-bit register denoted by bits 5:3.
     RegSelReg8Dest,
-    /// HL registers: Reg 1 will be H, Reg 2 will be L.
-    RegSelHL,
     /// The high part of the 16-bit register denoted by bits 5:4.
     RegSelReg16Hi,
     /// The low part of the 16-bit register denoted by bits 5:4.
@@ -308,9 +310,10 @@ module cpu (
             RegSelC: reg_read1_index = 1;
             RegSelW: reg_read1_index = 10;
             RegSelZ: reg_read1_index = 11;
+            RegSelH: reg_read1_index = 4;
+            RegSelL: reg_read1_index = 5;
             RegSelReg8Src: reg_read1_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read1_index = {1'b0, instruction_register[5:3]};
-            RegSelHL: reg_read1_index = 4;
             RegSelReg16Hi: reg_read1_index = reg_r16_hi;
             RegSelReg16Lo: reg_read1_index = reg_r16_lo;
             RegSPHi: reg_read1_index = 8;
@@ -321,9 +324,10 @@ module cpu (
             RegSelC: reg_read2_index = 1;
             RegSelW: reg_read2_index = 10;
             RegSelZ: reg_read2_index = 11;
+            RegSelH: reg_read2_index = 4;
+            RegSelL: reg_read2_index = 5;
             RegSelReg8Src: reg_read2_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_read2_index = {1'b0, instruction_register[5:3]};
-            RegSelHL: reg_read2_index = 5;
             RegSelReg16Hi: reg_read2_index = reg_r16_hi;
             RegSelReg16Lo: reg_read2_index = reg_r16_lo;
             RegSPHi: reg_read2_index = 8;
@@ -334,9 +338,10 @@ module cpu (
             RegSelC: reg_write_index = 1;
             RegSelW: reg_write_index = 10;
             RegSelZ: reg_write_index = 11;
+            RegSelH: reg_write_index = 4;
+            RegSelL: reg_write_index = 5;
             RegSelReg8Src: reg_write_index = {1'b0, instruction_register[2:0]};
             RegSelReg8Dest: reg_write_index = {1'b0, instruction_register[5:3]};
-            RegSelHL: reg_write_index = 4;
             RegSelReg16Hi: reg_write_index = reg_r16_hi;
             RegSelReg16Lo: reg_write_index = reg_r16_lo;
             RegSPHi: reg_write_index = 8;

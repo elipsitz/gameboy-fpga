@@ -329,8 +329,8 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelHl;
     microbranch = MicroBranchDispatch;
-    reg_read1_sel = RegSelHL;
-    reg_read2_sel = RegSelHL;
+    reg_read1_sel = RegSelH;
+    reg_read2_sel = RegSelL;
     reg_op = RegOpNone;
     inc_op = IncOpNone;
     alu_write_flags = 0;
@@ -645,4 +645,31 @@ end
     alu_op = AluOpCopyB;
     alu_write_flags = 0;
     next_state = 0;
+end
+47: begin
+    // LD SP, HL
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 0;
+    microbranch = MicroBranchNext;
+    reg_read2_sel = RegSelL;
+    reg_write_sel = RegSPLo;
+    reg_op = RegOpWriteAlu;
+    inc_op = IncOpNone;
+    alu_op = AluOpCopyB;
+    alu_write_flags = 0;
+end
+48: begin
+    pc_next = PcNextInc;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelPc;
+    microbranch = MicroBranchDispatch;
+    reg_read2_sel = RegSelH;
+    reg_write_sel = RegSPHi;
+    reg_op = RegOpWriteAlu;
+    inc_op = IncOpNone;
+    alu_op = AluOpCopyB;
+    alu_write_flags = 0;
 end

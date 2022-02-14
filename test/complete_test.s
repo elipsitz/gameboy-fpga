@@ -210,6 +210,18 @@ SECTION "ROM0", ROM0
     ldi a, [hl]
     AssertEquals $12
 
+    ; ######### Test 12: LD SP, HL
+    SetTestID 12
+    ld sp, $0000
+    ld hl, $AABB
+    ld sp, hl
+    ld [$C000], sp
+    ld hl, $C000
+    ldi a, [hl]
+    AssertEquals $BB
+    ldi a, [hl]
+    AssertEquals $AA
+
 
     ; ========================================
     ; If we made it here, suite is successful.

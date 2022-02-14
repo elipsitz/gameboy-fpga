@@ -22,7 +22,7 @@ HALT,,01110110,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,HALT
 JP nn,little endian address,11000011,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
 ,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
 #PC=WZ,,,Reg,W,Z,-,None,No,-,-,-,-,No,No,-,-,Jump,NOP
-JP HL,,11101001,RegInc,HL,HL,-,None,No,-,-,-,-,No,-,-,HL,Fetch*,-
+JP HL,,11101001,RegInc,H,L,-,None,No,-,-,-,-,No,-,-,HL,Fetch*,-
 "JP f,nn",Conditional,110??010,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
 ,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Cond,#PC=WZ
 ,,,-,-,-,-,None,No,-,-,-,-,No,-,-,-,Fetch,-
@@ -46,3 +46,5 @@ DEC rr,,00??1011,Same,-,-,-,None,Dec,Inst16,-,-,-,No,No,-,-,Jump,NOP
 ,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
 ,,,Same,-,SP_Lo,-,None,Inc,WZ,CopyB,-,-,No,Yes,Yes,Incrementer,Next,-
 ,,,Same,-,SP_Hi,-,None,Inc,WZ,CopyB,-,-,No,Yes,Yes,Incrementer,Jump,NOP
+"LD SP, HL",,11111001,Same,-,L,SP_Lo,WriteAlu,No,-,CopyB,-,-,No,No,-,-,Next,-
+,,,-,-,H,SP_Hi,WriteAlu,No,-,CopyB,-,-,No,-,-,-,Fetch,-
