@@ -150,6 +150,21 @@ if __name__ == "__main__":
         else:
             s.next_state = None
 
+    # Warnings about unused signals.
+    for signal_name, values in SIGNALS.items():
+        seen = set()
+        for s in states:
+            if s.data.get(signal_name, "-") != "-":
+                seen.add(s.data[signal_name])
+        if values is not None:
+            allowed = set(values.keys())
+            never_seen = allowed - seen
+            if never_seen:
+                print(
+                    f"WARNING: Never seen allowed signals for '{signal_name}':",
+                    " ".join(sorted(list(never_seen))),
+                )
+
     # Write control signals output file.
     path = Path(__file__).parent / "cpu_control_signals.inc"
     with open(path, "w") as f:
