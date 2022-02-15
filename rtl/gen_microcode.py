@@ -16,6 +16,8 @@ REG_SELECT = {
     "Reg16Lo": "RegSelReg16Lo",
     "SP_Hi": "RegSPHi",
     "SP_Lo": "RegSPLo",
+    "PC_Hi": "RegPCHi",
+    "PC_Lo": "RegPCLo",
 }
 SIGNALS = {
     "Label": None,

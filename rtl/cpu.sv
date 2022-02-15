@@ -33,7 +33,11 @@ typedef enum logic [3:0] {
     /// High byte of SP register.
     RegSPHi,
     /// Low byte of SP register.
-    RegSPLo
+    RegSPLo,
+    /// High byte of PC register.
+    RegPCHi,
+    /// Low byte of PC register.
+    RegPCLo
 } reg_sel_e;
 
 /// Control signal: register write operation.
@@ -176,17 +180,6 @@ module cpu (
         else if (t_cycle == 3 && inst_load) instruction_register <= mem_data_in;
     end
 
-    //////////////////////////////////////// Program Counter
-    logic [15:0] pc = 0; // Current PC
-    always_ff @(posedge clk) begin
-        if (reset) pc <= 0;
-        else if (t_cycle == 3) begin
-            case (pc_next)
-                PcNextIncOut: pc <= inc_out;
-            endcase
-        end
-    end
-
     //////////////////////////////////////// ALU
     localparam FLAG_C = 2'd0;
     localparam FLAG_H = 2'd1;
@@ -261,9 +254,10 @@ module cpu (
 
     //////////////////////////////////////// Register File
     // Includes incrementer/decrementer.
-    // 11 Registers: BC DE HL FA SP WZ
-    //               01 23 45 67 89 AB
-    logic [7:0] registers [0:11];
+    // 14 Registers: BC DE HL FA SP WZ PC
+    //               01 23 45 67 89 AB CD
+    logic [15:0] pc; // Current PC.
+    logic [7:0] registers [0:13];
     logic [7:0] reg_read1_out; // The value of selected Register 1.
     logic [7:0] reg_read2_out; // The value of selected Register 2.
     logic [3:0] reg_read1_index; // The index of the first register to read.
@@ -273,6 +267,7 @@ module cpu (
     logic [3:0] reg_r16_lo; // The instruction register r16 interpreted low.
     logic [15:0] inc_in; // Input to the incrementer/decrementer.
     logic [15:0] inc_out; // Output of the incrementer/decrementer.
+    assign pc = {registers[12], registers[13]};
     always @(*) begin
         case (instruction_register[5:4])
             2'b00: reg_r16_hi = 0;
@@ -287,6 +282,7 @@ module cpu (
             2'b11: reg_r16_lo = 9;
         endcase
         
+
         case (inc_reg)
             IncRegPC: inc_in = pc;
             IncRegHL: inc_in = {registers[4], registers[5]};
@@ -313,6 +309,8 @@ module cpu (
             RegSelReg16Lo: reg_read1_index = reg_r16_lo;
             RegSPHi: reg_read1_index = 8;
             RegSPLo: reg_read1_index = 9;
+            RegPCHi: reg_read1_index = 12;
+            RegPCLo: reg_read1_index = 13;
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
@@ -327,6 +325,8 @@ module cpu (
             RegSelReg16Lo: reg_read2_index = reg_r16_lo;
             RegSPHi: reg_read2_index = 8;
             RegSPLo: reg_read2_index = 9;
+            RegPCHi: reg_read2_index = 12;
+            RegPCLo: reg_read2_index = 13;
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
@@ -341,6 +341,8 @@ module cpu (
             RegSelReg16Lo: reg_write_index = reg_r16_lo;
             RegSPHi: reg_write_index = 8;
             RegSPLo: reg_write_index = 9;
+            RegPCHi: reg_write_index = 12;
+            RegPCLo: reg_write_index = 13;
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
@@ -348,11 +350,11 @@ module cpu (
     end
     int i;
     initial begin
-        for (i = 0; i < 12; i += 1) registers[i] = 0;
+        for (i = 0; i < 14; i += 1) registers[i] = 0;
     end
     always_ff @(posedge clk) begin
         if (reset) begin
-            for (i = 0; i < 12; i += 1) registers[i] <= 0;
+            for (i = 0; i < 14; i += 1) registers[i] <= 0;
         end else if (t_cycle == 3) begin
             case (reg_op)
                 RegOpWriteAlu: registers[reg_write_index] <= alu_out;
@@ -366,6 +368,9 @@ module cpu (
                     IncRegInst16: {registers[reg_r16_hi], registers[reg_r16_lo]} <= inc_out;
                 endcase
             end
+            case (pc_next)
+                PcNextIncOut: {registers[12], registers[13]} <= inc_out;
+            endcase
             if (alu_write_flags) begin
                 registers[6] <= {alu_flag_out, 4'b0000};
             end
