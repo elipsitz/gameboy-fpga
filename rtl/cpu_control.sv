@@ -69,7 +69,7 @@ module cpu_control (
         alu_write_flags = 0;
         mem_enable = 0;
         mem_write = 0;
-        mem_addr_sel = MemAddrSelPc;
+        mem_addr_sel = MemAddrSelIncrementer;
         microbranch = MicroBranchNext;
         next_state = 0;
         

@@ -24,9 +24,7 @@ SIGNALS = {
     "NextState": None,
     "PcNext": {
         "Same": "PcNextSame",
-        "Inc": "PcNextInc",
-        "Reg": "PcNextReg",
-        "RegInc": "PcNextRegInc",
+        "IncOut": "PcNextIncOut",
     },
     "RegRead1Sel": REG_SELECT,
     "RegRead2Sel": REG_SELECT,
@@ -40,8 +38,10 @@ SIGNALS = {
         "No": "IncOpNone",
         "Inc": "IncOpInc",
         "Dec": "IncOpDec",
+        "IncNoWrite": "IncOpIncNoWrite",
     },
     "IncReg": {
+        "PC": "IncRegPC",
         "HL": "IncRegHL",
         "SP": "IncRegSP",
         "WZ": "IncRegWZ",
@@ -63,8 +63,6 @@ SIGNALS = {
     "MemEn": BINARY,
     "MemWr": BINARY,
     "MemAddrSel": {
-        "PC": "MemAddrSelPc",
-        "HL": "MemAddrSelHl",
         "Incrementer": "MemAddrSelIncrementer",
         "High": "MemAddrSelHigh",
     },
@@ -101,10 +99,12 @@ class State:
 
         if self.data["MicroBranch"] in ("Fetch", "Fetch*"):
             forced = {
-                "PcNext": "Inc",
+                "PcNext": "IncOut",
                 "MemEn": "Yes",
                 "MemWr": "No",
-                "MemAddrSel": "PC",
+                "MemAddrSel": "Incrementer",
+                "IncOp": "Inc",
+                "IncReg": "PC",
                 "NextState": "-",
                 "InstLoad": "Yes",
             }

@@ -4,12 +4,8 @@
 typedef enum logic [1:0] {
     /// Do not change PC.
     PcNextSame,
-    /// Increment PC by 1.
-    PcNextInc,
-    /// PC = {Reg 1, Reg 2}
-    PcNextReg,
-    /// PC = {Reg 1, Reg 2} + 1
-    PcNextRegInc
+    /// PC = output of incrementer/decrementer
+    PcNextIncOut
 } pc_next_e;
 
 /// Control signal: 8-bit register select.
@@ -57,11 +53,15 @@ typedef enum logic [1:0] {
     /// Increment.
     IncOpInc,
     /// Decrement.
-    IncOpDec
+    IncOpDec,
+    /// Increment but no writeback.
+    IncOpIncNoWrite
 } inc_op_e;
 
 /// Control signal: register incrementer target selector.
-typedef enum logic [1:0] {
+typedef enum logic [2:0] {
+    /// PC register
+    IncRegPC,
     /// HL register
     IncRegHL,
     /// SP register
@@ -98,10 +98,6 @@ typedef enum logic [0:0] {
 
 /// Control signal: where the memory load/store address comes from.
 typedef enum logic [1:0] {
-    /// PC
-    MemAddrSelPc,
-    /// HL Register
-    MemAddrSelHl,
     /// **INPUT** to the register incrementer (not output).
     MemAddrSelIncrementer,
     /// High address: 0xFF00 | (Register 2)
@@ -186,9 +182,7 @@ module cpu (
         if (reset) pc <= 0;
         else if (t_cycle == 3) begin
             case (pc_next)
-                PcNextInc: pc <= pc + 16'd1;
-                PcNextReg:  pc <= {reg_read1_out, reg_read2_out};
-                PcNextRegInc:  pc <= ({reg_read1_out, reg_read2_out}) + 16'd1;
+                PcNextIncOut: pc <= inc_out;
             endcase
         end
     end
@@ -294,6 +288,7 @@ module cpu (
         endcase
         
         case (inc_reg)
+            IncRegPC: inc_in = pc;
             IncRegHL: inc_in = {registers[4], registers[5]};
             IncRegSP: inc_in = {registers[8], registers[9]};
             IncRegWZ: inc_in = {registers[10], registers[11]};
@@ -301,7 +296,7 @@ module cpu (
         endcase
         case (inc_op)
             IncOpNone: inc_out = inc_in;
-            IncOpInc: inc_out = inc_in + 1;
+            IncOpInc, IncOpIncNoWrite: inc_out = inc_in + 1;
             IncOpDec: inc_out = inc_in - 1;
         endcase
 
@@ -391,9 +386,7 @@ module cpu (
     assign mem_data_out = alu_out; // TODO support other places?
     always_comb begin
         case (mem_addr_sel)
-            MemAddrSelPc: mem_addr = pc;
-            MemAddrSelHl: mem_addr = {registers[4], registers[5]};
-            MemAddrSelIncrementer: mem_addr = inc_in; // ### 
+            MemAddrSelIncrementer: mem_addr = inc_in;
             MemAddrSelHigh: mem_addr = {8'hFF, reg_read2_out};
         endcase
     end

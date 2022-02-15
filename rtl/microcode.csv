@@ -1,53 +1,53 @@
 Label,Comment,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegOp,IncOp,IncReg,AluOp,AluSelA,AluSelB,AluFlags,MemEn,MemWr,MemAddrSel,MicroBranch,NextState
-NOP,,00000000,-,-,-,-,None,No,-,-,-,-,No,-,-,-,Fetch,-
+NOP,,00000000,-,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
 _INVALID,,,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
 HALT,,01110110,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,HALT
-"LD r, (HL)",,01???110,Same,-,-,Reg8Dest,WriteMem,No,-,-,-,-,No,Yes,No,HL,Jump,NOP
-"LD (HL), r",,01110???,Same,-,Reg8Src,-,None,No,-,CopyB,-,Reg2,No,Yes,Yes,HL,Jump,NOP
-"LD (HL),n",,00110110,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Same,-,W,-,None,No,-,CopyB,-,Reg2,No,Yes,Yes,HL,Jump,NOP
-"LD r,r",,01??????,-,-,Reg8Src,Reg8Dest,WriteAlu,No,-,CopyB,-,Reg2,No,-,-,-,Fetch,-
-"LD r,n",,00???110,Inc,-,-,Reg8Dest,WriteMem,No,-,-,-,-,No,Yes,No,PC,Jump,NOP
-"LD rr,nn",,00??0001,Inc,-,-,Reg16Lo,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Inc,-,-,Reg16Hi,WriteMem,No,-,-,-,-,No,Yes,No,PC,Jump,NOP
-"ldi (HL),A",,00100010,Same,-,-,-,None,Inc,HL,CopyA,A,-,No,Yes,Yes,HL,Jump,NOP
-"ldi A,(HL)",,00101010,Same,-,-,A,WriteMem,Inc,HL,-,-,-,No,Yes,No,HL,Jump,NOP
-"ldd (HL),A",,00110010,Same,-,-,-,None,Dec,HL,CopyA,A,-,No,Yes,Yes,HL,Jump,NOP
-"ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,Dec,HL,-,-,-,No,Yes,No,HL,Jump,NOP
-"ALU A, n",,11???110,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,-,-,W,A,WriteAlu,No,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
-"ALU A, (HL)",,10???110,Same,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,HL,Next,-
-,,,-,-,W,A,WriteAlu,No,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
-"ALU A, r",,10??????,-,-,Reg8Src,A,WriteAlu,No,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
-JP nn,little endian address,11000011,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-#PC=WZ,,,Reg,W,Z,-,None,No,-,-,-,-,No,No,-,-,Jump,NOP
-JP HL,,11101001,RegInc,H,L,-,None,No,-,-,-,-,No,-,-,HL,Fetch*,-
-"JP f,nn",Conditional,110??010,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Cond,#PC=WZ
-,,,-,-,-,-,None,No,-,-,-,-,No,-,-,-,Fetch,-
+"LD r, (HL)",,01???110,Same,-,-,Reg8Dest,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Jump,NOP
+"LD (HL), r",,01110???,Same,-,Reg8Src,-,None,No,HL,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
+"LD (HL),n",,00110110,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,-,W,-,None,No,HL,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
+"LD r,r",,01??????,-,-,Reg8Src,Reg8Dest,WriteAlu,-,-,CopyB,-,Reg2,No,-,-,-,Fetch,-
+"LD r,n",,00???110,IncOut,-,-,Reg8Dest,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Jump,NOP
+"LD rr,nn",,00??0001,IncOut,-,-,Reg16Lo,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,Reg16Hi,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Jump,NOP
+"ldi (HL),A",,00100010,Same,-,-,-,None,Inc,HL,CopyA,A,-,No,Yes,Yes,Incrementer,Jump,NOP
+"ldi A,(HL)",,00101010,Same,-,-,A,WriteMem,Inc,HL,-,-,-,No,Yes,No,Incrementer,Jump,NOP
+"ldd (HL),A",,00110010,Same,-,-,-,None,Dec,HL,CopyA,A,-,No,Yes,Yes,Incrementer,Jump,NOP
+"ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,Dec,HL,-,-,-,No,Yes,No,Incrementer,Jump,NOP
+"ALU A, n",,11???110,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,-,-,W,A,WriteAlu,-,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
+"ALU A, (HL)",,10???110,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,-,-,W,A,WriteAlu,-,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
+"ALU A, r",,10??????,-,-,Reg8Src,A,WriteAlu,-,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
+JP nn,little endian address,11000011,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+#PC=WZ,,,IncOut,-,-,-,None,No,WZ,-,-,-,No,No,-,-,Jump,NOP
+JP HL,,11101001,IncOut,-,-,-,None,IncNoWrite,HL,-,-,-,No,-,-,Incrementer,Fetch*,-
+"JP f,nn",Conditional,110??010,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Cond,#PC=WZ
+,,,-,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
 "LD (rr), A",,00??0010,Same,-,-,-,None,No,Inst16,CopyA,A,-,No,Yes,Yes,Incrementer,Jump,NOP
 "LD A, (rr)",,00??1010,Same,-,-,A,WriteMem,No,Inst16,-,-,-,No,Yes,No,Incrementer,Jump,NOP
-"LD (nn), A",,11101010,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
+"LD (nn), A",,11101010,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,-,-,None,No,WZ,CopyA,A,-,No,Yes,Yes,Incrementer,Jump,NOP
-"LD A, (nn)",,11111010,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
+"LD A, (nn)",,11111010,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,-,A,WriteMem,No,WZ,-,-,-,No,Yes,No,Incrementer,Jump,NOP
-"LD (FF00 + n), A",,11100000,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
+"LD (FF00 + n), A",,11100000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,W,-,None,No,-,CopyA,A,-,No,Yes,Yes,High,Jump,NOP
 "LD (FF00 + C), A",,11100010,Same,-,C,-,None,No,-,CopyA,A,-,No,Yes,Yes,High,Jump,NOP
-"LD A, (FF00 + n)",,11110000,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
+"LD A, (FF00 + n)",,11110000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,W,A,WriteMem,No,-,-,-,-,No,Yes,No,High,Jump,NOP
 "LD A, (FF00 + C)",,11110010,Same,-,C,A,WriteMem,No,-,-,-,-,No,Yes,No,High,Jump,NOP
 INC rr,,00??0011,Same,-,-,-,None,Inc,Inst16,-,-,-,No,No,-,-,Jump,NOP
 DEC rr,,00??1011,Same,-,-,-,None,Dec,Inst16,-,-,-,No,No,-,-,Jump,NOP
-"LD (nn), SP",,00001000,Inc,-,-,Z,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
-,,,Inc,-,-,W,WriteMem,No,-,-,-,-,No,Yes,No,PC,Next,-
+"LD (nn), SP",,00001000,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,SP_Lo,-,None,Inc,WZ,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
 ,,,Same,-,SP_Hi,-,None,Inc,WZ,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
 "LD SP, HL",,11111001,Same,-,L,SP_Lo,WriteAlu,No,-,CopyB,-,Reg2,No,No,-,-,Next,-
-,,,-,-,H,SP_Hi,WriteAlu,No,-,CopyB,-,Reg2,No,-,-,-,Fetch,-
+,,,-,-,H,SP_Hi,WriteAlu,-,-,CopyB,-,Reg2,No,-,-,-,Fetch,-
 PUSH AF,TODO,11110101,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
 POP AF,TODO,11110001,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
 PUSH rr,,11??0101,Same,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
