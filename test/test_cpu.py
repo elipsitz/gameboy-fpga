@@ -94,7 +94,8 @@ async def test_sanity(dut):
     Test basic operations (load immediate, compare, jump, jump conditional)
     to make sure that more complex tests can work.
     """
-    program = open("sanity_test.gb", "rb").read()
+    with open("sanity_test.gb", "rb") as f:
+        program = f.read()
     memory, _ = await run_program(dut, bytes(program))
     assert get_register(dut, "A") == 0x22
     assert get_register(dut, "B") == 0xBB
@@ -107,7 +108,8 @@ async def test_sanity(dut):
 @cocotb.test()
 async def test_load(dut):
     """Load values around between registers and memory."""
-    program = open("basic_test.gb", "rb").read()
+    with open("basic_test.gb", "rb") as f:
+        program = f.read()
     memory, _ = await run_program(dut, bytes(program))
     assert get_register(dut, "C") == 0xAB
     assert get_register(dut, "D") == 0x06
@@ -132,7 +134,8 @@ async def test_complete(dut):
     At the end, checks the last byte of memory. If it's 0, all tests pass.
     Otherwise, it contains the ID of the failed test.
     """
-    program = open("complete_test.gb", "rb").read()
+    with open("complete_test.gb", "rb") as f:
+        program = f.read()
     memory, _ = await run_program(dut, bytes(program))
     test_result = memory[-1]
     if test_result != 0:
