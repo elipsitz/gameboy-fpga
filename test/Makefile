@@ -6,6 +6,7 @@ TOPLEVEL_LANG ?= verilog
 
 COMPILE_ARGS = -grelative-include
 
+VERILOG_SOURCES += $(PWD)/../rtl/alu.sv
 VERILOG_SOURCES += $(PWD)/../rtl/cpu.sv
 VERILOG_SOURCES += $(PWD)/../rtl/cpu_control.sv
 

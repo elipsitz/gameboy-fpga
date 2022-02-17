@@ -77,13 +77,17 @@ typedef enum logic [2:0] {
 } inc_reg_e;
 
 /// Control signal: ALU operation.
-typedef enum logic [1:0] {
+typedef enum logic [2:0] {
     /// Output = A
     AluOpCopyA,
     /// Output = B
     AluOpCopyB,
     /// Output = A + 1
     AluOpIncA,
+    /// Output = A + B (and set the internal carry flag)
+    AluOpAddLo,
+    /// Output = A + B (and use the internal carry flag)
+    AluOpAddHi,
     /// Use the "ALU opcode" from the instruction (ADD/ADC/SUB/SBC/AND/XOR/OR/CP).
     AluOpInstAlu
 } alu_op_e;
@@ -190,67 +194,30 @@ module cpu (
     logic [7:0] alu_b;
     logic [3:0] alu_flag_out;
     logic [3:0] alu_flag_in;
-    logic [2:0] alu_inst_opcode;
+    logic [4:0] alu_inner_op;
     always @(*) begin
-        // Select ALU input A.
         case (alu_sel_a) 
             AluSelARegA: alu_a = registers[7];
         endcase
 
-        // Select ALU input B.
         case (alu_sel_b)
             AluSelBReg2: alu_b = reg_read2_out;
         endcase
 
-        // Compute ALU output.
-        alu_inst_opcode = instruction_register[5:3];
-        alu_flag_out = alu_flag_in;
         case (alu_op)
-            AluOpCopyA: alu_out = alu_a;
-            AluOpCopyB: alu_out = alu_b;
-            AluOpIncA: alu_out = alu_a + 1;
-            AluOpInstAlu: begin
-                logic carry;
-                logic [4:0] result_lo;
-                logic [4:0] result_hi;
-                alu_flag_out = 4'b0000;
-                case (alu_inst_opcode)
-                    0, 1: begin // ADD, ADC
-                        carry = (alu_inst_opcode == 1) ? alu_flag_in[FLAG_C] : 1'b0;
-                        result_lo = {1'b0, alu_a[3:0]} + {1'b0, alu_b[3:0]} + {4'b0, carry};
-                        result_hi = {1'b0, alu_a[7:4]} + {1'b0, alu_b[7:4]} + {4'b0, result_lo[4]};
-                        alu_out = {result_hi[3:0], result_lo[3:0]};
-                        alu_flag_out[FLAG_C] = result_hi[4];
-                        alu_flag_out[FLAG_H] = result_lo[4];
-                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
-                    end
-                    2, 3, 7: begin // SUB, SBC, CP
-                        carry = (alu_inst_opcode == 3) ? alu_flag_in[FLAG_C] : 1'b0;
-                        result_lo = {1'b0, alu_a[3:0]} + ~({1'b0, alu_b[3:0]}) + {4'b0, ~carry};
-                        result_hi = {1'b0, alu_a[7:4]} + ~({1'b0, alu_b[7:4]}) + {4'b0, ~result_lo[4]};
-                        alu_out = (alu_inst_opcode == 7) ? alu_a : {result_hi[3:0], result_lo[3:0]};
-                        alu_flag_out[FLAG_C] = result_hi[4];
-                        alu_flag_out[FLAG_H] = result_lo[4];
-                        alu_flag_out[FLAG_Z] = (({result_hi[3:0], result_lo[3:0]}) == 8'd0);
-                        alu_flag_out[FLAG_N] = 1'b1;
-                    end
-                    4: begin // AND
-                        alu_out = alu_a & alu_b;
-                        alu_flag_out[FLAG_H] = result_lo[4];
-                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
-                    end
-                    5: begin // XOR
-                        alu_out = alu_a ^ alu_b;
-                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
-                    end
-                    6: begin // OR
-                        alu_out = alu_a | alu_b;
-                        alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
-                    end
-                endcase
-            end
+            AluOpCopyA: alu_inner_op = 5'b11000;
+            AluOpCopyB: alu_inner_op = 5'b11001;
+            AluOpInstAlu: alu_inner_op = {2'b00, instruction_register[5:3]};
         endcase
     end
+    alu alu (
+        .alu_a,
+        .alu_b,
+        .alu_op(alu_inner_op),
+        .alu_flag_in,
+        .alu_flag_out,
+        .alu_out
+    );
 
     //////////////////////////////////////// Register File
     // Includes incrementer/decrementer.
@@ -281,7 +248,6 @@ module cpu (
             2'b10: reg_r16_lo = 5;
             2'b11: reg_r16_lo = 9;
         endcase
-        
 
         case (inc_reg)
             IncRegPC: inc_in = pc;
