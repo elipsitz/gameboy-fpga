@@ -267,6 +267,39 @@ SECTION "ROM0", ROM0
     AssertEquals $48
     ; TODO: check flags
 
+    ; ######### Test 15: 16-bit signed add: (add SP,dd) and (ld HL,SP+dd)
+    SetTestID 15
+    ; SP
+    ld sp, $0000
+    add sp, -2
+    ld [$C000], sp
+    ld hl, $C000
+    ldi a, [hl]
+    AssertEquals $FE
+    ldi a, [hl]
+    AssertEquals $FF
+    ; HL
+    ld sp, $00A0
+    ld hl, sp + $04
+    ld a, h
+    AssertEquals $00
+    ld a, l
+    AssertEquals $A4
+    ;
+    ld hl, sp + $66
+    ld a, h
+    AssertEquals $01
+    ld a, l
+    AssertEquals $06
+    ;
+    ld sp, $0205
+    ld hl, sp - $34
+    ld a, h
+    AssertEquals $01
+    ld a, l
+    AssertEquals $D1
+    ; TODO: check flags
+
 
 
     ; ========================================

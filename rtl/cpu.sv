@@ -103,7 +103,9 @@ typedef enum logic [0:0] {
 /// Control signal: ALU operand B source.
 typedef enum logic [0:0] {
     /// B = Register Read 2
-    AluSelBReg2
+    AluSelBReg2,
+    /// B = Sign extension of Register Read 2
+    AluSelBSignReg2
 } alu_sel_b_e;
 
 /// Control signal: ALU flag set mode.
@@ -220,6 +222,7 @@ module cpu (
 
         case (alu_sel_b)
             AluSelBReg2: alu_b = reg_read2_out;
+            AluSelBSignReg2: alu_b = {8{reg_read2_out[7]}};
         endcase
 
         case (alu_op)

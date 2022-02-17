@@ -63,6 +63,7 @@ SIGNALS = {
     },
     "AluSelB": {
         "Reg2": "AluSelBReg2",
+        "SignReg2": "AluSelBSignReg2",
     },
     "AluFlagSet": {
         "No": "AluFlagSetNone",

@@ -57,3 +57,9 @@ POP rr,,11??0001,Same,-,-,Reg16Lo,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Increme
 ,,,Same,-,-,Reg16Hi,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Jump,NOP
 "ADD HL,rr",16-bit add,00??1001,Same,L,Reg16Lo,L,WriteAlu,No,-,AddLo,Reg1,Reg2,No,No,-,-,Next,-
 ,,,-,H,Reg16Hi,H,WriteAlu,-,-,AddHi,Reg1,Reg2,-***,-,-,-,Fetch,-
+"ADD SP,dd",,11101000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,SP_Lo,W,SP_Lo,WriteAlu,No,-,AddLo,Reg1,Reg2,0***,No,-,-,Next,-
+,,,Same,SP_Hi,W,SP_Hi,WriteAlu,No,-,AddHi,Reg1,SignReg2,No,No,-,-,Jump,NOP
+"ld HL,SP+dd",,11111000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,SP_Lo,W,L,WriteAlu,No,-,AddLo,Reg1,Reg2,0***,No,-,-,Next,-
+,,,-,SP_Hi,W,H,WriteAlu,-,-,AddHi,Reg1,SignReg2,No,-,-,-,Fetch,-
