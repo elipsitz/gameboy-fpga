@@ -42,7 +42,7 @@ module cpu_control (
     /// Control signal: ALU select B.
     output alu_sel_b_e alu_sel_b,
     /// Control signal: whether ALU should update flags.
-    output logic alu_write_flags,
+    output alu_flag_set_e alu_flag_set,
     /// Control signal: whether we're accessing memory.
     output logic mem_enable,
     /// Control signal: whether we're writing to memory (if `mem_enable`). 
@@ -66,7 +66,7 @@ module cpu_control (
         alu_op = AluOpCopyA;
         alu_sel_a = AluSelARegA;
         alu_sel_b = AluSelBReg2;
-        alu_write_flags = 0;
+        alu_flag_set = AluFlagSetNone;
         mem_enable = 0;
         mem_write = 0;
         mem_addr_sel = MemAddrSelIncrementer;

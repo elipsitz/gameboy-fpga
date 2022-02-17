@@ -1,4 +1,4 @@
-Label,Comment,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegOp,IncOp,IncReg,AluOp,AluSelA,AluSelB,AluFlags,MemEn,MemWr,MemAddrSel,MicroBranch,NextState
+Label,Comment,Encoding,PcNext,RegRead1Sel,RegRead2Sel,RegWriteSel,RegOp,IncOp,IncReg,AluOp,AluSelA,AluSelB,AluFlagSet,MemEn,MemWr,MemAddrSel,MicroBranch,NextState
 NOP,,00000000,-,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
 _INVALID,,,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
 HALT,,01110110,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,HALT
@@ -15,10 +15,10 @@ HALT,,01110110,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,HALT
 "ldd (HL),A",,00110010,Same,-,-,-,None,Dec,HL,CopyA,A,-,No,Yes,Yes,Incrementer,Jump,NOP
 "ldd A,(HL)",,00111010,Same,-,-,A,WriteMem,Dec,HL,-,-,-,No,Yes,No,Incrementer,Jump,NOP
 "ALU A, n",,11???110,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
-,,,-,-,W,A,WriteAlu,-,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
+,,,-,-,W,A,WriteAlu,-,-,InstAlu,A,Reg2,All,-,-,-,Fetch,-
 "ALU A, (HL)",,10???110,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
-,,,-,-,W,A,WriteAlu,-,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
-"ALU A, r",,10??????,-,-,Reg8Src,A,WriteAlu,-,-,InstAlu,A,Reg2,Yes,-,-,-,Fetch,-
+,,,-,-,W,A,WriteAlu,-,-,InstAlu,A,Reg2,All,-,-,-,Fetch,-
+"ALU A, r",,10??????,-,-,Reg8Src,A,WriteAlu,-,-,InstAlu,A,Reg2,All,-,-,-,Fetch,-
 JP nn,little endian address,11000011,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 #PC=WZ,,,IncOut,-,-,-,None,No,WZ,-,-,-,No,No,-,-,Jump,NOP
@@ -55,3 +55,5 @@ PUSH rr,,11??0101,Same,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
 ,,,Same,-,Reg16Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
 POP rr,,11??0001,Same,-,-,Reg16Lo,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,-,Reg16Hi,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Jump,NOP
+"ADD HL,rr",16-bit add,00??1001,Same,L,Reg16Lo,L,WriteAlu,No,-,AddLo,Reg1,Reg2,No,No,-,-,Next,-
+,,,-,H,Reg16Hi,H,WriteAlu,-,-,AddHi,Reg1,Reg2,-***,-,-,-,Fetch,-

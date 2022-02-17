@@ -250,6 +250,23 @@ SECTION "ROM0", ROM0
     ldd a, [hl]
     AssertEquals $02
 
+    ; ######### Test 14: ADD HL,rr
+    SetTestID 14
+    ld hl, $1122
+    ld bc, $2233
+    add hl, bc
+    ld a, h
+    AssertEquals $33
+    ld a, l
+    AssertEquals $55
+    ld bc, $22F3
+    add hl, bc
+    ld a, h
+    AssertEquals $56
+    ld a, l
+    AssertEquals $48
+    ; TODO: check flags
+
 
 
     ; ========================================

@@ -95,7 +95,9 @@ typedef enum logic [2:0] {
 /// Control signal: ALU operand A source.
 typedef enum logic [0:0] {
     /// A = Accumulator register
-    AluSelARegA
+    AluSelARegA,
+    /// A = Register Read 1,
+    AluSelAReg1
 } alu_sel_a_e;
 
 /// Control signal: ALU operand B source.
@@ -103,6 +105,18 @@ typedef enum logic [0:0] {
     /// B = Register Read 2
     AluSelBReg2
 } alu_sel_b_e;
+
+/// Control signal: ALU flag set mode.
+typedef enum logic [1:0] {
+    /// F = ---- (no change)
+    AluFlagSetNone,
+    /// F = **** (all set)
+    AluFlagSetAll,
+    /// F = -*** (all set except zero)
+    AluFlagSet_NHC,
+    /// F = 0*** (all set, zero unset)
+    AluFlagSet0NHC
+} alu_flag_set_e;
 
 /// Control signal: where the memory load/store address comes from.
 typedef enum logic [1:0] {
@@ -153,7 +167,7 @@ module cpu (
     alu_sel_a_e alu_sel_a;
     alu_sel_b_e alu_sel_b;
     mem_addr_sel_e mem_addr_sel;
-    logic alu_write_flags;
+    alu_flag_set_e alu_flag_set;
     // Holds the current instruction. Used to address registers, etc.
     logic [7:0] instruction_register = 0;
     cpu_control control (
@@ -173,7 +187,7 @@ module cpu (
         .alu_op,
         .alu_sel_a,
         .alu_sel_b,
-        .alu_write_flags,
+        .alu_flag_set,
         .mem_enable,
         .mem_write,
         .mem_addr_sel
@@ -189,15 +203,19 @@ module cpu (
     localparam FLAG_H = 2'd1;
     localparam FLAG_N = 2'd2;
     localparam FLAG_Z = 2'd3;
+    logic [3:0] flag_read;
     logic [7:0] alu_out;
     logic [7:0] alu_a;
     logic [7:0] alu_b;
-    logic [3:0] alu_flag_out;
     logic [3:0] alu_flag_in;
+    logic [3:0] alu_flag_out;
     logic [4:0] alu_inner_op;
+    logic [3:0] alu_flag_next;
+    logic alu_internal_carry;
     always @(*) begin
         case (alu_sel_a) 
             AluSelARegA: alu_a = registers[7];
+            AluSelAReg1: alu_a = reg_read1_out;
         endcase
 
         case (alu_sel_b)
@@ -208,7 +226,24 @@ module cpu (
             AluOpCopyA: alu_inner_op = 5'b11000;
             AluOpCopyB: alu_inner_op = 5'b11001;
             AluOpInstAlu: alu_inner_op = {2'b00, instruction_register[5:3]};
+            AluOpAddLo: alu_inner_op = 5'b00000; // ADD
+            AluOpAddHi: alu_inner_op = 5'b00001; // ADC
         endcase
+
+        case (alu_flag_set)
+            AluFlagSetNone: alu_flag_next = alu_flag_in;
+            AluFlagSetAll: alu_flag_next = alu_flag_out;
+            AluFlagSet_NHC: alu_flag_next = {alu_flag_in[3], alu_flag_out[2:0]}; 
+            AluFlagSet0NHC: alu_flag_next = {1'b0, alu_flag_out[2:0]};
+        endcase
+
+        if (alu_op == AluOpAddHi) alu_flag_in = {3'd0, alu_internal_carry};
+        else alu_flag_in = flag_read;
+    end
+    always_ff @(posedge clk) begin
+        if (t_cycle == 3) begin
+            if (alu_op == AluOpAddLo) alu_internal_carry <= alu_flag_out[FLAG_C];
+        end
     end
     alu alu (
         .alu_a,
@@ -235,6 +270,7 @@ module cpu (
     logic [15:0] inc_in; // Input to the incrementer/decrementer.
     logic [15:0] inc_out; // Output of the incrementer/decrementer.
     assign pc = {registers[12], registers[13]};
+    assign flag_read = registers[6][7:4];
     always @(*) begin
         case (instruction_register[5:4])
             2'b00: reg_r16_hi = 0;
@@ -312,7 +348,6 @@ module cpu (
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
-        alu_flag_in = registers[6][7:4];
     end
     int i;
     initial begin
@@ -337,19 +372,17 @@ module cpu (
             case (pc_next)
                 PcNextIncOut: {registers[12], registers[13]} <= inc_out;
             endcase
-            if (alu_write_flags) begin
-                registers[6] <= {alu_flag_out, 4'b0000};
-            end
+            if (alu_flag_set != AluFlagSetNone) registers[6] <= {alu_flag_next, 4'b0000};
         end
     end
 
     //////////////////////////////////////// Condition Code Checking
     always @(*) begin
         case (instruction_register[4:3])
-            0: condition = !alu_flag_in[FLAG_Z];
-            1: condition = alu_flag_in[FLAG_Z];
-            2: condition = !alu_flag_in[FLAG_C];
-            3: condition = alu_flag_in[FLAG_C];
+            0: condition = !flag_read[FLAG_Z];
+            1: condition = flag_read[FLAG_Z];
+            2: condition = !flag_read[FLAG_C];
+            3: condition = flag_read[FLAG_C];
         endcase
     end
 

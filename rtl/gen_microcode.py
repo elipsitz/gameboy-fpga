@@ -54,14 +54,22 @@ SIGNALS = {
         "CopyB": "AluOpCopyB",
         "IncA": "AluOpIncA",
         "InstAlu": "AluOpInstAlu",
+        "AddLo": "AluOpAddLo",
+        "AddHi": "AluOpAddHi",
     },
     "AluSelA": {
         "A": "AluSelARegA",
+        "Reg1": "AluSelAReg1",
     },
     "AluSelB": {
         "Reg2": "AluSelBReg2",
     },
-    "AluFlags": BINARY,
+    "AluFlagSet": {
+        "No": "AluFlagSetNone",
+        "All": "AluFlagSetAll",
+        "-***": "AluFlagSet_NHC",
+        "0***": "AluFlagSet0NHC",
+    },
     "MemEn": BINARY,
     "MemWr": BINARY,
     "MemAddrSel": {
@@ -189,7 +197,7 @@ if __name__ == "__main__":
             simple_signal(f, s, "AluOp", "alu_op")
             simple_signal(f, s, "AluSelA", "alu_sel_a")
             simple_signal(f, s, "AluSelB", "alu_sel_b")
-            simple_signal(f, s, "AluFlags", "alu_write_flags")
+            simple_signal(f, s, "AluFlagSet", "alu_flag_set")
             if s.next_state is not None:
                 f.write(f"    next_state = {s.next_state};\n")
             f.write("end\n")

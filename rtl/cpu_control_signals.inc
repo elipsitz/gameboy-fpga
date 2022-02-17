@@ -9,7 +9,7 @@
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 1: begin
     // _INVALID
@@ -19,7 +19,7 @@ end
     microbranch = MicroBranchJump;
     reg_op = RegOpNone;
     inc_op = IncOpNone;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 1;
 end
 2: begin
@@ -30,7 +30,7 @@ end
     microbranch = MicroBranchJump;
     reg_op = RegOpNone;
     inc_op = IncOpNone;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 2;
 end
 3: begin
@@ -45,7 +45,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 4: begin
@@ -62,7 +62,7 @@ end
     inc_reg = IncRegHL;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 5: begin
@@ -77,7 +77,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 6: begin
     pc_next = PcNextSame;
@@ -92,7 +92,7 @@ end
     inc_reg = IncRegHL;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 7: begin
@@ -110,7 +110,7 @@ end
     inc_reg = IncRegPC;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 8: begin
     // LD r,n
@@ -124,7 +124,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 9: begin
@@ -139,7 +139,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 10: begin
     pc_next = PcNextIncOut;
@@ -152,7 +152,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 11: begin
@@ -168,7 +168,7 @@ end
     inc_reg = IncRegHL;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 12: begin
@@ -183,7 +183,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegHL;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 13: begin
@@ -199,7 +199,7 @@ end
     inc_reg = IncRegHL;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 14: begin
@@ -214,7 +214,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpDec;
     inc_reg = IncRegHL;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 15: begin
@@ -229,7 +229,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 16: begin
     pc_next = PcNextIncOut;
@@ -246,7 +246,7 @@ end
     alu_op = AluOpInstAlu;
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 1;
+    alu_flag_set = AluFlagSetAll;
 end
 17: begin
     // ALU A, (HL)
@@ -260,7 +260,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 18: begin
     pc_next = PcNextIncOut;
@@ -277,7 +277,7 @@ end
     alu_op = AluOpInstAlu;
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 1;
+    alu_flag_set = AluFlagSetAll;
 end
 19: begin
     // ALU A, r
@@ -295,7 +295,7 @@ end
     alu_op = AluOpInstAlu;
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 1;
+    alu_flag_set = AluFlagSetAll;
 end
 20: begin
     // JP nn
@@ -309,7 +309,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 21: begin
     pc_next = PcNextIncOut;
@@ -322,7 +322,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 22: begin
     // #PC=WZ
@@ -333,7 +333,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpNone;
     inc_reg = IncRegWZ;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 23: begin
@@ -347,7 +347,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpIncNoWrite;
     inc_reg = IncRegHL;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 24: begin
     // JP f,nn
@@ -361,7 +361,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 25: begin
     pc_next = PcNextIncOut;
@@ -374,7 +374,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 22;
 end
 26: begin
@@ -387,7 +387,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 27: begin
     // LD (rr), A
@@ -402,7 +402,7 @@ end
     inc_reg = IncRegInst16;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 28: begin
@@ -417,7 +417,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
     inc_reg = IncRegInst16;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 29: begin
@@ -432,7 +432,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 30: begin
     pc_next = PcNextIncOut;
@@ -445,7 +445,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 31: begin
     pc_next = PcNextSame;
@@ -459,7 +459,7 @@ end
     inc_reg = IncRegWZ;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 32: begin
@@ -474,7 +474,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 33: begin
     pc_next = PcNextIncOut;
@@ -487,7 +487,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 34: begin
     pc_next = PcNextSame;
@@ -500,7 +500,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
     inc_reg = IncRegWZ;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 35: begin
@@ -515,7 +515,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 36: begin
     pc_next = PcNextSame;
@@ -529,7 +529,7 @@ end
     inc_op = IncOpNone;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 37: begin
@@ -545,7 +545,7 @@ end
     inc_op = IncOpNone;
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 38: begin
@@ -560,7 +560,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 39: begin
     pc_next = PcNextSame;
@@ -573,7 +573,7 @@ end
     reg_write_sel = RegSelA;
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 40: begin
@@ -588,7 +588,7 @@ end
     reg_write_sel = RegSelA;
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 41: begin
@@ -600,7 +600,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegInst16;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 42: begin
@@ -612,7 +612,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpDec;
     inc_reg = IncRegInst16;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 43: begin
@@ -627,7 +627,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 44: begin
     pc_next = PcNextIncOut;
@@ -640,7 +640,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 45: begin
     pc_next = PcNextSame;
@@ -655,7 +655,7 @@ end
     inc_reg = IncRegWZ;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 46: begin
     pc_next = PcNextSame;
@@ -670,7 +670,7 @@ end
     inc_reg = IncRegWZ;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 47: begin
@@ -685,7 +685,7 @@ end
     inc_op = IncOpNone;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 48: begin
     pc_next = PcNextIncOut;
@@ -701,7 +701,7 @@ end
     inc_reg = IncRegPC;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 49: begin
     // PUSH AF
@@ -711,7 +711,7 @@ end
     microbranch = MicroBranchJump;
     reg_op = RegOpNone;
     inc_op = IncOpNone;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 1;
 end
 50: begin
@@ -722,7 +722,7 @@ end
     microbranch = MicroBranchJump;
     reg_op = RegOpNone;
     inc_op = IncOpNone;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 1;
 end
 51: begin
@@ -735,7 +735,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpDec;
     inc_reg = IncRegSP;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 52: begin
     pc_next = PcNextSame;
@@ -750,7 +750,7 @@ end
     inc_reg = IncRegSP;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 53: begin
     pc_next = PcNextSame;
@@ -765,7 +765,7 @@ end
     inc_reg = IncRegSP;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
 end
 54: begin
@@ -782,7 +782,7 @@ end
     inc_reg = IncRegSP;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
 end
 55: begin
     pc_next = PcNextSame;
@@ -797,6 +797,40 @@ end
     inc_reg = IncRegSP;
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
-    alu_write_flags = 0;
+    alu_flag_set = AluFlagSetNone;
     next_state = 0;
+end
+56: begin
+    // ADD HL,rr
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 0;
+    microbranch = MicroBranchNext;
+    reg_read1_sel = RegSelL;
+    reg_read2_sel = RegSelReg16Lo;
+    reg_write_sel = RegSelL;
+    reg_op = RegOpWriteAlu;
+    inc_op = IncOpNone;
+    alu_op = AluOpAddLo;
+    alu_sel_a = AluSelAReg1;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSetNone;
+end
+57: begin
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    reg_read1_sel = RegSelH;
+    reg_read2_sel = RegSelReg16Hi;
+    reg_write_sel = RegSelH;
+    reg_op = RegOpWriteAlu;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_op = AluOpAddHi;
+    alu_sel_a = AluSelAReg1;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSet_NHC;
 end
