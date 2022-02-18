@@ -979,3 +979,50 @@ end
     alu_sel_b = AluSelBSignReg2;
     alu_flag_set = AluFlagSetNone;
 end
+67: begin
+    // JR e
+    pc_next = PcNextIncOut;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_flag_set = AluFlagSetNone;
+end
+68: begin
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 0;
+    microbranch = MicroBranchNext;
+    reg_read1_sel = RegPCLo;
+    reg_read2_sel = RegSelW;
+    reg_write_sel = RegPCLo;
+    reg_op = RegOpWriteAlu;
+    inc_op = IncOpNone;
+    alu_op = AluOpAddLo;
+    alu_sel_a = AluSelAReg1;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSetNone;
+end
+69: begin
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    reg_read1_sel = RegPCHi;
+    reg_read2_sel = RegSelW;
+    reg_write_sel = RegPCHi;
+    reg_op = RegOpWriteAlu;
+    inc_op = IncOpIncNoWrite;
+    inc_reg = IncRegPC_ALU;
+    alu_op = AluOpAddHi;
+    alu_sel_a = AluSelAReg1;
+    alu_sel_b = AluSelBSignReg2;
+    alu_flag_set = AluFlagSetNone;
+end

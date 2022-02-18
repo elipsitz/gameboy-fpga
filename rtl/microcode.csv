@@ -66,3 +66,6 @@ POP rr,,11??0001,Same,-,-,Reg16Lo,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Increme
 "ld HL,SP+dd",,11111000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,SP_Lo,W,L,WriteAlu,No,-,AddLo,Reg1,Reg2,0***,No,-,-,Next,-
 ,,,-,SP_Hi,W,H,WriteAlu,-,-,AddHi,Reg1,SignReg2,No,-,-,-,Fetch,-
+JR e,,00011000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,PC_Lo,W,PC_Lo,WriteAlu,No,-,AddLo,Reg1,Reg2,No,No,-,-,Next,-
+,"Mem MemAddr to be the new PC, and need to increment PC",,IncOut,PC_Hi,W,PC_Hi,WriteAlu,IncNoWrite,PC_ALU,AddHi,Reg1,SignReg2,No,Yes,No,Incrementer,Fetch*,-

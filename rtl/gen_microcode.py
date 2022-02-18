@@ -49,6 +49,7 @@ SIGNALS = {
         "SP": "IncRegSP",
         "WZ": "IncRegWZ",
         "Inst16": "IncRegInst16",
+        "PC_ALU": "IncRegPC_ALU",
     },
     "AluOp": {
         "CopyA": "AluOpCopyA",

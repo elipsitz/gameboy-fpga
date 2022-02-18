@@ -75,7 +75,9 @@ typedef enum logic [2:0] {
     /// WZ register
     IncRegWZ,
     /// 16-bit register selected by instruction register
-    IncRegInst16
+    IncRegInst16,
+    /// Target: PC register, Input: {ALU Out, PC Lo} (used for relative jump).
+    IncRegPC_ALU
 } inc_reg_e;
 
 /// Control signal: ALU operation.
@@ -296,6 +298,7 @@ module cpu (
             IncRegSP: inc_in = {registers[8], registers[9]};
             IncRegWZ: inc_in = {registers[10], registers[11]};
             IncRegInst16: inc_in = {registers[reg_r16_hi], registers[reg_r16_lo]};
+            IncRegPC_ALU: inc_in = {alu_out, pc[7:0]};
         endcase
         case (inc_op)
             IncOpNone: inc_out = inc_in;

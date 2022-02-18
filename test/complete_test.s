@@ -321,6 +321,23 @@ SECTION "ROM0", ROM0
     jp z, suite_end ; z should be unset
     AssertEquals $99
 
+    ; ######### Test 17: JR
+    SetTestID 17
+    jr :+             ; Forward Jump
+    halt
+:   ld a, $71
+    add a, $10
+    add a, $01
+    AssertEquals $82
+    ;
+    ld a, $00
+:   add 1
+    cp a, $55
+    jp z, :+
+    ld a, $54
+    jr :-             ; Backward Jump
+:   nop
+
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0
