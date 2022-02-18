@@ -63,6 +63,8 @@ module cpu_control (
         reg_read2_sel = RegSelA;
         reg_write_sel = RegSelA;
         reg_op = RegOpNone;
+        inc_op = IncOpNone;
+        inc_reg = IncRegPC;
         alu_op = AluOpCopyA;
         alu_sel_a = AluSelARegA;
         alu_sel_b = AluSelBReg2;

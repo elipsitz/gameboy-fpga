@@ -56,8 +56,8 @@ POP AF,,11110001,Same,-,-,F,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,N
 PUSH rr,,11??0101,Same,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
 ,,,Same,-,Reg16Hi,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
 ,,,Same,-,Reg16Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
-POP rr,,11??0001,Same,-,-,Reg16Lo,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Next,-
-,,,Same,-,-,Reg16Hi,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Jump,NOP
+POP rr,,11??0001,Same,-,-,Reg16Lo,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,-,-,Reg16Hi,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Jump,NOP
 "ADD HL,rr",16-bit add,00??1001,Same,L,Reg16Lo,L,WriteAlu,No,-,AddLo,Reg1,Reg2,No,No,-,-,Next,-
 ,,,-,H,Reg16Hi,H,WriteAlu,-,-,AddHi,Reg1,Reg2,-***,-,-,-,Fetch,-
 "ADD SP,dd",,11101000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
@@ -70,4 +70,18 @@ JR e,,00011000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
 #PC+=W,,,Same,PC_Lo,W,PC_Lo,WriteAlu,No,-,AddLo,Reg1,Reg2,No,No,-,-,Next,-
 ,"Mem MemAddr to be the new PC, and need to increment PC",,IncOut,PC_Hi,W,PC_Hi,WriteAlu,IncNoWrite,PC_ALU,AddHi,Reg1,SignReg2,No,Yes,No,Incrementer,Fetch*,-
 "JR c,e",Conditional,001??000,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Cond,#PC+=W
+,,,-,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
+CALL nn,,11001101,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+#CALL_end,,,Same,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
+,,,Same,-,PC_Hi,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
+,,,Same,-,PC_Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
+,,,IncOut,-,-,-,None,IncNoWrite,WZ,-,-,-,No,-,-,Incrementer,Fetch*,-
+"CALL cc, nn",Conditional,110??100,IncOut,-,-,Z,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,IncOut,-,-,W,WriteMem,Inc,PC,-,-,-,No,Yes,No,Incrementer,Cond,#CALL_end
+,,,-,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
+RET,,11001001,Same,-,-,PC_Lo,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,-,-,PC_Hi,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Next,-
+,Extra NOP,,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,NOP
+RET cc,Conditional,110??000,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Cond,RET
 ,,,-,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-

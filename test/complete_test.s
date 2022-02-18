@@ -355,6 +355,52 @@ SECTION "ROM0", ROM0
     add a, $1
     AssertEquals $72
 
+    ; ######### Test 19: CALL/RET
+    SetTestID 19
+    ld sp, $C100
+    ld bc, $ABCD
+    push bc
+    ld a, $10
+    call :+
+    jp :++
+:   ; Start of function
+    ld bc, $0000
+    add $01
+    ret
+:   add $10
+    add $01
+    AssertEquals $22
+    pop bc
+    ld a, b
+    AssertEquals $AB
+    ld a, c
+    AssertEquals $CD
+    
+    ; ######### Test 20: CALL/RET conditional
+    SetTestID 20
+    ld sp, $C100
+    ld bc, $ABCD
+    push bc
+    ld a, $10
+    cp a, $00
+    call z, :+
+    call nz, :+
+    jp :++
+:   ; Start of function
+    ld bc, $0000
+    cp $99
+    ret z
+    add $02
+    ret
+:   add $10
+    add $01
+    AssertEquals $23
+    pop bc
+    ld a, b
+    AssertEquals $AB
+    ld a, c
+    AssertEquals $CD
+
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0

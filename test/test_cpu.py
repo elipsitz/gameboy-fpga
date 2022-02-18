@@ -136,7 +136,7 @@ async def test_complete(dut):
     """
     with open("complete_test.gb", "rb") as f:
         program = f.read()
-    memory, _ = await run_program(dut, bytes(program))
+    memory, _ = await run_program(dut, bytes(program), max_steps=2_000)
     test_result = memory[-1]
     if test_result != 0:
         print("#" * 80)
