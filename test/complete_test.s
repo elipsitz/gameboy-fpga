@@ -300,7 +300,26 @@ SECTION "ROM0", ROM0
     AssertEquals $D1
     ; TODO: check flags
 
-
+    ; ######### Test 16: PUSH/POP AF
+    SetTestID 16
+    ld sp, $C002
+    ld a, $40
+    sub a, $40
+    ; Flags should be 1100
+    push af
+    ld hl, $C001
+    ldd a, [hl]
+    AssertEquals $00 ; A
+    ld a, [hl]
+    AssertEquals $C0 ; F
+    ld a, $30
+    ldi [hl], a
+    ld a, $99
+    ldi [hl], a
+    ld a, $11
+    pop af
+    jp z, suite_end ; z should be unset
+    AssertEquals $99
 
     ; ========================================
     ; If we made it here, suite is successful.

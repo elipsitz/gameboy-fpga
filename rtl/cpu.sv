@@ -12,6 +12,8 @@ typedef enum logic [1:0] {
 typedef enum logic [3:0] {
     /// The accumulator register.
     RegSelA,
+    /// The flags register.
+    RegSelF,
     /// Register C.
     RegSelC,
     /// Temp register W.
@@ -303,6 +305,7 @@ module cpu (
 
         case (reg_read1_sel)
             RegSelA: reg_read1_index = 7;
+            RegSelF: reg_read1_index = 6;
             RegSelC: reg_read1_index = 1;
             RegSelW: reg_read1_index = 10;
             RegSelZ: reg_read1_index = 11;
@@ -319,6 +322,7 @@ module cpu (
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
+            RegSelF: reg_read2_index = 6;
             RegSelC: reg_read2_index = 1;
             RegSelW: reg_read2_index = 10;
             RegSelZ: reg_read2_index = 11;
@@ -335,6 +339,7 @@ module cpu (
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
+            RegSelF: reg_write_index = 6;
             RegSelC: reg_write_index = 1;
             RegSelW: reg_write_index = 10;
             RegSelZ: reg_write_index = 11;
@@ -362,7 +367,11 @@ module cpu (
         end else if (t_cycle == 3) begin
             case (reg_op)
                 RegOpWriteAlu: registers[reg_write_index] <= alu_out;
-                RegOpWriteMem: registers[reg_write_index] <= mem_data_in;
+                RegOpWriteMem: begin
+                    // Keep bottom 4 bits of Flags register 0.
+                    if (reg_write_index == 6) registers[reg_write_index] <= {mem_data_in[7:4], 4'd0};
+                    else registers[reg_write_index] <= mem_data_in;
+                end
             endcase
             if (inc_op == IncOpInc || inc_op == IncOpDec) begin
                 case (inc_reg)

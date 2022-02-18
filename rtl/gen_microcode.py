@@ -5,6 +5,7 @@ import math
 BINARY = {"Yes": "1", "No": "0"}
 REG_SELECT = {
     "A": "RegSelA",
+    "F": "RegSelF",
     "C": "RegSelC",
     "W": "RegSelW",
     "Z": "RegSelZ",

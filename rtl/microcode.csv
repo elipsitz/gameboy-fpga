@@ -48,8 +48,11 @@ DEC rr,,00??1011,Same,-,-,-,None,Dec,Inst16,-,-,-,No,No,-,-,Jump,NOP
 ,,,Same,-,SP_Hi,-,None,Inc,WZ,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
 "LD SP, HL",,11111001,Same,-,L,SP_Lo,WriteAlu,No,-,CopyB,-,Reg2,No,No,-,-,Next,-
 ,,,-,-,H,SP_Hi,WriteAlu,-,-,CopyB,-,Reg2,No,-,-,-,Fetch,-
-PUSH AF,TODO,11110101,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
-POP AF,TODO,11110001,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,_INVALID
+PUSH AF,,11110101,Same,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
+,,,Same,-,A,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
+,,,Same,-,F,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
+POP AF,,11110001,Same,-,-,F,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Next,-
+,,,Same,-,-,A,WriteMem,Inc,SP,CopyB,-,Reg2,No,Yes,No,Incrementer,Jump,NOP
 PUSH rr,,11??0101,Same,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
 ,,,Same,-,Reg16Hi,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
 ,,,Same,-,Reg16Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
