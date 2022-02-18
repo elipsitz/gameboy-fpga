@@ -994,6 +994,7 @@ end
     alu_flag_set = AluFlagSetNone;
 end
 68: begin
+    // #PC+=W
     pc_next = PcNextSame;
     inst_load = 0;
     mem_enable = 0;
@@ -1024,5 +1025,32 @@ end
     alu_op = AluOpAddHi;
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBSignReg2;
+    alu_flag_set = AluFlagSetNone;
+end
+70: begin
+    // JR c,e
+    pc_next = PcNextIncOut;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchCond;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_flag_set = AluFlagSetNone;
+    next_state = 68;
+end
+71: begin
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
 end

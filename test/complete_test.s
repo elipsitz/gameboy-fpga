@@ -338,6 +338,23 @@ SECTION "ROM0", ROM0
     jr :-             ; Backward Jump
 :   nop
 
+    ; ######### Test 18: JR (conditional)
+    SetTestID 18
+    ld a, $00
+    cp a, $99
+    jr z, :+
+    jp :++
+:   halt
+:   nop
+    ;
+    ld a, $70
+    cp a, $70
+    jr z, :+             
+    halt
+:   add a, $1
+    add a, $1
+    AssertEquals $72
+
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0
