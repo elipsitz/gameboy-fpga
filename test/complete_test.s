@@ -512,6 +512,7 @@ SECTION "ROM0", ROM0
     jp z, suite_end
     
     ; ########## Test 26: EI and DI
+    ; TODO check automatically if interrupts are enabled
     SetTestID 26
     di
     nop
@@ -519,6 +520,16 @@ SECTION "ROM0", ROM0
     ei
     nop
     nop
+
+    ; ########### Test 27: RETI
+    ; TODO check automatically if interrupts are enabled.
+    di
+    ld sp, $C100
+    call :+
+    jp :++
+:   ; Start of function
+    reti
+:   nop
 
     ; ========================================
     ; If we made it here, suite is successful.

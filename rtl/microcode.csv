@@ -85,6 +85,9 @@ RET,,11001001,Same,=,-,-,PC_Lo,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Next,
 ,Extra NOP,,Same,=,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,NOP
 RET cc,Conditional,110??000,Same,=,-,-,-,None,No,-,-,-,-,No,No,-,-,Cond,RET
 ,,,-,=,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
+RETI,RET + enable interrupts,11011001,Same,=,-,-,PC_Lo,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,=,-,-,PC_Hi,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Next,-
+,Extra NOP,,Same,En,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,NOP
 INC (HL),,00110100,Same,=,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,=,-,W,-,None,No,HL,IncB,-,Reg2,All,Yes,Yes,Incrementer,Jump,NOP
 INC r,,00???100,-,=,-,Reg8Dest,Reg8Dest,WriteAlu,-,-,IncB,-,Reg2,All,-,-,-,Fetch,-
