@@ -6,6 +6,7 @@
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
@@ -103,6 +104,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read2_sel = RegSelReg8Src;
     reg_write_sel = RegSelReg8Dest;
     reg_op = RegOpWriteAlu;
@@ -238,6 +240,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read2_sel = RegSelW;
     reg_write_sel = RegSelA;
     reg_op = RegOpWriteAlu;
@@ -269,6 +272,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read2_sel = RegSelW;
     reg_write_sel = RegSelA;
     reg_op = RegOpWriteAlu;
@@ -287,6 +291,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read2_sel = RegSelReg8Src;
     reg_write_sel = RegSelA;
     reg_op = RegOpWriteAlu;
@@ -344,6 +349,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_op = RegOpNone;
     inc_op = IncOpIncNoWrite;
     inc_reg = IncRegHL;
@@ -384,6 +390,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
@@ -694,6 +701,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read2_sel = RegSelH;
     reg_write_sel = RegSPHi;
     reg_op = RegOpWriteAlu;
@@ -872,6 +880,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read1_sel = RegSelH;
     reg_read2_sel = RegSelReg16Hi;
     reg_write_sel = RegSelH;
@@ -964,6 +973,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read1_sel = RegSPHi;
     reg_read2_sel = RegSelW;
     reg_write_sel = RegSelH;
@@ -1012,6 +1022,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read1_sel = RegPCHi;
     reg_read2_sel = RegSelW;
     reg_write_sel = RegPCHi;
@@ -1045,6 +1056,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
@@ -1126,6 +1138,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_op = RegOpNone;
     inc_op = IncOpIncNoWrite;
     inc_reg = IncRegWZ;
@@ -1166,6 +1179,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
@@ -1226,6 +1240,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_op = RegOpNone;
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
@@ -1269,6 +1284,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read2_sel = RegSelReg8Dest;
     reg_write_sel = RegSelReg8Dest;
     reg_op = RegOpWriteAlu;
@@ -1316,6 +1332,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_read2_sel = RegSelReg8Dest;
     reg_write_sel = RegSelReg8Dest;
     reg_op = RegOpWriteAlu;
@@ -1333,6 +1350,7 @@ end
     mem_write = 0;
     mem_addr_sel = MemAddrSelIncrementer;
     microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
     reg_write_sel = RegSelA;
     reg_op = RegOpWriteAlu;
     inc_op = IncOpInc;
@@ -1341,4 +1359,18 @@ end
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+end
+93: begin
+    // CB_PREFIX
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixCB;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_flag_set = AluFlagSetNone;
 end

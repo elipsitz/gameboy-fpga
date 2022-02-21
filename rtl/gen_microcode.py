@@ -87,8 +87,13 @@ SIGNALS = {
         "Cond": "MicroBranchCond",
         "Fetch": "MicroBranchDispatch",
         "Fetch*": "MicroBranchDispatch",  # Fetch, but don't force all of the fields
+        "DispatchCB": "MicroBranchDispatch",
     },
     "InstLoad": BINARY,
+    "DispatchPrefix": {
+        "None": "DispatchPrefixNone",
+        "CB": "DispatchPrefixCB",
+    },
 }
 
 
@@ -105,8 +110,13 @@ class State:
             valid_values = SIGNALS[k]
             if valid_values is not None and (v not in valid_values) and v != "-":
                 raise Exception(f"Error on row {i}: Invalid value '{v}' for key '{k}'")
-        if self.data["Encoding"] and len(self.data["Encoding"]) != 8:
-            raise Exception(f"Error on row {i}: bad 'Encoding'")
+        if self.data["Encoding"]:
+            encoding_len = len(self.data["Encoding"])
+            encoding_cb = self.data["Encoding"].startswith("CB_")
+            if not (encoding_len == 8 or (encoding_len == 11 and encoding_cb)):
+                raise Exception(f"Error on row {i}: bad 'Encoding'")
+            encoding_prefix = "1" if encoding_cb else "0"
+            self.data["Encoding"] = encoding_prefix + self.data["Encoding"]
         if self.data["MemWr"] == "Yes" and self.data["AluOp"] == "-":
             raise Exception(f"Row {i}: AluOp must be set if MemWr is Yes")
         if self.data["MemAddrSel"] == "Incrementer" and self.data["IncReg"] == "-":
@@ -122,14 +132,19 @@ class State:
                 "IncReg": "PC",
                 "NextState": "-",
                 "InstLoad": "Yes",
+                "DispatchPrefix": "None",
             }
             for k, v in forced.items():
                 if self.data.get(k, "-") == "-":
                     self.data[k] = v
                 elif self.data["MicroBranch"] == "Fetch":
                     raise Exception(f"Error on row {i}: {k} must be '-' w/ Fetch")
+        elif self.data["MicroBranch"] == "DispatchCB":
+            self.data["InstLoad"] = "Yes"
+            self.data["DispatchPrefix"] = "CB"
         else:
             self.data["InstLoad"] = "No"
+            self.data["DispatchPrefix"] = "-"
 
     def get(self, key):
         if self.data[key] == "-":
@@ -193,6 +208,7 @@ if __name__ == "__main__":
             simple_signal(f, s, "MemWr", "mem_write")
             simple_signal(f, s, "MemAddrSel", "mem_addr_sel")
             simple_signal(f, s, "MicroBranch", "microbranch")
+            simple_signal(f, s, "DispatchPrefix", "dispatch_prefix")
             simple_signal(f, s, "RegRead1Sel", "reg_read1_sel")
             simple_signal(f, s, "RegRead2Sel", "reg_read2_sel")
             simple_signal(f, s, "RegWriteSel", "reg_write_sel")
@@ -212,4 +228,4 @@ if __name__ == "__main__":
     with open(path, "w") as f:
         for s in states:
             if encoding := s.data["Encoding"]:
-                f.write(f"8'b{encoding}: state <= {s.i};\n")
+                f.write(f"9'b{encoding}: state <= {s.i};\n")

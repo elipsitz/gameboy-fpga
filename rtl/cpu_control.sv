@@ -5,6 +5,11 @@ typedef enum logic [1:0] {
     MicroBranchDispatch
 } microbranch_e;
 
+typedef enum logic [0:0] {
+    DispatchPrefixNone = 1'b0,
+    DispatchPrefixCB = 1'b1
+} dispatch_prefix_e;
+
 typedef logic [7:0] state_t;
 
 module cpu_control (
@@ -53,6 +58,7 @@ module cpu_control (
     state_t state = 0; // Initial state = NOP
 
     // Describe control given the state.
+    dispatch_prefix_e dispatch_prefix; // 0 for regular, 1 for CB.
     microbranch_e microbranch;
     state_t next_state;
     always_comb begin
@@ -74,6 +80,7 @@ module cpu_control (
         mem_addr_sel = MemAddrSelIncrementer;
         microbranch = MicroBranchNext;
         next_state = 0;
+        dispatch_prefix = DispatchPrefixNone;
         
         case (state)
             `include "cpu_control_signals.inc"
@@ -87,7 +94,7 @@ module cpu_control (
             if (microbranch == MicroBranchNext) state <= state + 1;
             else if (microbranch == MicroBranchDispatch) begin
                 // Dispatch based off the next memory we're reading.
-                casez (mem_data_in)
+                casez ({dispatch_prefix, mem_data_in})
                     `include "cpu_control_dispatch.inc"
                     default: state <= 1; // "INVALID" state.
                 endcase
