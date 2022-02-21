@@ -91,3 +91,4 @@ INC r,,00???100,-,-,Reg8Dest,Reg8Dest,WriteAlu,-,-,IncB,-,Reg2,All,-,-,-,Fetch,-
 DEC (HL),,00110101,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,W,-,None,No,HL,DecB,-,Reg2,All,Yes,Yes,Incrementer,Jump,NOP
 DEC r,,00???101,-,-,Reg8Dest,Reg8Dest,WriteAlu,-,-,DecB,-,Reg2,All,-,-,-,Fetch,-
+ALU unary,accumulator/flag ops,00???111,-,-,-,A,WriteAlu,-,-,InstAcc,A,Reg2,All,-,-,-,Fetch,-

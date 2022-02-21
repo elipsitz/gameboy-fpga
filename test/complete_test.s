@@ -429,7 +429,38 @@ SECTION "ROM0", ROM0
     dec [hl]
     ld a, [hl]
     AssertEquals $81
-    
+
+    ; ########## Test 23: Unary accumulator/flag operations
+    SetTestID 23
+    ld a, 0
+    scf
+    adc a, 0
+    AssertEquals $01
+    scf
+    ccf
+    adc a, 0
+    AssertEquals $01
+    scf
+    ccf
+    ccf
+    adc a, 0
+    AssertEquals $02
+    cpl
+    AssertEquals $FD
+    ld a, $8F
+    rlca
+    AssertEquals $1F
+    rrca
+    AssertEquals $8F
+    ld a, $1C
+    scf
+    rla
+    AssertEquals $39
+    ld a, $1C
+    scf
+    rra
+    AssertEquals $8E
+    ; TODO test DAA
 
     ; ========================================
     ; If we made it here, suite is successful.

@@ -118,6 +118,44 @@ module alu (
                 alu_flag_out[FLAG_N] = 1'd0;
                 alu_flag_out[FLAG_Z] = (alu_out == 8'd0);
             end
+            OP_RLCA: begin // Rotate left (NOT through carry)
+                alu_out = {alu_a[6:0], alu_a[7]};
+                alu_flag_out = {3'b000, alu_a[7]};
+            end
+            OP_RRCA: begin // Rotate right (NOT through carry)
+                alu_out = {alu_a[0], alu_a[7:1]};
+                alu_flag_out = {3'b000, alu_a[0]};
+            end
+            OP_RLA: begin // Rotate left (through carry)
+                alu_out = {alu_a[6:0], alu_flag_in[FLAG_C]};
+                alu_flag_out = {3'b000, alu_a[7]};
+            end
+            OP_RRA: begin // Rotate right (through carry)
+                alu_out = {alu_flag_in[FLAG_C], alu_a[7:1]};
+                alu_flag_out = {3'b000, alu_a[0]};
+            end
+            OP_DAA: begin // Decimal adjust A
+                // TODO ?????
+                alu_out = 0;
+                alu_flag_out = 4'd0;
+            end
+            OP_CPL: begin // Complement A
+                alu_out = ~alu_a;
+                alu_flag_out[FLAG_H] = 1'd1;
+                alu_flag_out[FLAG_N] = 1'd1;
+            end
+            OP_SCF: begin // Set carry flag
+                alu_out = alu_a;
+                alu_flag_out[FLAG_H] = 1'd0;
+                alu_flag_out[FLAG_N] = 1'd0;
+                alu_flag_out[FLAG_C] = 1'd1;
+            end
+            OP_CCF: begin // Complement carry flag
+                alu_out = alu_a;
+                alu_flag_out[FLAG_H] = 1'd0;
+                alu_flag_out[FLAG_N] = 1'd0;
+                alu_flag_out[FLAG_C] = ~alu_flag_in[FLAG_C];
+            end
         endcase
     end
 endmodule

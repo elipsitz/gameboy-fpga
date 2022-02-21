@@ -95,7 +95,9 @@ typedef enum logic [2:0] {
     /// Output = A + B (and use the internal carry flag)
     AluOpAddHi,
     /// Use the "ALU opcode" from the instruction (ADD/ADC/SUB/SBC/AND/XOR/OR/CP).
-    AluOpInstAlu
+    AluOpInstAlu,
+    /// Use the "Acc/Flag opcode" from the instruction (RLCA/RRCA/RLA/RRA/DAA/CPL/SCF/CCF).
+    AluOpInstAcc
 } alu_op_e;
 
 /// Control signal: ALU operand A source.
@@ -237,6 +239,7 @@ module cpu (
             AluOpIncB: alu_inner_op = 5'b11010;
             AluOpDecB: alu_inner_op = 5'b11011;
             AluOpInstAlu: alu_inner_op = {2'b00, instruction_register[5:3]};
+            AluOpInstAcc: alu_inner_op = {2'b01, instruction_register[5:3]};
             AluOpAddLo: alu_inner_op = 5'b00000; // ADD
             AluOpAddHi: alu_inner_op = 5'b00001; // ADC
         endcase
