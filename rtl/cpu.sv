@@ -99,7 +99,9 @@ typedef enum logic [3:0] {
     /// Use the "Acc/Flag opcode" from the instruction (RLCA/RRCA/RLA/RRA/DAA/CPL/SCF/CCF).
     AluOpInstAcc,
     /// Use the CB-prefixed opcode from the instruction.
-    AluOpInstCB
+    AluOpInstCB,
+    /// CB-prefixed single bit operations (get/reset/set)
+    AluOpInstBit
 } alu_op_e;
 
 /// Control signal: ALU operand A source.
@@ -220,6 +222,7 @@ module cpu (
     logic [7:0] alu_a;
     logic [7:0] alu_b;
     logic [3:0] alu_flag_in;
+    logic [2:0] alu_bit_index;
     logic [3:0] alu_flag_out;
     logic [4:0] alu_inner_op;
     logic [3:0] alu_flag_next;
@@ -243,6 +246,7 @@ module cpu (
             AluOpInstAlu: alu_inner_op = {2'b00, instruction_register[5:3]};
             AluOpInstAcc: alu_inner_op = {2'b01, instruction_register[5:3]};
             AluOpInstCB: alu_inner_op = {2'b10, instruction_register[5:3]};
+            AluOpInstBit: alu_inner_op = {3'b111, instruction_register[7:6]};
             AluOpAddLo: alu_inner_op = 5'b00000; // ADD
             AluOpAddHi: alu_inner_op = 5'b00001; // ADC
         endcase
@@ -258,6 +262,8 @@ module cpu (
             AluOpAddHi: alu_flag_in = {3'd0, alu_internal_carry};
             default: alu_flag_in = flag_read;
         endcase
+
+        alu_bit_index = instruction_register[5:3];
     end
     always_ff @(posedge clk) begin
         if (t_cycle == 3) begin
@@ -269,6 +275,7 @@ module cpu (
         .alu_b,
         .alu_op(alu_inner_op),
         .alu_flag_in,
+        .alu_bit_index,
         .alu_flag_out,
         .alu_out
     );

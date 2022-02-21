@@ -59,6 +59,7 @@ SIGNALS = {
         "InstAlu": "AluOpInstAlu",
         "InstAcc": "AluOpInstAcc",
         "InstCB": "AluOpInstCB",
+        "InstBit": "AluOpInstBit",
         "AddLo": "AluOpAddLo",
         "AddHi": "AluOpAddHi",
     },

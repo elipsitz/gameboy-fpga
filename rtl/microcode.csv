@@ -96,3 +96,8 @@ CB_PREFIX,CB prefix,11001011,IncOut,-,-,-,None,Inc,PC,-,-,-,No,Yes,No,Incremente
 CB_ALU (HL),CB shift / rotates,CB_00???110,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
 ,,,Same,-,W,-,None,No,HL,InstCB,-,Reg2,All,Yes,Yes,Incrementer,Jump,NOP
 CB_ALU r,CB shift / rotates,CB_00??????,-,-,Reg8Src,Reg8Src,WriteAlu,-,-,InstCB,-,Reg2,All,-,-,-,Fetch,-
+BIT (HL),No (HL) writeback,CB_01???110,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,-,-,W,-,None,-,-,InstBit,-,Reg2,All,-,-,-,Fetch,-
+CB_BIT (HL),,CB_?????110,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,-,W,-,None,No,HL,InstBit,-,Reg2,All,Yes,Yes,Incrementer,Jump,NOP
+CB_BIT r,,CB_????????,-,-,Reg8Src,Reg8Src,WriteAlu,-,-,InstBit,-,Reg2,All,-,-,-,Fetch,-

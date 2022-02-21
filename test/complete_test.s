@@ -481,6 +481,35 @@ SECTION "ROM0", ROM0
     AssertEquals $F8
     srl a
     AssertEquals $7C
+
+    ; ########## Test 25: CB-prefixed single-bit operations
+    SetTestID 25
+    ld b, $5E
+    set 5, b
+    ld a, b
+    AssertEquals $7E
+    ld hl, $C000
+    ld [hl], $00
+    set 7, [hl]
+    ld a, [hl]
+    AssertEquals $80
+    ld [hl], $AA
+    bit 2, [hl]
+    jp nz, suite_end
+    bit 3, [hl]
+    jp z, suite_end
+    ;
+    ld a, $00
+    set 4, a
+    AssertEquals $10
+    set 2, a
+    AssertEquals $14
+    res 4, a
+    AssertEquals $04
+    bit 3, a
+    jp nz, suite_end
+    bit 2, a
+    jp z, suite_end
     
 
     ; ========================================

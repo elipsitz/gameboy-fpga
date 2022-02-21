@@ -7,6 +7,8 @@ module alu (
     input logic [4:0] alu_op,
     /// The input flags (CHNZ).
     input logic [3:0] alu_flag_in,
+    /// The input bit index (only for CB single-bit instructions).
+    input logic [2:0] alu_bit_index,
 
     /// The ALU output.
     output logic [7:0] alu_out,
@@ -51,9 +53,10 @@ module alu (
     localparam OP_COPY_B = 5'b11001;
     localparam OP_INC_B  = 5'b11010;
     localparam OP_DEC_B  = 5'b11011;
-    localparam OP_BIT    = 5'b11100;
-    localparam OP_RES    = 5'b11101;
-    localparam OP_SET    = 5'b11110;
+    localparam OP_UNUSED = 5'b11100;
+    localparam OP_BIT    = 5'b11101;
+    localparam OP_RES    = 5'b11110;
+    localparam OP_SET    = 5'b11111;
 
     logic carry;
     logic [4:0] result_lo;
@@ -187,6 +190,20 @@ module alu (
             OP_SRL: begin
                 alu_out = {1'd0, alu_b[7:1]};
                 alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[0]};
+            end
+            OP_BIT: begin
+                alu_out = alu_b;
+                alu_flag_out[FLAG_Z] = !alu_b[alu_bit_index];
+                alu_flag_out[FLAG_H] = 1'd1;
+                alu_flag_out[FLAG_N] = 1'd0;
+            end
+            OP_SET: begin
+                alu_out = alu_b;
+                alu_out[alu_bit_index] = 1'd1;
+            end
+            OP_RES: begin
+                alu_out = alu_b;
+                alu_out[alu_bit_index] = 1'd0;
             end
         endcase
     end

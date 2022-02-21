@@ -1422,3 +1422,81 @@ end
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
 end
+97: begin
+    // BIT (HL)
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    inc_op = IncOpNone;
+    inc_reg = IncRegHL;
+    alu_flag_set = AluFlagSetNone;
+end
+98: begin
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
+    reg_read2_sel = RegSelW;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_op = AluOpInstBit;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSetAll;
+end
+99: begin
+    // CB_BIT (HL)
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchNext;
+    reg_write_sel = RegSelW;
+    reg_op = RegOpWriteMem;
+    inc_op = IncOpNone;
+    inc_reg = IncRegHL;
+    alu_flag_set = AluFlagSetNone;
+end
+100: begin
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchJump;
+    reg_read2_sel = RegSelW;
+    reg_op = RegOpNone;
+    inc_op = IncOpNone;
+    inc_reg = IncRegHL;
+    alu_op = AluOpInstBit;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSetAll;
+    next_state = 0;
+end
+101: begin
+    // CB_BIT r
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
+    reg_read2_sel = RegSelReg8Src;
+    reg_write_sel = RegSelReg8Src;
+    reg_op = RegOpWriteAlu;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_op = AluOpInstBit;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSetAll;
+end
