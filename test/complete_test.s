@@ -460,7 +460,6 @@ SECTION "ROM0", ROM0
     scf
     rra
     AssertEquals $8E
-    ; TODO test DAA
 
     ; ########## Test 24: CB-prefixed ALU operations
     SetTestID 24
@@ -523,6 +522,7 @@ SECTION "ROM0", ROM0
 
     ; ########### Test 27: RETI
     ; TODO check automatically if interrupts are enabled.
+    SetTestID 27
     di
     ld sp, $C100
     call :+
@@ -530,6 +530,28 @@ SECTION "ROM0", ROM0
 :   ; Start of function
     reti
 :   nop
+
+    ; ############ Test 28: DAA
+    SetTestID 28
+    ld a, $23
+    add $08
+    daa
+    AssertEquals $31
+    add $01
+    daa
+    AssertEquals $32
+    sub $04
+    daa
+    AssertEquals $28
+    add $90
+    daa
+    AssertEquals $18
+    sub $03
+    daa
+    AssertEquals $15
+    sub $24
+    daa
+    AssertEquals $91
 
     ; ========================================
     ; If we made it here, suite is successful.

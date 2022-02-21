@@ -100,7 +100,7 @@ SIGNALS = {
         "=": "IMEUpdateSame",
         "En": "IMEUpdateEnable",
         "Dis": "IMEUpdateDisable",
-    }
+    },
 }
 
 
