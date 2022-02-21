@@ -81,7 +81,7 @@ typedef enum logic [2:0] {
 } inc_reg_e;
 
 /// Control signal: ALU operation.
-typedef enum logic [2:0] {
+typedef enum logic [3:0] {
     /// Output = A
     AluOpCopyA,
     /// Output = B
@@ -97,7 +97,9 @@ typedef enum logic [2:0] {
     /// Use the "ALU opcode" from the instruction (ADD/ADC/SUB/SBC/AND/XOR/OR/CP).
     AluOpInstAlu,
     /// Use the "Acc/Flag opcode" from the instruction (RLCA/RRCA/RLA/RRA/DAA/CPL/SCF/CCF).
-    AluOpInstAcc
+    AluOpInstAcc,
+    /// Use the CB-prefixed opcode from the instruction.
+    AluOpInstCB
 } alu_op_e;
 
 /// Control signal: ALU operand A source.
@@ -240,6 +242,7 @@ module cpu (
             AluOpDecB: alu_inner_op = 5'b11011;
             AluOpInstAlu: alu_inner_op = {2'b00, instruction_register[5:3]};
             AluOpInstAcc: alu_inner_op = {2'b01, instruction_register[5:3]};
+            AluOpInstCB: alu_inner_op = {2'b10, instruction_register[5:3]};
             AluOpAddLo: alu_inner_op = 5'b00000; // ADD
             AluOpAddHi: alu_inner_op = 5'b00001; // ADC
         endcase

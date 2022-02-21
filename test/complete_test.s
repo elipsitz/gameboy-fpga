@@ -462,6 +462,27 @@ SECTION "ROM0", ROM0
     AssertEquals $8E
     ; TODO test DAA
 
+    ; ########## Test 24: CB-prefixed ALU operations
+    SetTestID 24
+    ld b, $E9
+    swap b
+    ld a, b
+    AssertEquals $9E
+    ld hl, $C000
+    ld [hl], $4A
+    swap [hl]
+    ld a, [hl]
+    AssertEquals $A4
+    ;
+    ld a, $78
+    sla a
+    AssertEquals $F0
+    sra a
+    AssertEquals $F8
+    srl a
+    AssertEquals $7C
+    
+
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0

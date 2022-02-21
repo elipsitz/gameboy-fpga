@@ -93,3 +93,6 @@ DEC (HL),,00110101,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
 DEC r,,00???101,-,-,Reg8Dest,Reg8Dest,WriteAlu,-,-,DecB,-,Reg2,All,-,-,-,Fetch,-
 ALU unary,accumulator/flag ops,00???111,-,-,-,A,WriteAlu,-,-,InstAcc,A,Reg2,All,-,-,-,Fetch,-
 CB_PREFIX,CB prefix,11001011,IncOut,-,-,-,None,Inc,PC,-,-,-,No,Yes,No,Incrementer,DispatchCB,-
+CB_ALU (HL),CB shift / rotates,CB_00???110,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,-,W,-,None,No,HL,InstCB,-,Reg2,All,Yes,Yes,Incrementer,Jump,NOP
+CB_ALU r,CB shift / rotates,CB_00??????,-,-,Reg8Src,Reg8Src,WriteAlu,-,-,InstCB,-,Reg2,All,-,-,-,Fetch,-

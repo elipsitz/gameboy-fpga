@@ -58,6 +58,7 @@ SIGNALS = {
         "DecB": "AluOpDecB",
         "InstAlu": "AluOpInstAlu",
         "InstAcc": "AluOpInstAcc",
+        "InstCB": "AluOpInstCB",
         "AddLo": "AluOpAddLo",
         "AddHi": "AluOpAddHi",
     },
@@ -115,8 +116,10 @@ class State:
             encoding_cb = self.data["Encoding"].startswith("CB_")
             if not (encoding_len == 8 or (encoding_len == 11 and encoding_cb)):
                 raise Exception(f"Error on row {i}: bad 'Encoding'")
-            encoding_prefix = "1" if encoding_cb else "0"
-            self.data["Encoding"] = encoding_prefix + self.data["Encoding"]
+            if encoding_cb:
+                self.data["Encoding"] = "1" + self.data["Encoding"][3:]
+            else:
+                self.data["Encoding"] = "0" + self.data["Encoding"]
         if self.data["MemWr"] == "Yes" and self.data["AluOp"] == "-":
             raise Exception(f"Row {i}: AluOp must be set if MemWr is Yes")
         if self.data["MemAddrSel"] == "Incrementer" and self.data["IncReg"] == "-":

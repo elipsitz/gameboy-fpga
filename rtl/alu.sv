@@ -156,6 +156,38 @@ module alu (
                 alu_flag_out[FLAG_N] = 1'd0;
                 alu_flag_out[FLAG_C] = ~alu_flag_in[FLAG_C];
             end
+            OP_RLC: begin // Rotate left (NOT through carry)
+                alu_out = {alu_b[6:0], alu_b[7]};
+                alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[7]};
+            end
+            OP_RRC: begin // Rotate right (NOT through carry)
+                alu_out = {alu_b[0], alu_b[7:1]};
+                alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[0]};
+            end
+            OP_RL: begin // Rotate left (through carry)
+                alu_out = {alu_b[6:0], alu_flag_in[FLAG_C]};
+                alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[7]};
+            end
+            OP_RR: begin // Rotate right (through carry)
+                alu_out = {alu_flag_in[FLAG_C], alu_b[7:1]};
+                alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[0]};
+            end
+            OP_SLA: begin
+                alu_out = {alu_b[6:0], 1'd0};
+                alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[7]};
+            end
+            OP_SRA: begin
+                alu_out = {alu_b[7], alu_b[7:1]};
+                alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[0]};
+            end
+            OP_SWAP: begin
+                alu_out = {alu_b[3:0], alu_b[7:4]};
+                alu_flag_out = {(alu_out == 8'd0), 3'b000};
+            end
+            OP_SRL: begin
+                alu_out = {1'd0, alu_b[7:1]};
+                alu_flag_out = {(alu_out == 8'd0), 2'b00, alu_b[0]};
+            end
         endcase
     end
 endmodule
