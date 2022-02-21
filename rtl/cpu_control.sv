@@ -10,6 +10,12 @@ typedef enum logic [0:0] {
     DispatchPrefixCB = 1'b1
 } dispatch_prefix_e;
 
+typedef enum logic [1:0] {
+    IMEUpdateSame,
+    IMEUpdateEnable,
+    IMEUpdateDisable
+} ime_update_e;
+
 typedef logic [7:0] state_t;
 
 module cpu_control (
@@ -56,11 +62,13 @@ module cpu_control (
     output mem_addr_sel_e mem_addr_sel
 );
     state_t state = 0; // Initial state = NOP
+    logic ime = 0; // Interrupt master enable.
 
     // Describe control given the state.
     dispatch_prefix_e dispatch_prefix; // 0 for regular, 1 for CB.
     microbranch_e microbranch;
     state_t next_state;
+    ime_update_e ime_update;
     always_comb begin
         // TODO: make these don't cares?
         pc_next = PcNextSame;
@@ -81,6 +89,7 @@ module cpu_control (
         microbranch = MicroBranchNext;
         next_state = 0;
         dispatch_prefix = DispatchPrefixNone;
+        ime_update = IMEUpdateSame;
         
         case (state)
             `include "cpu_control_signals.inc"
@@ -89,8 +98,11 @@ module cpu_control (
 
     // Describe next state given current state.
     always_ff @(posedge clk) begin
-        if (reset) state <= 0;
-        else if (t_cycle == 3) begin
+        if (reset) begin
+            state <= 0;
+            ime <= 1; // TODO check what the initial value should be
+        end else if (t_cycle == 3) begin
+            // Advance the state machine.
             if (microbranch == MicroBranchNext) state <= state + 1;
             else if (microbranch == MicroBranchDispatch) begin
                 // Dispatch based off the next memory we're reading.
@@ -100,6 +112,12 @@ module cpu_control (
                 endcase
             end else if (microbranch == MicroBranchJump) state <= next_state;
             else if (microbranch == MicroBranchCond) state <= (condition ? next_state : (state + 1));
+
+            // Maybe enable/disable IME.
+            case (ime_update)
+                IMEUpdateEnable: ime <= 1;
+                IMEUpdateDisable: ime <= 0;
+            endcase
         end
     end
 

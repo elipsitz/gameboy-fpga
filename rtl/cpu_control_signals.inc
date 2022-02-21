@@ -11,6 +11,7 @@
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 1: begin
     // _INVALID
@@ -21,6 +22,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpNone;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 1;
 end
 2: begin
@@ -32,6 +34,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpNone;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 2;
 end
 3: begin
@@ -47,6 +50,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 4: begin
@@ -64,6 +68,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 5: begin
@@ -79,6 +84,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 6: begin
     pc_next = PcNextSame;
@@ -94,6 +100,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 7: begin
@@ -113,6 +120,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 8: begin
     // LD r,n
@@ -127,6 +135,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 9: begin
@@ -142,6 +151,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 10: begin
     pc_next = PcNextIncOut;
@@ -155,6 +165,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 11: begin
@@ -171,6 +182,7 @@ end
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 12: begin
@@ -186,6 +198,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 13: begin
@@ -202,6 +215,7 @@ end
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 14: begin
@@ -217,6 +231,7 @@ end
     inc_op = IncOpDec;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 15: begin
@@ -232,6 +247,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 16: begin
     pc_next = PcNextIncOut;
@@ -250,6 +266,7 @@ end
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 17: begin
     // ALU A, (HL)
@@ -264,6 +281,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 18: begin
     pc_next = PcNextIncOut;
@@ -282,6 +300,7 @@ end
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 19: begin
     // ALU A, r
@@ -301,6 +320,7 @@ end
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 20: begin
     // JP nn
@@ -315,6 +335,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 21: begin
     pc_next = PcNextIncOut;
@@ -328,6 +349,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 22: begin
     // #PC=WZ
@@ -339,6 +361,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegWZ;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 23: begin
@@ -354,6 +377,7 @@ end
     inc_op = IncOpIncNoWrite;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 24: begin
     // JP f,nn
@@ -368,6 +392,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 25: begin
     pc_next = PcNextIncOut;
@@ -381,6 +406,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 22;
 end
 26: begin
@@ -395,6 +421,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 27: begin
     // LD (rr), A
@@ -410,6 +437,7 @@ end
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 28: begin
@@ -425,6 +453,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegInst16;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 29: begin
@@ -440,6 +469,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 30: begin
     pc_next = PcNextIncOut;
@@ -453,6 +483,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 31: begin
     pc_next = PcNextSame;
@@ -467,6 +498,7 @@ end
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 32: begin
@@ -482,6 +514,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 33: begin
     pc_next = PcNextIncOut;
@@ -495,6 +528,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 34: begin
     pc_next = PcNextSame;
@@ -508,6 +542,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegWZ;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 35: begin
@@ -523,6 +558,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 36: begin
     pc_next = PcNextSame;
@@ -537,6 +573,7 @@ end
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 37: begin
@@ -553,6 +590,7 @@ end
     alu_op = AluOpCopyA;
     alu_sel_a = AluSelARegA;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 38: begin
@@ -568,6 +606,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 39: begin
     pc_next = PcNextSame;
@@ -581,6 +620,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 40: begin
@@ -596,6 +636,7 @@ end
     reg_op = RegOpWriteMem;
     inc_op = IncOpNone;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 41: begin
@@ -608,6 +649,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegInst16;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 42: begin
@@ -620,6 +662,7 @@ end
     inc_op = IncOpDec;
     inc_reg = IncRegInst16;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 43: begin
@@ -635,6 +678,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 44: begin
     pc_next = PcNextIncOut;
@@ -648,6 +692,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 45: begin
     pc_next = PcNextSame;
@@ -663,6 +708,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 46: begin
     pc_next = PcNextSame;
@@ -678,6 +724,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 47: begin
@@ -693,6 +740,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 48: begin
     pc_next = PcNextIncOut;
@@ -710,6 +758,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 49: begin
     // PUSH AF
@@ -722,6 +771,7 @@ end
     inc_op = IncOpDec;
     inc_reg = IncRegSP;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 50: begin
     pc_next = PcNextSame;
@@ -737,6 +787,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 51: begin
     pc_next = PcNextSame;
@@ -752,6 +803,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 52: begin
@@ -769,6 +821,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 53: begin
     pc_next = PcNextSame;
@@ -784,6 +837,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 54: begin
@@ -797,6 +851,7 @@ end
     inc_op = IncOpDec;
     inc_reg = IncRegSP;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 55: begin
     pc_next = PcNextSame;
@@ -812,6 +867,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 56: begin
     pc_next = PcNextSame;
@@ -827,6 +883,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 57: begin
@@ -842,6 +899,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegSP;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 58: begin
     pc_next = PcNextSame;
@@ -855,6 +913,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegSP;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 59: begin
@@ -872,6 +931,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 60: begin
     pc_next = PcNextIncOut;
@@ -891,6 +951,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSet_NHC;
+    ime_update = IMEUpdateSame;
 end
 61: begin
     // ADD SP,dd
@@ -905,6 +966,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 62: begin
     pc_next = PcNextSame;
@@ -920,6 +982,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSet0NHC;
+    ime_update = IMEUpdateSame;
 end
 63: begin
     pc_next = PcNextSame;
@@ -935,6 +998,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBSignReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 64: begin
@@ -950,6 +1014,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 65: begin
     pc_next = PcNextSame;
@@ -965,6 +1030,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSet0NHC;
+    ime_update = IMEUpdateSame;
 end
 66: begin
     pc_next = PcNextIncOut;
@@ -984,6 +1050,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBSignReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 67: begin
     // JR e
@@ -998,6 +1065,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 68: begin
     // #PC+=W
@@ -1014,6 +1082,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 69: begin
     pc_next = PcNextIncOut;
@@ -1033,6 +1102,7 @@ end
     alu_sel_a = AluSelAReg1;
     alu_sel_b = AluSelBSignReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 70: begin
     // JR c,e
@@ -1047,6 +1117,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 68;
 end
 71: begin
@@ -1061,6 +1132,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 72: begin
     // CALL nn
@@ -1075,6 +1147,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 73: begin
     pc_next = PcNextIncOut;
@@ -1088,6 +1161,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 74: begin
     // #CALL_end
@@ -1100,6 +1174,7 @@ end
     inc_op = IncOpDec;
     inc_reg = IncRegSP;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 75: begin
     pc_next = PcNextSame;
@@ -1115,6 +1190,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 76: begin
     pc_next = PcNextSame;
@@ -1130,6 +1206,7 @@ end
     alu_op = AluOpCopyB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 77: begin
     pc_next = PcNextIncOut;
@@ -1143,6 +1220,7 @@ end
     inc_op = IncOpIncNoWrite;
     inc_reg = IncRegWZ;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 78: begin
     // CALL cc, nn
@@ -1157,6 +1235,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 79: begin
     pc_next = PcNextIncOut;
@@ -1170,6 +1249,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 74;
 end
 80: begin
@@ -1184,6 +1264,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 81: begin
     // RET
@@ -1198,6 +1279,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegSP;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 82: begin
     pc_next = PcNextSame;
@@ -1211,6 +1293,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegSP;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 83: begin
     pc_next = PcNextSame;
@@ -1220,6 +1303,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpNone;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 84: begin
@@ -1231,6 +1315,7 @@ end
     reg_op = RegOpNone;
     inc_op = IncOpNone;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
     next_state = 81;
 end
 85: begin
@@ -1245,6 +1330,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 86: begin
     // INC (HL)
@@ -1259,6 +1345,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 87: begin
     pc_next = PcNextSame;
@@ -1274,6 +1361,7 @@ end
     alu_op = AluOpIncB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 88: begin
@@ -1293,6 +1381,7 @@ end
     alu_op = AluOpIncB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 89: begin
     // DEC (HL)
@@ -1307,6 +1396,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 90: begin
     pc_next = PcNextSame;
@@ -1322,6 +1412,7 @@ end
     alu_op = AluOpDecB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 91: begin
@@ -1341,6 +1432,7 @@ end
     alu_op = AluOpDecB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 92: begin
     // ALU unary
@@ -1359,6 +1451,7 @@ end
     alu_sel_a = AluSelARegA;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 93: begin
     // CB_PREFIX
@@ -1373,6 +1466,7 @@ end
     inc_op = IncOpInc;
     inc_reg = IncRegPC;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 94: begin
     // CB_ALU (HL)
@@ -1387,6 +1481,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 95: begin
     pc_next = PcNextSame;
@@ -1402,6 +1497,7 @@ end
     alu_op = AluOpInstCB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 96: begin
@@ -1421,6 +1517,7 @@ end
     alu_op = AluOpInstCB;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 97: begin
     // BIT (HL)
@@ -1435,6 +1532,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 98: begin
     pc_next = PcNextIncOut;
@@ -1451,6 +1549,7 @@ end
     alu_op = AluOpInstBit;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
 end
 99: begin
     // CB_BIT (HL)
@@ -1465,6 +1564,7 @@ end
     inc_op = IncOpNone;
     inc_reg = IncRegHL;
     alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
 end
 100: begin
     pc_next = PcNextSame;
@@ -1480,6 +1580,7 @@ end
     alu_op = AluOpInstBit;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
     next_state = 0;
 end
 101: begin
@@ -1499,4 +1600,35 @@ end
     alu_op = AluOpInstBit;
     alu_sel_b = AluSelBReg2;
     alu_flag_set = AluFlagSetAll;
+    ime_update = IMEUpdateSame;
+end
+102: begin
+    // EI
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateEnable;
+end
+103: begin
+    // DI
+    pc_next = PcNextIncOut;
+    inst_load = 1;
+    mem_enable = 1;
+    mem_write = 0;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchDispatch;
+    dispatch_prefix = DispatchPrefixNone;
+    reg_op = RegOpNone;
+    inc_op = IncOpInc;
+    inc_reg = IncRegPC;
+    alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateDisable;
 end

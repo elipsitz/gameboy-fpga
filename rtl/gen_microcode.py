@@ -96,6 +96,11 @@ SIGNALS = {
         "None": "DispatchPrefixNone",
         "CB": "DispatchPrefixCB",
     },
+    "IME": {
+        "=": "IMEUpdateSame",
+        "En": "IMEUpdateEnable",
+        "Dis": "IMEUpdateDisable",
+    }
 }
 
 
@@ -223,6 +228,7 @@ if __name__ == "__main__":
             simple_signal(f, s, "AluSelA", "alu_sel_a")
             simple_signal(f, s, "AluSelB", "alu_sel_b")
             simple_signal(f, s, "AluFlagSet", "alu_flag_set")
+            simple_signal(f, s, "IME", "ime_update")
             if s.next_state is not None:
                 f.write(f"    next_state = {s.next_state};\n")
             f.write("end\n")

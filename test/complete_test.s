@@ -511,6 +511,14 @@ SECTION "ROM0", ROM0
     bit 2, a
     jp z, suite_end
     
+    ; ########## Test 26: EI and DI
+    SetTestID 26
+    di
+    nop
+    nop
+    ei
+    nop
+    nop
 
     ; ========================================
     ; If we made it here, suite is successful.
