@@ -86,8 +86,10 @@ typedef enum logic [2:0] {
     AluOpCopyA,
     /// Output = B
     AluOpCopyB,
-    /// Output = A + 1
-    AluOpIncA,
+    /// Output = B + 1
+    AluOpIncB,
+    /// Output = B - 1
+    AluOpDecB,
     /// Output = A + B (and set the internal carry flag)
     AluOpAddLo,
     /// Output = A + B (and use the internal carry flag)
@@ -113,7 +115,7 @@ typedef enum logic [0:0] {
 } alu_sel_b_e;
 
 /// Control signal: ALU flag set mode.
-typedef enum logic [1:0] {
+typedef enum logic [2:0] {
     /// F = ---- (no change)
     AluFlagSetNone,
     /// F = **** (all set)
@@ -232,6 +234,8 @@ module cpu (
         case (alu_op)
             AluOpCopyA: alu_inner_op = 5'b11000;
             AluOpCopyB: alu_inner_op = 5'b11001;
+            AluOpIncB: alu_inner_op = 5'b11010;
+            AluOpDecB: alu_inner_op = 5'b11011;
             AluOpInstAlu: alu_inner_op = {2'b00, instruction_register[5:3]};
             AluOpAddLo: alu_inner_op = 5'b00000; // ADD
             AluOpAddHi: alu_inner_op = 5'b00001; // ADC
@@ -244,8 +248,10 @@ module cpu (
             AluFlagSet0NHC: alu_flag_next = {1'b0, alu_flag_out[2:0]};
         endcase
 
-        if (alu_op == AluOpAddHi) alu_flag_in = {3'd0, alu_internal_carry};
-        else alu_flag_in = flag_read;
+        case (alu_op)
+            AluOpAddHi: alu_flag_in = {3'd0, alu_internal_carry};
+            default: alu_flag_in = flag_read;
+        endcase
     end
     always_ff @(posedge clk) begin
         if (t_cycle == 3) begin

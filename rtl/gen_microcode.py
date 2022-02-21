@@ -54,7 +54,8 @@ SIGNALS = {
     "AluOp": {
         "CopyA": "AluOpCopyA",
         "CopyB": "AluOpCopyB",
-        "IncA": "AluOpIncA",
+        "IncB": "AluOpIncB",
+        "DecB": "AluOpDecB",
         "InstAlu": "AluOpInstAlu",
         "AddLo": "AluOpAddLo",
         "AddHi": "AluOpAddHi",

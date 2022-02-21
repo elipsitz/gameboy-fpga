@@ -85,3 +85,9 @@ RET,,11001001,Same,-,-,PC_Lo,WriteMem,Inc,SP,-,-,-,No,Yes,No,Incrementer,Next,-
 ,Extra NOP,,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Jump,NOP
 RET cc,Conditional,110??000,Same,-,-,-,None,No,-,-,-,-,No,No,-,-,Cond,RET
 ,,,-,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
+INC (HL),,00110100,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,-,W,-,None,No,HL,IncB,-,Reg2,All,Yes,Yes,Incrementer,Jump,NOP
+INC r,,00???100,-,-,Reg8Dest,Reg8Dest,WriteAlu,-,-,IncB,-,Reg2,All,-,-,-,Fetch,-
+DEC (HL),,00110101,Same,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer,Next,-
+,,,Same,-,W,-,None,No,HL,DecB,-,Reg2,All,Yes,Yes,Incrementer,Jump,NOP
+DEC r,,00???101,-,-,Reg8Dest,Reg8Dest,WriteAlu,-,-,DecB,-,Reg2,All,-,-,-,Fetch,-

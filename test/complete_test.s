@@ -401,6 +401,36 @@ SECTION "ROM0", ROM0
     ld a, c
     AssertEquals $CD
 
+    ; ######### Test 21: 8-bit INC and DEC with registers
+    SetTestID 21
+    ld a, $FE
+    inc a
+    AssertEquals $FF
+    inc a
+    AssertEquals $00
+    dec a
+    AssertEquals $FF
+    dec a
+    AssertEquals $FE
+    ; TODO check flags
+    ld b, $50
+    inc b
+    ld a, b
+    AssertEquals $51
+    
+    ; ######### Test 22: 8-bit INC and DEC with (HL)
+    SetTestID 22
+    ld hl, $C000
+    ld [hl], $80
+    inc [hl]
+    inc [hl]
+    ld a, [hl]
+    AssertEquals $82
+    dec [hl]
+    ld a, [hl]
+    AssertEquals $81
+    
+
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0
