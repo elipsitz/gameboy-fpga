@@ -5,3 +5,5 @@ results.xml
 *.gb
 /rtl/obj_dir
 /rtl/*.inc
+/sim/obj_pc
+/sim/main
