@@ -138,8 +138,8 @@ module alu (
                 alu_flag_out = {3'b000, alu_a[0]};
             end
             OP_DAA: begin // Decimal adjust A
-                result_lo = (alu_flag_in[FLAG_H] || (!alu_flag_in[FLAG_N] && (alu_a[3:0] > 9))) ? 4'd6 : 4'd0;
-                result_hi = (alu_flag_in[FLAG_C] || (!alu_flag_in[FLAG_N] && (alu_a[7:4] > 9))) ? 4'd6 : 4'd0;
+                result_lo = (alu_flag_in[FLAG_H] || (!alu_flag_in[FLAG_N] && (alu_a[3:0] > 9))) ? 5'd6 : 5'd0;
+                result_hi = (alu_flag_in[FLAG_C] || (!alu_flag_in[FLAG_N] && (alu_a[7:4] > 9))) ? 5'd6 : 5'd0;
 
                 if (alu_flag_in[FLAG_N]) alu_out = alu_a - {result_hi[3:0], result_lo[3:0]};
                 else alu_out = alu_a + {result_hi[3:0], result_lo[3:0]};

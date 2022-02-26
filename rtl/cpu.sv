@@ -253,19 +253,20 @@ module cpu (
             AluOpAddHi: alu_inner_op = 5'b00001; // ADC
         endcase
 
-        case (alu_flag_set)
-            AluFlagSetNone: alu_flag_next = alu_flag_in;
-            AluFlagSetAll: alu_flag_next = alu_flag_out;
-            AluFlagSet_NHC: alu_flag_next = {alu_flag_in[3], alu_flag_out[2:0]}; 
-            AluFlagSet0NHC: alu_flag_next = {1'b0, alu_flag_out[2:0]};
-        endcase
-
         case (alu_op)
             AluOpAddHi: alu_flag_in = {3'd0, alu_internal_carry};
             default: alu_flag_in = flag_read;
         endcase
 
         alu_bit_index = instruction_register[5:3];
+    end
+    always @(*) begin
+        case (alu_flag_set)
+            AluFlagSetNone: alu_flag_next = alu_flag_in;
+            AluFlagSetAll: alu_flag_next = alu_flag_out;
+            AluFlagSet_NHC: alu_flag_next = {alu_flag_in[3], alu_flag_out[2:0]}; 
+            AluFlagSet0NHC: alu_flag_next = {1'b0, alu_flag_out[2:0]};
+        endcase
     end
     always_ff @(posedge clk) begin
         if (t_cycle == 3) begin
@@ -311,20 +312,6 @@ module cpu (
             2'b01: reg_r16_lo = 3;
             2'b10: reg_r16_lo = 5;
             2'b11: reg_r16_lo = 9;
-        endcase
-
-        case (inc_reg)
-            IncRegPC: inc_in = pc;
-            IncRegHL: inc_in = {registers[4], registers[5]};
-            IncRegSP: inc_in = {registers[8], registers[9]};
-            IncRegWZ: inc_in = {registers[10], registers[11]};
-            IncRegInst16: inc_in = {registers[reg_r16_hi], registers[reg_r16_lo]};
-            IncRegPC_ALU: inc_in = {alu_out, pc[7:0]};
-        endcase
-        case (inc_op)
-            IncOpNone: inc_out = inc_in;
-            IncOpInc, IncOpIncNoWrite: inc_out = inc_in + 1;
-            IncOpDec: inc_out = inc_in - 1;
         endcase
 
         case (reg_read1_sel)
@@ -380,6 +367,21 @@ module cpu (
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
+    end
+    always @(*) begin
+        case (inc_reg)
+            IncRegPC: inc_in = pc;
+            IncRegHL: inc_in = {registers[4], registers[5]};
+            IncRegSP: inc_in = {registers[8], registers[9]};
+            IncRegWZ: inc_in = {registers[10], registers[11]};
+            IncRegInst16: inc_in = {registers[reg_r16_hi], registers[reg_r16_lo]};
+            IncRegPC_ALU: inc_in = {alu_out, pc[7:0]};
+        endcase
+        case (inc_op)
+            IncOpNone: inc_out = inc_in;
+            IncOpInc, IncOpIncNoWrite: inc_out = inc_in + 1;
+            IncOpDec: inc_out = inc_in - 1;
+        endcase
     end
     int i;
     initial begin
