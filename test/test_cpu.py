@@ -34,6 +34,8 @@ async def run_program(dut, program, max_steps=1000):
 
     # Execute until we hit a HALT instruction.
     while True:
+        if steps % 1000 == 0:
+            print("steps: ", steps)
         await Timer(2, units="ns")
 
         instruction = dut.instruction_register.value.integer
@@ -44,19 +46,23 @@ async def run_program(dut, program, max_steps=1000):
             # Hit "INVALID" control state.
             raise Exception(f"Hit INVALID state, instruction={instruction:02X}")
         if steps >= max_steps:
+            print(memory)
             raise Exception("Execution hit max steps")
-        # dut._log.info(
-        #    f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X} | state={dut.control.state.value.integer}"
-        # )
+        #dut._log.info(
+        #    f"pc {dut.pc.value.integer:04X} | inst {dut.instruction_register.value.integer:02X}"
+        #)
 
         if dut.mem_enable.value:
             address = dut.mem_addr.value.integer
             if dut.mem_write.value:
                 # Write
                 data = dut.mem_data_out.value.integer
-                # dut._log.info(f"    mem write at {address:04X} <- {data:02X}   |  ")
+                dut._log.info(f"    mem write at {address:04X} <- {data:02X}   |  ")
                 if address >= 0xC000 and address <= 0xDFFF:
                     memory[address - 0xC000] = data
+                elif address == 0xFF02 and data == 0x81:
+                    # Serial out
+                    print(chr(high_memory[0x02]), end="")
                 elif address >= 0xFF00 and address <= 0xFFFF:
                     high_memory[address - 0xFF00] = data
             else:
@@ -143,3 +149,9 @@ async def test_complete(dut):
         print(f"Complete Test failed: {test_result}")
         print("#" * 80)
         raise Exception(f"Complete test failed! ID = {test_result}")
+
+@cocotb.test()
+async def test_blargg_cpu_instr_0(dut):
+    with open("/Users/eli/Downloads/blargg_gb_cpu_instrs/individual/05-op rp.gb", "rb") as f:
+        program = f.read()
+    memory, _ = await run_program(dut, bytes(program), max_steps=6_000_000)

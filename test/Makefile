@@ -30,3 +30,6 @@ include $(shell cocotb-config --makefiles)/Makefile.sim
 
 %.o : %.s
 	rgbasm -o $@ $<
+
+clean::
+	rm -f *.gb

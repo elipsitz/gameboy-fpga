@@ -1,11 +1,11 @@
-test: microcode
+rtl:
+	cd rtl; $(MAKE) --no-print-directory
+
+test: rtl
 	make -C test
 
-microcode:
-	python3 rtl/gen_microcode.py
-
 clean:
-	rm -f rtl/cpu_control_*.inc
-	rm -f test/*.gb
+	cd rtl; $(MAKE) --no-print-directory clean
+	cd test; $(MAKE) --no-print-directory clean
 
-.PHONY: test microcode clean
+.PHONY: rtl test clean

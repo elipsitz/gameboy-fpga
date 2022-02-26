@@ -3,3 +3,5 @@ __pycache__
 results.xml
 *.vcd
 *.gb
+/rtl/obj_dir
+/rtl/*.inc
