@@ -12,6 +12,21 @@ MACRO AssertEquals
 ENDM
 
 SECTION "ROM0", ROM0
+    ; Reset Vectors
+    ; 0x00
+    jp suite_start
+    DS 5, $00
+    ; 0x08
+    add A, $10
+    ret
+    DS 5, $00
+    ; 0x10
+    ld a, $77
+    ret
+    DS 5, $00
+    
+
+suite_start:
     ; ######### Test 1: `ld r, n` and `ld r, r`
     SetTestID 1
     ld a, $13
@@ -553,6 +568,22 @@ SECTION "ROM0", ROM0
     daa
     AssertEquals $91
 
+    ; ############ Test 29: RST
+    SetTestID 29
+    ld sp, $C100
+    ld bc, $ABCD
+    push bc
+    ld a, $50
+    rst $08 ; A += $10
+    AssertEquals $60
+    rst $10 ; A = $77
+    AssertEquals $77
+    pop bc
+    ld a, b
+    AssertEquals $AB
+    ld a, c
+    AssertEquals $CD
+    
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0

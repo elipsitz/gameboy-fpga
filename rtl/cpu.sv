@@ -5,7 +5,9 @@ typedef enum logic [1:0] {
     /// Do not change PC.
     PcNextSame,
     /// PC = output of incrementer/decrementer
-    PcNextIncOut
+    PcNextIncOut,
+    /// PC = computed reset address
+    PcNextRstAddr
 } pc_next_e;
 
 /// Control signal: 8-bit register select.
@@ -405,6 +407,7 @@ module cpu (
             end
             case (pc_next)
                 PcNextIncOut: {registers[12], registers[13]} <= inc_out;
+                PcNextRstAddr: {registers[12], registers[13]} <= {10'd0, instruction_register[5:3], 3'd0};
             endcase
             if (alu_flag_set != AluFlagSetNone) registers[6] <= {alu_flag_next, 4'b0000};
         end

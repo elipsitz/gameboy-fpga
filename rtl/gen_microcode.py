@@ -28,6 +28,7 @@ SIGNALS = {
     "PcNext": {
         "Same": "PcNextSame",
         "IncOut": "PcNextIncOut",
+        "RstAddr": "PcNextRstAddr",
     },
     "RegRead1Sel": REG_SELECT,
     "RegRead2Sel": REG_SELECT,

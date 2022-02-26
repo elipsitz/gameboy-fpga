@@ -106,3 +106,6 @@ CB_BIT (HL),,CB_?????110,Same,=,-,-,W,WriteMem,No,HL,-,-,-,No,Yes,No,Incrementer
 CB_BIT r,,CB_????????,-,=,-,Reg8Src,Reg8Src,WriteAlu,-,-,InstBit,-,Reg2,All,-,-,-,Fetch,-
 EI,Enable interrupts,11111011,-,En,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
 DI,Disable interrupts,11110011,-,Dis,-,-,-,None,-,-,-,-,-,No,-,-,-,Fetch,-
+RST vec,,11???111,Same,=,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
+,,,Same,=,-,PC_Hi,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
+,,,RstAddr,=,-,PC_Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP

@@ -1672,3 +1672,49 @@ end
     alu_flag_set = AluFlagSetNone;
     ime_update = IMEUpdateDisable;
 end
+107: begin
+    // RST vec
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 0;
+    mem_write = 0;
+    microbranch = MicroBranchNext;
+    reg_op = RegOpNone;
+    inc_op = IncOpDec;
+    inc_reg = IncRegSP;
+    alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
+end
+108: begin
+    pc_next = PcNextSame;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchNext;
+    reg_read2_sel = RegPCHi;
+    reg_op = RegOpNone;
+    inc_op = IncOpDec;
+    inc_reg = IncRegSP;
+    alu_op = AluOpCopyB;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
+end
+109: begin
+    pc_next = PcNextRstAddr;
+    inst_load = 0;
+    mem_enable = 1;
+    mem_write = 1;
+    mem_addr_sel = MemAddrSelIncrementer;
+    microbranch = MicroBranchJump;
+    reg_read2_sel = RegPCLo;
+    reg_op = RegOpNone;
+    inc_op = IncOpNone;
+    inc_reg = IncRegSP;
+    alu_op = AluOpCopyB;
+    alu_sel_b = AluSelBReg2;
+    alu_flag_set = AluFlagSetNone;
+    ime_update = IMEUpdateSame;
+    next_state = 0;
+end
