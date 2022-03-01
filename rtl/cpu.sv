@@ -254,7 +254,7 @@ module cpu (
         endcase
 
         case (alu_op)
-            AluOpAddHi: alu_flag_in = {3'd0, alu_internal_carry};
+            AluOpAddHi: alu_flag_in = {flag_read[3:1], alu_internal_carry};
             default: alu_flag_in = flag_read;
         endcase
 
@@ -389,7 +389,21 @@ module cpu (
     end
     always_ff @(posedge clk) begin
         if (reset) begin
-            for (i = 0; i < 14; i += 1) registers[i] <= 0;
+            // Reset to initial DMG state after boot rom.
+            registers[0] <= 8'h00;
+            registers[1] <= 8'h13;
+            registers[2] <= 8'h00;
+            registers[3] <= 8'hD8;
+            registers[4] <= 8'h01;
+            registers[5] <= 8'h4D;
+            registers[6] <= 8'b10110000;
+            registers[7] <= 8'h01;
+            registers[8] <= 8'hFF;
+            registers[9] <= 8'hFE;
+            registers[10] <= 8'h00;
+            registers[11] <= 8'h00;
+            registers[12] <= 8'h01;
+            registers[13] <= 8'h00;
         end else if (t_cycle == 3) begin
             case (reg_op)
                 RegOpWriteAlu: registers[reg_write_index] <= alu_out;
