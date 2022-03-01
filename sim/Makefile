@@ -25,7 +25,7 @@ $(OBJDIR)/%.o: $(VINCD)/%.cpp
 
 main: $(OBJDIR)/main.o $(OBJS)
 main: $(VOBJS) $(VOBJDR)/Vcpu__ALL.a
-	$(CXX) $(INCS) $^ $(VOBJDR)/Vcpu__ALL.a -o $@
+	$(CXX) -L . -l gbit $(INCS) $^ $(VOBJDR)/Vcpu__ALL.a -o $@
 
 define	mk-objdir
 	@bash -c "if [ ! -e $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi"
