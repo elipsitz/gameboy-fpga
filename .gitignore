@@ -4,6 +4,6 @@ results.xml
 *.vcd
 *.gb
 /rtl/obj_dir
-/rtl/*.inc
+/rtl/**/*.inc
 /sim/obj_pc
 /sim/main
