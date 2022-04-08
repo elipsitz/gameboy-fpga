@@ -123,7 +123,7 @@ typedef enum logic [0:0] {
 } alu_sel_b_e;
 
 /// Control signal: ALU flag set mode.
-typedef enum logic [2:0] {
+typedef enum logic [1:0] {
     /// F = ---- (no change)
     AluFlagSetNone,
     /// F = **** (all set)
@@ -135,7 +135,7 @@ typedef enum logic [2:0] {
 } alu_flag_set_e;
 
 /// Control signal: where the memory load/store address comes from.
-typedef enum logic [1:0] {
+typedef enum logic [0:0] {
     /// **INPUT** to the register incrementer (not output).
     MemAddrSelIncrementer,
     /// High address: 0xFF00 | (Register 2)
@@ -162,8 +162,6 @@ module cpu (
 );
     //////////////////////////////////////// Clocking: T-Cycles
     logic [1:0] t_cycle = 0;
-    logic clk_phi;
-    assign clk_phi = !t_cycle[1];
     always_ff @(posedge clk) begin
         if (reset) t_cycle <= 0;
         else t_cycle <= t_cycle + 1;
@@ -216,8 +214,6 @@ module cpu (
 
     //////////////////////////////////////// ALU
     localparam FLAG_C = 2'd0;
-    localparam FLAG_H = 2'd1;
-    localparam FLAG_N = 2'd2;
     localparam FLAG_Z = 2'd3;
     logic [3:0] flag_read;
     logic [7:0] alu_out;
@@ -251,6 +247,7 @@ module cpu (
             AluOpInstBit: alu_inner_op = {3'b111, instruction_register[7:6]};
             AluOpAddLo: alu_inner_op = 5'b00000; // ADD
             AluOpAddHi: alu_inner_op = 5'b00001; // ADC
+            default: $stop;
         endcase
 
         case (alu_op)
@@ -314,6 +311,9 @@ module cpu (
             2'b11: reg_r16_lo = 9;
         endcase
 
+        reg_read1_index = 0;
+        reg_read2_index = 0;
+        reg_write_index = 0;
         case (reg_read1_sel)
             RegSelA: reg_read1_index = 7;
             RegSelF: reg_read1_index = 6;
@@ -330,6 +330,7 @@ module cpu (
             RegSPLo: reg_read1_index = 9;
             RegPCHi: reg_read1_index = 12;
             RegPCLo: reg_read1_index = 13;
+            default: $stop;
         endcase
         case (reg_read2_sel)
             RegSelA: reg_read2_index = 7;
@@ -347,6 +348,7 @@ module cpu (
             RegSPLo: reg_read2_index = 9;
             RegPCHi: reg_read2_index = 12;
             RegPCLo: reg_read2_index = 13;
+            default: $stop;
         endcase
         case (reg_write_sel)
             RegSelA: reg_write_index = 7;
@@ -364,11 +366,14 @@ module cpu (
             RegSPLo: reg_write_index = 9;
             RegPCHi: reg_write_index = 12;
             RegPCLo: reg_write_index = 13;
+            default: $stop;
         endcase
         reg_read1_out = registers[reg_read1_index];
         reg_read2_out = registers[reg_read2_index];
     end
     always @(*) begin
+        inc_in = 0;
+        inc_out = 0;
         case (inc_reg)
             IncRegPC: inc_in = pc;
             IncRegHL: inc_in = {registers[4], registers[5]};
@@ -376,6 +381,7 @@ module cpu (
             IncRegWZ: inc_in = {registers[10], registers[11]};
             IncRegInst16: inc_in = {registers[reg_r16_hi], registers[reg_r16_lo]};
             IncRegPC_ALU: inc_in = {alu_out, pc[7:0]};
+            default: $stop;
         endcase
         case (inc_op)
             IncOpNone: inc_out = inc_in;
@@ -412,6 +418,7 @@ module cpu (
                     if (reg_write_index == 6) registers[reg_write_index] <= {mem_data_in[7:4], 4'd0};
                     else registers[reg_write_index] <= mem_data_in;
                 end
+                default: ;
             endcase
             if (inc_op == IncOpInc || inc_op == IncOpDec) begin
                 case (inc_reg)
@@ -419,11 +426,13 @@ module cpu (
                     IncRegSP: {registers[8], registers[9]} <= inc_out;
                     IncRegWZ: {registers[10], registers[11]} <= inc_out;
                     IncRegInst16: {registers[reg_r16_hi], registers[reg_r16_lo]} <= inc_out;
+                    default: ;
                 endcase
             end
             case (pc_next)
                 PcNextIncOut: {registers[12], registers[13]} <= inc_out;
                 PcNextRstAddr: {registers[12], registers[13]} <= {10'd0, instruction_register[5:3], 3'd0};
+                default: ;
             endcase
             if (alu_flag_set != AluFlagSetNone) registers[6] <= {alu_flag_next, 4'b0000};
         end

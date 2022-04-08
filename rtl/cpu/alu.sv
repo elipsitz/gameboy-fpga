@@ -1,3 +1,5 @@
+`timescale 1ns/1ns
+
 module alu (
     /// The first operand.
     input logic [7:0] alu_a,
@@ -53,7 +55,7 @@ module alu (
     localparam OP_COPY_B = 5'b11001;
     localparam OP_INC_B  = 5'b11010;
     localparam OP_DEC_B  = 5'b11011;
-    localparam OP_UNUSED = 5'b11100;
+    // localparam OP_UNUSED = 5'b11100;
     localparam OP_BIT    = 5'b11101;
     localparam OP_RES    = 5'b11110;
     localparam OP_SET    = 5'b11111;
@@ -64,6 +66,9 @@ module alu (
     always @(*) begin
         alu_out = 0;
         alu_flag_out = alu_flag_in;
+        carry = 0;
+        result_lo = 0;
+        result_hi = 0;
 
         case (alu_op)
             OP_COPY_A: alu_out = alu_a;
@@ -211,6 +216,7 @@ module alu (
                 alu_out = alu_b;
                 alu_out[alu_bit_index] = 1'd0;
             end
+            default: $stop;
         endcase
     end
 endmodule

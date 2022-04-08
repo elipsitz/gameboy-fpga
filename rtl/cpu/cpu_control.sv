@@ -1,3 +1,5 @@
+`timescale 1ns/1ns
+
 typedef enum logic [1:0] {
     MicroBranchNext,
     MicroBranchJump,
@@ -62,7 +64,11 @@ module cpu_control (
     output mem_addr_sel_e mem_addr_sel
 );
     state_t state = 0; // Initial state = NOP
+
+    // TODO implement interrupts.
+    // verilator lint_off UNUSED
     logic ime = 0; // Interrupt master enable.
+    // verilator lint_on UNUSED
 
     // Describe control given the state.
     dispatch_prefix_e dispatch_prefix; // 0 for regular, 1 for CB.
@@ -106,10 +112,12 @@ module cpu_control (
             if (microbranch == MicroBranchNext) state <= state + 1;
             else if (microbranch == MicroBranchDispatch) begin
                 // Dispatch based off the next memory we're reading.
+                // verilator lint_off CASEOVERLAP
                 casez ({dispatch_prefix, mem_data_in})
                     `include "cpu_control_dispatch.inc"
                     default: state <= 1; // "INVALID" state.
                 endcase
+                // verilator lint_on CASEOVERLAP
             end else if (microbranch == MicroBranchJump) state <= next_state;
             else if (microbranch == MicroBranchCond) state <= (condition ? next_state : (state + 1));
 
@@ -117,6 +125,7 @@ module cpu_control (
             case (ime_update)
                 IMEUpdateEnable: ime <= 1;
                 IMEUpdateDisable: ime <= 0;
+                default: ;
             endcase
         end
     end
