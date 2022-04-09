@@ -24,8 +24,8 @@ $(OBJDIR)/%.o: $(VINCD)/%.cpp
 	$(CXX) $(FLAGS) $(INCS) -c $< -o $@
 
 main: $(OBJDIR)/main.o $(OBJS)
-main: $(VOBJS) $(VOBJDR)/Vcpu__ALL.a
-	$(CXX) $(INCS) $^ $(VOBJDR)/Vcpu__ALL.a -o $@
+main: $(VOBJS) $(VOBJDR)/Vgameboy__ALL.a
+	$(CXX) $(INCS) $^ $(VOBJDR)/Vgameboy__ALL.a -o $@
 
 define	mk-objdir
 	@bash -c "if [ ! -e $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi"
