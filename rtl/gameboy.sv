@@ -98,4 +98,11 @@ module gameboy (
             cpu_mem_data_in = high_ram_data_out;
         end
     end
+
+    // HACK: DEBUG: write serial output to stdout.
+    always_ff @(posedge clk) begin
+        if (cpu_mem_enable && cpu_mem_write && cpu_mem_addr == 16'hFF01) begin
+            $write("%s", cpu_mem_data_out);
+        end
+    end
 endmodule
