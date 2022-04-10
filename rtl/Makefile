@@ -28,4 +28,4 @@ clean:
 cpu: $(VOBJ)/Vcpu__ALL.a
 gameboy: $(VOBJ)/Vgameboy__ALL.a
 
-.PHONY: all clean
+.PHONY: all clean gameboy cpu
