@@ -52,14 +52,14 @@ int main(int argc, char** argv) {
             if (top->cart_enable) {
                 uint16_t address = top->cart_addr;
                 if (top->cart_write) {
-                    uint8_t data = top->cart_data_out;
-                    printf("cart write at [%.04X] <= [%.02X]\n", address, data);
+                    // uint8_t data = top->cart_data_out;
+                    // printf("cart write at [%.04X] <= [%.02X]\n", address, data);
                 } else {
                     uint8_t data = 0;
                     if (address >= 0x0000 && address <= 0x7FFF) {
                         data = rom[address];
                     }
-                    printf("mem read at [%.04X] => [%.02X]\n", address, data);
+                    // printf("mem read at [%.04X] => [%.02X]\n", address, data);
                     top->cart_data_in = data;
                 }
             }

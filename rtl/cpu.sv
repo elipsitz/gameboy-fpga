@@ -182,6 +182,7 @@ module cpu (
     alu_sel_b_e alu_sel_b;
     mem_addr_sel_e mem_addr_sel;
     alu_flag_set_e alu_flag_set;
+    logic mem_enable_internal;
     // Holds the current instruction. Used to address registers, etc.
     logic [7:0] instruction_register = 0;
     cpu_control control (
@@ -202,7 +203,7 @@ module cpu (
         .alu_sel_a,
         .alu_sel_b,
         .alu_flag_set,
-        .mem_enable,
+        .mem_enable(mem_enable_internal),
         .mem_write,
         .mem_addr_sel
     );
@@ -211,6 +212,7 @@ module cpu (
         if (reset) instruction_register <= 0;
         else if (t_cycle == 3 && inst_load) instruction_register <= mem_data_in;
     end
+    assign mem_enable = mem_enable_internal && (t_cycle == 2);
 
     //////////////////////////////////////// ALU
     localparam FLAG_C = 2'd0;

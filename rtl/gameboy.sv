@@ -77,27 +77,25 @@ module gameboy (
         work_ram_enable = 0;
         high_ram_enable = 0;
 
-        if (cpu_mem_enable) begin
-            // Cartridge ROM: 0x0000 to 0x7FFF.
-            if (cpu_mem_addr <= 16'h7FFF) begin
-                cart_enable = 1;
-                cpu_mem_data_in = cart_data_in;
-            end
-            // Cartridge RAM: 0xA000 to 0xBFFF.
-            else if (cpu_mem_addr >= 16'hA000 && cpu_mem_addr <= 16'hBFFF) begin
-                cart_enable = 1;
-                cpu_mem_data_in = cart_data_in;
-            end
-            // Work RAM: 0xC000 to 0xDFFF (and mirror at 0xE000 to 0xFDFF).
-            else if (cpu_mem_addr >= 16'hC000 && cpu_mem_addr <= 16'hFDFF) begin
-                work_ram_enable = 1;
-                cpu_mem_data_in = work_ram_data_out;
-            end
-            // High RAM: 0xFF80 to 0xFFFE.
-            else if (cpu_mem_addr >= 16'hFF80 && cpu_mem_addr <= 16'hFFFE) begin
-                high_ram_enable = 1;
-                cpu_mem_data_in = high_ram_data_out;
-            end
+        // Cartridge ROM: 0x0000 to 0x7FFF.
+        if (cpu_mem_addr <= 16'h7FFF) begin
+            cart_enable = cpu_mem_enable;
+            cpu_mem_data_in = cart_data_in;
+        end
+        // Cartridge RAM: 0xA000 to 0xBFFF.
+        else if (cpu_mem_addr >= 16'hA000 && cpu_mem_addr <= 16'hBFFF) begin
+            cart_enable = cpu_mem_enable;
+            cpu_mem_data_in = cart_data_in;
+        end
+        // Work RAM: 0xC000 to 0xDFFF (and mirror at 0xE000 to 0xFDFF).
+        else if (cpu_mem_addr >= 16'hC000 && cpu_mem_addr <= 16'hFDFF) begin
+            work_ram_enable = cpu_mem_enable;
+            cpu_mem_data_in = work_ram_data_out;
+        end
+        // High RAM: 0xFF80 to 0xFFFE.
+        else if (cpu_mem_addr >= 16'hFF80 && cpu_mem_addr <= 16'hFFFE) begin
+            high_ram_enable = cpu_mem_enable;
+            cpu_mem_data_in = high_ram_data_out;
         end
     end
 endmodule
