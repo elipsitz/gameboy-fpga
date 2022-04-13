@@ -17,15 +17,15 @@ all:	$(PROGRAMS)
 %.o: $(OBJDIR)/%.o
 $(OBJDIR)/%.o: %.cpp
 	$(mk-objdir)
-	$(CXX) $(FLAGS) $(INCS) -c $< -o $@
+	$(CXX) $(FLAGS) $(INCS) `pkg-config sdl2 --cflags` -c $< -o $@
 
 $(OBJDIR)/%.o: $(VINCD)/%.cpp
 	$(mk-objdir)
-	$(CXX) $(FLAGS) $(INCS) -c $< -o $@
+	$(CXX) $(FLAGS) $(INCS) `pkg-config sdl2 --cflags` -c $< -o $@
 
 main: $(OBJDIR)/main.o $(OBJS)
 main: $(VOBJS) $(VOBJDR)/Vgameboy__ALL.a
-	$(CXX) $(FLAGS) $(INCS) $^ $(VOBJDR)/Vgameboy__ALL.a -o $@
+	$(CXX) $(FLAGS) $(INCS) `pkg-config sdl2 --cflags --libs` $^ $(VOBJDR)/Vgameboy__ALL.a -o $@
 
 define	mk-objdir
 	@bash -c "if [ ! -e $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi"

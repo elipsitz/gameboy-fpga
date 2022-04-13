@@ -3,7 +3,11 @@
 #include <vector>
 #include <cstdio>
 
+#include <SDL2/SDL.h>
+
 #include "simulator.hpp"
+
+const uint64_t FRAME_MS = 1000 / 16;
 
 std::vector<uint8_t> read_file(const char* path) {
     std::vector<uint8_t> buffer;
@@ -25,8 +29,25 @@ int main(int argc, char** argv) {
 
     Simulator simulator(rom);
 
-    for (size_t frame = 0; frame < 60; frame++) {
+    uint64_t last_frame = 0;
+    while (true) {
+        // Handle SDL events.
+        SDL_Event event;
+        if (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                break;
+            }
+        }
+
         // Simulate for a frame.
         simulator.simulate_frame();
+
+        // Sleep for the rest of the frame.
+        // TODO: vsync instead
+        uint64_t ticks = SDL_GetTicks64();
+        if (last_frame + FRAME_MS > ticks) {
+            SDL_Delay((uint32_t)(FRAME_MS - (ticks - last_frame)));
+        }
+        last_frame = ticks;
     }
 }
