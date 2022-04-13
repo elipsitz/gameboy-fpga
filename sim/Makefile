@@ -5,10 +5,10 @@ ifeq ($(VERILATOR_ROOT),)
 VERILATOR_ROOT ?= $(shell bash -c 'verilator -V|grep VERILATOR_ROOT | head -1 | sed -e " s/^.*=\s*//"')
 endif
 VROOT   := $(VERILATOR_ROOT)
-FLAGS	:= -Wall -Og -g -faligned-new -std=c++11
+FLAGS	:= -Wall -Og -g -faligned-new -std=c++20
 VINCD   := $(VROOT)/include
 INCS	:= -I$(RTLD)/obj_dir/ -I$(RTLD) -I$(VINCD) -I$(VINCD)/vltstd
-OBJS    := $(OBJDIR)/simulator.o 
+OBJS    := $(OBJDIR)/simulator.o $(OBJDIR)/window.o
 VOBJDR	:= $(RTLD)/obj_dir
 VOBJS   := $(OBJDIR)/verilated.o $(OBJDIR)/verilated_vcd_c.o
 PROGRAMS := main

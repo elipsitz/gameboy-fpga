@@ -1,9 +1,11 @@
+#include "common.hpp"
 #include "simulator.hpp"
 
 Simulator::Simulator(std::vector<uint8_t> rom)
 {
     this->top = new Vgameboy;
     this->rom = rom;
+    this->frameBuffer.resize(WIDTH * HEIGHT * 4, 0xFF);
 
     reset();
 }
@@ -58,4 +60,9 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
 void Simulator::simulate_frame()
 {
     simulate_cycles(70224);
+}
+
+std::vector<uint8_t>& Simulator::getFramebuffer()
+{
+    return this->frameBuffer;
 }

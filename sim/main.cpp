@@ -1,13 +1,13 @@
 #include <iostream>
 #include <fstream>
+#include <format>
 #include <vector>
 #include <cstdio>
 
 #include <SDL2/SDL.h>
 
 #include "simulator.hpp"
-
-const uint64_t FRAME_MS = 1000 / 16;
+#include "window.hpp"
 
 std::vector<uint8_t> read_file(const char* path) {
     std::vector<uint8_t> buffer;
@@ -27,9 +27,14 @@ int main(int argc, char** argv) {
     }
     auto rom = read_file(argv[1]);
 
+    // Initialize SDL.
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    Window window;
+
     Simulator simulator(rom);
 
-    uint64_t last_frame = 0;
+    uint64_t frame_timer = 0;
+    int frame_counter = 0;
     while (true) {
         // Handle SDL events.
         SDL_Event event;
@@ -41,13 +46,16 @@ int main(int argc, char** argv) {
 
         // Simulate for a frame.
         simulator.simulate_frame();
+        window.update(simulator.getFramebuffer());
+        frame_counter++;
 
-        // Sleep for the rest of the frame.
-        // TODO: vsync instead
-        uint64_t ticks = SDL_GetTicks64();
-        if (last_frame + FRAME_MS > ticks) {
-            SDL_Delay((uint32_t)(FRAME_MS - (ticks - last_frame)));
+        // Update title.
+        if (SDL_GetTicks64() - frame_timer >= 1000) {
+            char buffer[100];
+            snprintf(buffer, 100, "Game Boy - FPS: %d", frame_counter);
+            window.setTitle(buffer);
+            frame_counter = 0;
+            frame_timer = SDL_GetTicks64();
         }
-        last_frame = ticks;
     }
 }
