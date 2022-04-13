@@ -48,12 +48,34 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
             }
         }
 
+        this->stepFramebuffer();
+
         top->clk = 0;
         top->eval();
         top->clk = 1;
         top->eval();
 
         this->cycles++;
+    }
+}
+
+void Simulator::stepFramebuffer()
+{
+    if (top->pixel_valid) {
+        uint8_t pixel = top->pixel_out;
+        uint32_t color = 0x000000; // RGB
+        switch (pixel) {
+            case 0: color = 0xfafbf6; break;
+            case 1: color = 0xc6b7be; break;
+            case 2: color = 0x565a75; break;
+            case 3: color = 0x0f0f1b; break;
+        }
+
+        this->frameBuffer[this->framebufferIndex++] = (color >> 0) & 0xFF;
+        this->frameBuffer[this->framebufferIndex++] = (color >> 8) & 0xFF;
+        this->frameBuffer[this->framebufferIndex++] = (color >> 16) & 0xFF;
+        this->frameBuffer[this->framebufferIndex++] = 0xFF;
+        this->framebufferIndex %= this->frameBuffer.size();
     }
 }
 

@@ -4,7 +4,7 @@ FBDIR := .
 VFLAGS := -Wall -Wno-fatal -MMD --trace -cc -Icpu
 SUBMAKE := $(MAKE) --no-print-directory --directory=$(VOBJ) -f
 
-SRC := gameboy.sv cpu.sv cpu/cpu_control.sv cpu/cpu_control_dispatch.inc cpu/cpu_control_signals.inc cpu/alu.sv
+SRC := gameboy.sv cpu.sv ppu.sv cpu/cpu_control.sv cpu/cpu_control_dispatch.inc cpu/cpu_control_signals.inc cpu/alu.sv
 
 $(VOBJ)/V%.cpp $(VOBJ)/V%.h $(VOBJ)/V%.mk: $(FBDIR)/%.sv $(SRC)
 	$(VERILATOR) $(VFLAGS) $*.sv

@@ -13,8 +13,11 @@ public:
     std::vector<uint8_t>& getFramebuffer();
 
 private:
+    void stepFramebuffer();
+
     std::vector<uint8_t> rom;
     std::vector<uint8_t> frameBuffer;
     uint64_t cycles = 0;
     Vgameboy* top = nullptr;
+    size_t framebufferIndex = 0;
 };

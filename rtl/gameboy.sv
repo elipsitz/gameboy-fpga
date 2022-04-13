@@ -18,7 +18,12 @@ module gameboy (
     /// Cartridge data in.
     input        [7:0]  cart_data_in,
     /// Cartridge data out.
-    output logic [7:0]  cart_data_out
+    output logic [7:0]  cart_data_out,
+
+    /// PPU pixel data out.
+    output logic [1:0] pixel_out,
+    /// Whether the pixel output is valid.
+    output logic       pixel_valid
 );
     // System Bus.
     logic bus_write = cpu_mem_write;
@@ -42,6 +47,14 @@ module gameboy (
         .mem_write (cpu_mem_write),
         .mem_data_in (cpu_mem_data_in),
         .mem_data_out (cpu_mem_data_out)
+    );
+
+    // PPU.
+    ppu ppu (
+        .clk,
+        .reset,
+        .pixel_out,
+        .pixel_valid
     );
 
     // Work RAM (WRAM).
