@@ -23,7 +23,11 @@ module gameboy (
     /// PPU pixel data out.
     output logic [1:0] pixel_out,
     /// Whether the pixel output is valid.
-    output logic       pixel_valid
+    output logic       pixel_valid,
+    /// Whether PPU is in HBlank.
+    output logic       ppu_hblank,
+    /// Whether PPU is in VBlank.
+    output logic       ppu_vblank
 );
     // System Bus.
     logic bus_write = cpu_mem_write;
@@ -84,7 +88,9 @@ module gameboy (
         .oam_data_in,
         .oam_data_out,
         .pixel_out,
-        .pixel_valid
+        .pixel_valid,
+        .ppu_hblank,
+        .ppu_vblank
     );
 
     // Work RAM (WRAM).

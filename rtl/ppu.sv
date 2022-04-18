@@ -1,5 +1,13 @@
 `timescale 1ns/1ns
 
+/// PPU Mode.
+typedef enum logic [1:0] {
+    ModeHBlank = 0,
+    ModeVBlank = 1,
+    ModeOamSearch = 2,
+    ModePixelPush = 3
+} ppu_mode_e;
+
 /// PPU
 module ppu (
     /// Clock (4 MHz)
@@ -43,8 +51,16 @@ module ppu (
     /// Output pixel value.
     output logic [1:0] pixel_out,
     /// Whether the pixel is valid.
-    output logic       pixel_valid
+    output logic       pixel_valid,
+    /// Whether PPU is in HBlank.
+    output logic       ppu_hblank,
+    /// Whether PPU is in VBlank.
+    output logic       ppu_vblank
 );
+    localparam CYCLES_SCANLINE = 456;
+    localparam SCANLINES_VDRAW = 144;
+    localparam SCANLINES_VBLANK = 10;
+
     /// Control registers.
     logic [7:0] reg_lcdc; // LCD Control.
     logic [7:0] reg_stat; // LCD Status.
@@ -108,6 +124,25 @@ module ppu (
         end
     end
 
+    /// Keeping track of scanlines.
+    logic [8:0] scanline_cycle; // Current cycle within scanline.
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            scanline_cycle <= 0;
+        end else begin
+            if (scanline_cycle < CYCLES_SCANLINE - 1) begin
+                scanline_cycle <= scanline_cycle + 1;
+            end else begin
+                scanline_cycle <= 0;
+                if (reg_ly < (SCANLINES_VBLANK + SCANLINES_VDRAW) - 1) begin
+                    reg_ly <= reg_ly + 1;
+                end else begin
+                    reg_ly <= 0;
+                end
+            end
+        end
+    end
+
     /// Video RAM.
     logic [7:0] vram [8191:0];
     always_ff @(posedge clk) begin
@@ -128,13 +163,17 @@ module ppu (
         end
     end
 
-    // Dummy pixel output.
-    assign pixel_valid = 1;
-    always_ff @ (posedge clk) begin
+    /// Render Logic.
+    ppu_mode_e mode;
+    always_ff @(posedge clk) begin
         if (reset) begin
-            pixel_out <= 0;
-        end else begin
-            pixel_out <= pixel_out + 1;
+            mode <= ModeHBlank;
         end
     end
+
+    assign ppu_vblank = reg_ly >= SCANLINES_VDRAW;
+    // Dummy pixel output.
+    assign ppu_hblank = scanline_cycle >= 368;
+    assign pixel_valid = 1;
+    assign pixel_out = reg_ly[1:0];
 endmodule

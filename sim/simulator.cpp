@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "common.hpp"
 #include "simulator.hpp"
 
@@ -61,7 +63,19 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
 
 void Simulator::stepFramebuffer()
 {
+    bool vblank = top->ppu_vblank && !prev_vblank;
+    if (vblank) {
+        framebufferIndex = 0;
+    }
+    prev_hblank = top->ppu_hblank;
+    prev_vblank = top->ppu_vblank;
+
     if (top->pixel_valid) {
+        if (framebufferIndex >= frameBuffer.size() - 4) {
+            // TODO: make this a fatal error (framebuffer overrun).
+            return;
+        }
+
         uint8_t pixel = top->pixel_out;
         uint32_t color = 0x000000; // RGB
         switch (pixel) {
@@ -71,11 +85,10 @@ void Simulator::stepFramebuffer()
             case 3: color = 0x0f0f1b; break;
         }
 
-        this->frameBuffer[this->framebufferIndex++] = (color >> 0) & 0xFF;
-        this->frameBuffer[this->framebufferIndex++] = (color >> 8) & 0xFF;
-        this->frameBuffer[this->framebufferIndex++] = (color >> 16) & 0xFF;
-        this->frameBuffer[this->framebufferIndex++] = 0xFF;
-        this->framebufferIndex %= this->frameBuffer.size();
+        frameBuffer[framebufferIndex++] = (color >> 0) & 0xFF;
+        frameBuffer[framebufferIndex++] = (color >> 8) & 0xFF;
+        frameBuffer[framebufferIndex++] = (color >> 16) & 0xFF;
+        frameBuffer[framebufferIndex++] = 0xFF;
     }
 }
 
