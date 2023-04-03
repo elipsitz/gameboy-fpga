@@ -1,6 +1,7 @@
 package gameboy.cpu
 
 import chisel3._
+import chisel3.util._
 
 /** Gameboy CPU - Sharp SM83 */
 class Cpu extends Module {
@@ -17,22 +18,185 @@ class Cpu extends Module {
     val memDataOut = Output(UInt(8.W))
   })
 
+  val control = Module(new Control())
+  val alu = Module(new Alu())
+  val aluFlagNext = Wire(new Alu.Flags)
+
   // Clocking: T-Cycles
   val tCycle = RegInit(0.U(2.W))
   tCycle := tCycle + 1.U
 
   // Control
-  val control = Module(new Control())
   control.io.tCycle := tCycle
   control.io.memDataIn := io.memDataIn
   control.io.condition := false.B // TODO: !!! fix!
+  val instructionRegister = RegEnable(io.memDataIn, 0.U(8.W), tCycle === 3.U && control.io.instLoad)
+  io.memEnable := control.io.memEnable && (tCycle === 2.U)
+
+  // Registers
+  // Includes incrementer/decrementer.
+  // 14 Registers: BC DE HL FA SP WZ PC
+  //               01 23 45 67 89 AB CD
+  val initialRegisterValues = Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
+  val registers = RegInit(VecInit(initialRegisterValues.map(_.U(8.W))))
+  val regR16IndexHi = Wire(UInt(4.W))
+  regR16IndexHi := 0.U
+  val regR16IndexLo = regR16IndexHi | 1.U
+  switch (instructionRegister(5, 4)) {
+    is("b00".U) { regR16IndexHi := 0.U; }
+    is("b01".U) { regR16IndexHi := 2.U; }
+    is("b10".U) { regR16IndexHi := 4.U; }
+    is("b11".U) { regR16IndexHi := 8.U; }
+  }
+  private def genRegisterIndex(selector: RegSel.Type) = {
+    val index = WireDefault(0.U(4.W))
+    switch (selector) {
+      is(RegSel.a) { index := 7.U }
+      is(RegSel.f) { index := 6.U }
+      is(RegSel.c) { index := 1.U }
+      is(RegSel.w) { index := 10.U }
+      is(RegSel.z) { index := 11.U }
+      is(RegSel.h) { index := 4.U }
+      is(RegSel.l) { index := 5.U }
+      is(RegSel.reg8Src) { index := Cat(0.U(1.W), instructionRegister(2, 0)) }
+      is(RegSel.reg8Dest) { index := Cat(0.U(1.W), instructionRegister(5, 3)) }
+      is(RegSel.reg16Hi) { index := regR16IndexHi }
+      is(RegSel.reg16Lo) { index := regR16IndexLo }
+      is(RegSel.spHi) { index := 8.U }
+      is(RegSel.spLo) { index := 9.U }
+      is(RegSel.pcHi) { index := 12.U }
+      is(RegSel.pcLo) { index := 13.U }
+    }
+    index
+  }
+  val regRead1Index = genRegisterIndex(control.io.regRead1Sel)
+  val regRead2Index = genRegisterIndex(control.io.regRead2Sel)
+  val regWriteIndex = genRegisterIndex(control.io.regWriteSel)
+  val flagRead = registers(6)(7, 4).asTypeOf(new Alu.Flags)
+  val pc = Cat(registers(12), registers(13))
+  val regRead1Out = registers(regRead1Index)
+  val regRead2Out = registers(regRead2Index)
+  // Incrementer
+  val incIn = WireDefault(0.U(16.W))
+  val incOut = WireDefault(0.U(16.W))
+  switch (control.io.incReg) {
+    is (IncReg.pc) { incIn := pc }
+    is (IncReg.hl) { incIn := Cat(registers(4), registers(5)) }
+    is (IncReg.sp) { incIn := Cat(registers(8), registers(9)) }
+    is (IncReg.wz) { incIn := Cat(registers(10), registers(11)) }
+    is (IncReg.inst16) { incIn := Cat(registers(regR16IndexHi), registers(regR16IndexLo)) }
+    is (IncReg.pcAlu) { incIn := Cat(alu.io.out, registers(13)) }
+  }
+  switch (control.io.incOp) {
+    is (IncOp.none) { incOut := incIn }
+    is (IncOp.inc, IncOp.incNoWrite) { incOut := incIn + 1.U }
+    is (IncOp.dec) { incOut := incIn - 1.U }
+  }
+  // Register write
+  when (tCycle === 3.U) {
+    switch (control.io.regOp) {
+      is (RegOp.writeAlu) { registers(regWriteIndex) := alu.io.out }
+      is (RegOp.writeMem) {
+        // Keep bottom 4 bits of Flags register 0
+        registers(regWriteIndex) := Mux(
+          regWriteIndex === 6.U,
+          Cat(io.memDataIn(7, 4), 0.U(4.W)),
+          io.memDataIn
+        )
+      }
+    }
+    when (control.io.incOp === IncOp.inc | control.io.incOp === IncOp.dec) {
+      switch (control.io.incReg) {
+        is (IncReg.hl) {
+          registers(4) := incOut(15, 8)
+          registers(5) := incOut(7, 0)
+        }
+        is (IncReg.sp) {
+          registers(8) := incOut(15, 8)
+          registers(9) := incOut(7, 0)
+        }
+        is (IncReg.wz) {
+          registers(10) := incOut(15, 8)
+          registers(11) := incOut(7, 0)
+        }
+        is (IncReg.inst16) {
+          registers(regR16IndexHi) := incOut(15, 8)
+          registers(regR16IndexLo) := incOut(7, 0)
+        }
+      }
+    }
+    switch (control.io.pcNext) {
+      is (PcNext.incOut) {
+        registers(12) := incOut(15, 8)
+        registers(13) := incOut(7, 0)
+      }
+      is (PcNext.rstAddr) {
+        registers(12) := 0.U
+        registers(13) := Cat(0.U(2.W), instructionRegister(5, 3), 0.U(3.W))
+      }
+    }
+    when (control.io.aluFlagSet =/= AluFlagSet.setNone) {
+      registers(6) := Cat(aluFlagNext.asUInt, 0.U(4.W))
+    }
+  }
 
   // ALU
-  val alu = Module(new Alu())
+  val aluCarry = RegEnable(alu.io.flagOut.c, 0.B, tCycle === 3.U & control.io.aluOp === AluOp.addLo)
+  alu.io.a := DontCare
+  switch (control.io.aluSelA) {
+    is (AluSelA.regA) { alu.io.a := registers(7) }
+    is (AluSelA.reg1) { alu.io.a := regRead1Out }
+  }
+  alu.io.b := DontCare
+  switch (control.io.aluSelB) {
+    is (AluSelB.reg2) { alu.io.b := regRead2Out }
+    is (AluSelB.signReg2) { alu.io.b := Fill(8, regRead2Out(7)) }
+  }
+  alu.io.op := DontCare
+  alu.io.flagIn := flagRead
+  switch (control.io.aluOp) {
+    is (AluOp.copyA) { alu.io.op := Alu.Opcode.copyA }
+    is (AluOp.copyB) { alu.io.op := Alu.Opcode.copyB }
+    is (AluOp.incB) { alu.io.op := Alu.Opcode.incB }
+    is (AluOp.decB) { alu.io.op := Alu.Opcode.decB }
+    is (AluOp.instAlu) { alu.io.op := Cat("b00".U(2.W), instructionRegister(5, 3)).asTypeOf(Alu.Opcode()) }
+    is (AluOp.instAcc) { alu.io.op := Cat("b01".U(2.W), instructionRegister(5, 3)).asTypeOf(Alu.Opcode()) }
+    is (AluOp.instCB) { alu.io.op := Cat("b10".U(2.W), instructionRegister(5, 3)).asTypeOf(Alu.Opcode()) }
+    is (AluOp.instBit) { alu.io.op := Cat("b111".U(3.W), instructionRegister(7, 6)).asTypeOf(Alu.Opcode()) }
+    is(AluOp.addLo) { alu.io.op := Alu.Opcode.add }
+    is(AluOp.addHi) {
+      alu.io.op := Alu.Opcode.adc
+      alu.io.flagIn.c := aluCarry
+    }
+  }
+  alu.io.bitIndex := instructionRegister(5, 3)
+  aluFlagNext := alu.io.flagOut
+  switch (control.io.aluFlagSet) {
+    is (AluFlagSet.setNone) { aluFlagNext := alu.io.flagIn }
+    is (AluFlagSet.setAll) { aluFlagNext := alu.io.flagOut }
+    is (AluFlagSet.set_NHC) {
+      aluFlagNext.z := alu.io.flagIn.z
+    }
+    is(AluFlagSet.set0NHC) {
+      aluFlagNext.z := 0.U
+    }
+  }
 
+  // Condition code checking
+  switch (instructionRegister(4, 3)) {
+    is (0.U) { control.io.condition := !flagRead.z}
+    is (1.U) { control.io.condition := flagRead.z}
+    is (2.U) { control.io.condition := !flagRead.c}
+    is (3.U) { control.io.condition := flagRead.c}
+  }
 
-  io.memAddress := 0.U(16.W) // TODO
-  io.memEnable := false.B // TODO
-  io.memWrite := false.B // TODO
-  io.memDataOut := 0.U(8.W) // TODO
+  // Memory accesses
+  io.memDataOut := alu.io.out
+  io.memAddress := DontCare
+  switch (control.io.memAddrSel) {
+    is (MemAddrSel.incrementer) { io.memAddress := incIn }
+    is (MemAddrSel.high) { io.memAddress := Cat(0xFF.U(8.W), regRead2Out) }
+  }
+  io.memEnable := control.io.memEnable & (tCycle === 2.U) /** ?? */
+  io.memWrite := control.io.memWrite
 }

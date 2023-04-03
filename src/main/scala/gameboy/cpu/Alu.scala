@@ -44,7 +44,7 @@ object Alu {
     val copyB = Value("b11001".U)
     val incB = Value("b11010".U)
     val decB = Value("b11011".U)
-    // val unused = Value("b11100".U)
+    val unused = Value("b11100".U)
     val bit = Value("b11101".U)
     val res = Value("b11110".U)
     val set = Value("b11111".U)
@@ -182,7 +182,7 @@ class Alu extends Module {
     }
     is(Alu.Opcode.ccf) {
       io.out := io.a
-      io.flagOut.c := ~io.flagIn.c
+      io.flagOut.c := !io.flagIn.c
       io.flagOut.h := 0.U
       io.flagOut.n := 0.U
     }
@@ -246,7 +246,7 @@ class Alu extends Module {
       io.out := io.b
       io.flagOut.h := 1.U
       io.flagOut.n := 0.U
-      io.flagOut.z := ~io.b(io.bitIndex)
+      io.flagOut.z := !io.b(io.bitIndex)
     }
     is(Alu.Opcode.set) {
       val bits = VecInit(io.b)
