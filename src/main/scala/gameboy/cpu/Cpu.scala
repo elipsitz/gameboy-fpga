@@ -29,7 +29,6 @@ class Cpu extends Module {
   // Control
   control.io.tCycle := tCycle
   control.io.memDataIn := io.memDataIn
-  control.io.condition := false.B // TODO: !!! fix!
   val instructionRegister = RegEnable(io.memDataIn, 0.U(8.W), tCycle === 3.U && control.io.instLoad)
   io.memEnable := control.io.memEnable && (tCycle === 2.U)
 
@@ -37,7 +36,8 @@ class Cpu extends Module {
   // Includes incrementer/decrementer.
   // 14 Registers: BC DE HL FA SP WZ PC
   //               01 23 45 67 89 AB CD
-  val initialRegisterValues = Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
+//  val initialRegisterValues = Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
+  val initialRegisterValues = Seq.fill(14)(0x00)
   val registers = RegInit(VecInit(initialRegisterValues.map(_.U(8.W))))
   val regR16IndexHi = Wire(UInt(4.W))
   regR16IndexHi := 0.U
@@ -183,6 +183,7 @@ class Cpu extends Module {
   }
 
   // Condition code checking
+  control.io.condition := false.B
   switch (instructionRegister(4, 3)) {
     is (0.U) { control.io.condition := !flagRead.z}
     is (1.U) { control.io.condition := flagRead.z}

@@ -260,13 +260,9 @@ class Control extends Module {
         state := state + 1.U
       }
       is (Microbranch.dispatch) {
-        state := 1.U // "Invalid" state
-        val lookup = Cat(dispatchPrefix.asUInt, io.memDataIn)
-        for ((e, i) <- microcode.entries.zipWithIndex) {
-          e.encoding.foreach({ encoding =>
-            when (lookup === encoding) { state := i.U }
-          })
-        }
+        val key = Cat(dispatchPrefix.asUInt, io.memDataIn)
+        val dispatchTable = microcode.entries.zipWithIndex.flatMap(e => e._1.encoding.map((_, e._2.U)))
+        state := Lookup(key, 1.U, dispatchTable)
       }
       is (Microbranch.jump) {
         state := nextState
