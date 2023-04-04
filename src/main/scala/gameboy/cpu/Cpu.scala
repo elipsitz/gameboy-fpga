@@ -16,6 +16,8 @@ class Cpu extends Module {
     val memDataIn = Input(UInt(8.W))
     /** System bus data out */
     val memDataOut = Output(UInt(8.W))
+
+    val tCycle = Output(UInt(2.W))
   })
 
   val control = Module(new Control())
@@ -25,12 +27,12 @@ class Cpu extends Module {
   // Clocking: T-Cycles
   val tCycle = RegInit(0.U(2.W))
   tCycle := tCycle + 1.U
+  io.tCycle := tCycle
 
   // Control
   control.io.tCycle := tCycle
   control.io.memDataIn := io.memDataIn
   val instructionRegister = RegEnable(io.memDataIn, 0.U(8.W), tCycle === 3.U && control.io.instLoad)
-  io.memEnable := control.io.memEnable && (tCycle === 2.U)
 
   // Registers
   // Includes incrementer/decrementer.
@@ -198,6 +200,6 @@ class Cpu extends Module {
     is (MemAddrSel.incrementer) { io.memAddress := incIn }
     is (MemAddrSel.high) { io.memAddress := Cat(0xFF.U(8.W), regRead2Out) }
   }
-  io.memEnable := control.io.memEnable & (tCycle === 2.U) /** ?? */
+  io.memEnable := control.io.memEnable
   io.memWrite := control.io.memWrite
 }

@@ -36,6 +36,7 @@ class Gameboy extends Module {
   cpu.io.memDataIn := busDataRead
   val busMemEnable = cpu.io.memEnable
   val busMemWrite = cpu.io.memWrite
+  val phiPulse = cpu.io.tCycle === 3.U
 
   // Peripheral enables
   val cartRomEnable = busMemEnable && (busAddress >= 0x0000.U && busAddress < 0x8000.U)
@@ -54,13 +55,18 @@ class Gameboy extends Module {
   // Read and write from the peripherals
   when (workRamEnable) {
     val workRamAddress = busAddress(12, 0)
-    when (busMemWrite) { workRam.write(workRamAddress, busDataWrite) }
+    when (busMemWrite && phiPulse) { workRam.write(workRamAddress, busDataWrite) }
       .otherwise { busDataRead := workRam.read(workRamAddress) }
   }
   when (highRamEnable) {
     val highRamAddress = busAddress(6, 0)
-    when (busMemWrite) { highRam.write(highRamAddress, busDataWrite) }
+    when (busMemWrite && phiPulse) { highRam.write(highRamAddress, busDataWrite) }
       .otherwise { busDataRead := highRam.read(highRamAddress) }
+  }
+
+  // Debug serial output for simulator
+  when (busMemEnable && busMemWrite && busAddress === 0xFF01.U && phiPulse) {
+    printf(cf"$busDataWrite%c")
   }
 }
 

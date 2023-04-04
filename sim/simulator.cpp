@@ -33,14 +33,15 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
 {
     for (uint64_t i = 0; i < num_cycles; i++) {
         // Handle memory.
-        if (this->cycles % 4 == 2) {
+        if (this->cycles % 4 == 3) {
             uint16_t address = top->io_cartridge_address;
+//            printf("mem access at [%.04X] => [%.02X]\n", address, top->io_cartridge_dataOut);
             if (top->io_cartridge_readEnable) {
                 uint8_t data = 0;
                 if (address >= 0x0000 && address <= 0x7FFF) {
                     data = rom[address];
                 }
-                // printf("mem read at [%.04X] => [%.02X]\n", address, data);
+//                printf("mem read at [%.04X] => [%.02X]\n", address, data);
                 top->io_cartridge_dataIn = data;
             }
             if (top->io_cartridge_writeEnable) {
