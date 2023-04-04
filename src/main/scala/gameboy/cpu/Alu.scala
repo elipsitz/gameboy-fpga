@@ -249,14 +249,10 @@ class Alu extends Module {
       io.flagOut.z := !io.b(io.bitIndex)
     }
     is(Alu.Opcode.set) {
-      val bits = VecInit(io.b)
-      bits(io.bitIndex) := 1.U
-      io.out := bits.asUInt
+      io.out := io.b | (1.U(1.W) << io.bitIndex).asUInt
     }
     is(Alu.Opcode.res) {
-      val bits = VecInit(io.b)
-      bits(io.bitIndex) := 0.U
-      io.out := bits.asUInt
+      io.out := io.b & (~(1.U(1.W) << io.bitIndex)).asUInt
     }
   }
 }
