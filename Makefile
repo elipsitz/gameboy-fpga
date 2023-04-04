@@ -7,7 +7,7 @@ sim: rtl
 rtl: $(BUILD_DIR)/Gameboy.v
 
 # Compile Chisel to Verilog
-$(BUILD_DIR)/Gameboy.v:
+$(BUILD_DIR)/Gameboy.v: .FORCE
 	sbt "run --target-dir $(BUILD_DIR)"
 
 test:
@@ -16,4 +16,6 @@ test:
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: sim rtl test clean
+.PHONY: sim rtl test clean .FORCE
+
+.FORCE:
