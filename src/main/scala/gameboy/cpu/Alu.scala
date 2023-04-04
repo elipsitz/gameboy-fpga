@@ -6,10 +6,10 @@ import chisel3.util._
 
 object Alu {
   class Flags extends Bundle {
-    val c = Bool()
-    val h = Bool()
-    val n = Bool()
     val z = Bool()
+    val n = Bool()
+    val h = Bool()
+    val c = Bool()
   }
 
   object Opcode extends ChiselEnum {
