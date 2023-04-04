@@ -23,6 +23,7 @@ class CpuWrapper extends Cpu {
 
 class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   private def compileTest(name: String): Array[Byte] = {
+    // TODO: throw an exception if compilation fails
     val data = getClass.getResourceAsStream("/cpu_tests/" + name)
     val bos = new ByteArrayOutputStream()
     "rgbasm -o - -" #< data #> "rgblink -o - -" #> bos !< ProcessLogger(_ => ())
@@ -57,7 +58,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
           val address = dut.io.memAddress.peekInt().toInt
           if (dut.io.memWrite.peekBoolean()) {
             val data = dut.io.memDataOut.peekInt().toByte
-//            println(s"---> Write to $address data $data")
+//            println(f"---> Write to $address%x data $data%x")
             if (address >= 0xC000 && address <= 0xDFFF) {
               memory.update(address - 0xC000, data)
             } else if (address >= 0xFF02 && data == 0x81) {
@@ -74,10 +75,10 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
               }
             } else if (address >= 0xC000 && address <= 0xDFFF) {
               output = memory(address - 0xC000)
-            } else if (address >= 0xF000 && address <= 0xFFFF) {
+            } else if (address >= 0xFF00 && address <= 0xFFFF) {
               output = highMemory(address - 0xFF00)
             }
-//            println(s"---> Read from $address data $output")
+//            println(f"---> Read from $address%x data $output%x")
             dut.io.memDataIn.poke((output & 0xFF).U)
           }
         }
@@ -132,7 +133,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
 
   "complete" in {
     test(new CpuWrapper) { dut =>
-      val (memory, _) = runProgram(dut, compileTest("complete_test.s"), maxSteps=2000)
+      val (memory, _) = runProgram(dut, compileTest("complete_test.s"), maxSteps = 2000)
       val resultCode = memory(memory.length - 1)
       assert(resultCode == 0)
     }
