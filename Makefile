@@ -1,14 +1,19 @@
+BUILD_DIR := build
+export BUILD_DIR
+
 sim: rtl
 	make -C sim
 
-rtl:
-	cd rtl; $(MAKE) --no-print-directory
+rtl: $(BUILD_DIR)/Gameboy.v
 
-test: rtl
-	make -C test
+# Compile Chisel to Verilog
+$(BUILD_DIR)/Gameboy.v:
+	sbt "run --target-dir $(BUILD_DIR)"
+
+test:
+	sbt test
 
 clean:
-	cd rtl; $(MAKE) --no-print-directory clean
-	cd test; $(MAKE) --no-print-directory clean
+	rm -rf $(BUILD_DIR)
 
 .PHONY: sim rtl test clean

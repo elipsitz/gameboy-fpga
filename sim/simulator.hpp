@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vgameboy.h"
+#include "VGameboy.h"
 
 class Simulator {
 public:
@@ -18,7 +18,7 @@ private:
     std::vector<uint8_t> rom;
     std::vector<uint8_t> frameBuffer;
     uint64_t cycles = 0;
-    Vgameboy* top = nullptr;
+    VGameboy* top = nullptr;
     size_t framebufferIndex = 0;
     bool prev_vblank = false;
     bool prev_hblank = false;

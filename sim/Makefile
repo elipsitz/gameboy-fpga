@@ -1,31 +1,35 @@
+BUILD_DIR := ../build
+VERILATOR := verilator
+VFLAGS := -Wall -Wno-fatal -MMD -cc
 CXX	:= g++
-OBJDIR  := obj_pc
-RTLD	:= ../rtl
+OBJDIR  := $(BUILD_DIR)
 ifeq ($(VERILATOR_ROOT),)
 VERILATOR_ROOT ?= $(shell bash -c 'verilator -V|grep VERILATOR_ROOT | head -1 | sed -e " s/^.*=\s*//"')
 endif
 VROOT   := $(VERILATOR_ROOT)
-FLAGS	:= -Wall -Og -g -faligned-new -std=c++20
 VINCD   := $(VROOT)/include
-INCS	:= -I$(RTLD)/obj_dir/ -I$(RTLD) -I$(VINCD) -I$(VINCD)/vltstd
+CFLAGS	:= -Wall -Og -g -faligned-new -std=c++20
+INCS	:= -I$(BUILD_DIR)/ -I$(VINCD) -I$(VINCD)/vltstd
 OBJS    := $(OBJDIR)/simulator.o $(OBJDIR)/window.o
-VOBJDR	:= $(RTLD)/obj_dir
-VOBJS   := $(OBJDIR)/verilated.o $(OBJDIR)/verilated_vcd_c.o
-PROGRAMS := main
+VOBJS   := $(OBJDIR)/verilated.o $(OBJDIR)/verilated_vcd_c.o $(OBJDIR)/verilated_threads.o
+PROGRAMS := $(BUILD_DIR)/simulator
 all:	$(PROGRAMS)
+
+$(BUILD_DIR)/V%__ALL.a: $(BUILD_DIR)/%.v
+	$(SUBMAKE) verilator --cc $(BUILD_DIR)/$*.v --build --Mdir $(BUILD_DIR)
 
 %.o: $(OBJDIR)/%.o
 $(OBJDIR)/%.o: %.cpp
 	$(mk-objdir)
-	$(CXX) $(FLAGS) $(INCS) `pkg-config sdl2 --cflags` -c $< -o $@
+	$(CXX) $(CFLAGS) $(INCS) `pkg-config sdl2 --cflags` -c $< -o $@
 
 $(OBJDIR)/%.o: $(VINCD)/%.cpp
 	$(mk-objdir)
-	$(CXX) $(FLAGS) $(INCS) `pkg-config sdl2 --cflags` -c $< -o $@
+	$(CXX) $(CFLAGS) $(INCS) `pkg-config sdl2 --cflags` -c $< -o $@
 
-main: $(OBJDIR)/main.o $(OBJS)
-main: $(VOBJS) $(VOBJDR)/Vgameboy__ALL.a
-	$(CXX) $(FLAGS) $(INCS) `pkg-config sdl2 --cflags --libs` $^ $(VOBJDR)/Vgameboy__ALL.a -o $@
+$(BUILD_DIR)/simulator: $(OBJDIR)/main.o $(OBJS)
+$(BUILD_DIR)/simulator: $(BUILD_DIR)/VGameboy__ALL.a $(VOBJS)
+	$(CXX) $(CFLAGS) $(INCS) `pkg-config sdl2 --cflags --libs` $^ -o $@
 
 define	mk-objdir
 	@bash -c "if [ ! -e $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi"
@@ -33,7 +37,5 @@ endef
 
 .PHONY: clean
 clean:
-	rm -f *.vcd
-	rm -rf $(OBJDIR)/
+	rm -rf $(BUILD_DIR)
 	rm -f $(PROGRAMS)
-	rm -f *.o

@@ -7,6 +7,7 @@ results.xml
 /rtl/**/*.inc
 /sim/obj_pc
 /sim/main
+/build
 
 ### Project Specific stuff
 test_run_dir/*

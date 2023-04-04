@@ -65,5 +65,5 @@ class Gameboy extends Module {
 }
 
 object Gameboy extends App {
-  println(getVerilogString(new Gameboy()))
+  emitVerilog(new Gameboy(), args)
 }
