@@ -2,24 +2,12 @@ package gameboy.cpu
 
 import chisel3._
 import chiseltest._
-import chiseltest.experimental._
 import org.scalatest.freespec.AnyFreeSpec
 
 import java.io.ByteArrayOutputStream
 import scala.sys.process._
 import scala.language.postfixOps
 import scala.util.control.Breaks.{break, breakable}
-
-/** Wrapper of Cpu to expose some internal signals. */
-class CpuWrapper extends Cpu {
-  val xInstructionRegister = expose(instructionRegister)
-  val xControlState = expose(control.state)
-  val xRegB = expose(registers(0))
-  val xRegC = expose(registers(1))
-  val xRegD = expose(registers(2))
-  val xRegE = expose(registers(3))
-  val xRegA = expose(registers(7))
-}
 
 class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   private def compileTest(name: String): Array[Byte] = {
@@ -30,7 +18,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
     bos.toByteArray
   }
 
-  private def runProgram(dut: CpuWrapper, program: Array[Byte], maxSteps: Int = 1000): (Array[Byte], Array[Byte]) = {
+  private def runProgram(dut: TestableCpu, program: Array[Byte], maxSteps: Int = 1000): (Array[Byte], Array[Byte]) = {
     val memory = new Array[Byte](8 * 1024)
     val highMemory = new Array[Byte](256)
     var steps = 0
@@ -96,13 +84,13 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "nop" in {
-    test(new CpuWrapper) { dut =>
+    test(new TestableCpu) { dut =>
       runProgram(dut, Array(0x00, 0x00, 0x00, 0x00, 0x00, 0x76))
     }
   }
 
   "sanity" in {
-    test(new CpuWrapper) { dut =>
+    test(new TestableCpu) { dut =>
       runProgram(dut, compileTest("sanity_test.s"))
       dut.xRegA.expect(0x22.U)
       dut.xRegB.expect(0xBB.U)
@@ -113,7 +101,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "load between registers and memory" in {
-    test(new CpuWrapper) { dut =>
+    test(new TestableCpu) { dut =>
       val (memory, _) = runProgram(dut, compileTest("basic_test.s"))
       dut.xRegC.expect(0xAB.U)
       dut.xRegD.expect(0x06.U)
@@ -132,7 +120,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "complete" in {
-    test(new CpuWrapper) { dut =>
+    test(new TestableCpu) { dut =>
       val (memory, _) = runProgram(dut, compileTest("complete_test.s"), maxSteps = 2000)
       val resultCode = memory(memory.length - 1)
       assert(resultCode == 0)
