@@ -2,8 +2,7 @@ package gameboy
 
 import chisel3._
 import chisel3.util._
-
-import gameboy.cpu.Cpu
+import gameboy.cpu.{Cpu, TestableCpu}
 
 class CartridgeIo extends Bundle {
   /** Cartridge address selection */
@@ -72,4 +71,5 @@ class Gameboy extends Module {
 
 object Gameboy extends App {
   emitVerilog(new Gameboy(), args)
+  emitVerilog(new TestableCpu(), args)
 }

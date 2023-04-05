@@ -12,7 +12,7 @@ CFLAGS	:= -Wall -Og -g -faligned-new -std=c++20
 INCS	:= -I$(BUILD_DIR)/ -I$(VINCD) -I$(VINCD)/vltstd
 OBJS    := $(OBJDIR)/simulator.o $(OBJDIR)/window.o
 VOBJS   := $(OBJDIR)/verilated.o $(OBJDIR)/verilated_vcd_c.o $(OBJDIR)/verilated_threads.o
-PROGRAMS := $(BUILD_DIR)/simulator
+PROGRAMS := $(BUILD_DIR)/simulator $(BUILD_DIR)/cpu_tester
 all:	$(PROGRAMS)
 
 $(BUILD_DIR)/V%__ALL.a: $(BUILD_DIR)/%.v
@@ -30,6 +30,10 @@ $(OBJDIR)/%.o: $(VINCD)/%.cpp
 $(BUILD_DIR)/simulator: $(OBJDIR)/main.o $(OBJS)
 $(BUILD_DIR)/simulator: $(BUILD_DIR)/VGameboy__ALL.a $(VOBJS)
 	$(CXX) $(CFLAGS) $(INCS) `pkg-config sdl2 --cflags --libs` $^ -o $@
+
+$(BUILD_DIR)/cpu_tester: $(OBJDIR)/cpu_tester.o
+$(BUILD_DIR)/cpu_tester: $(BUILD_DIR)/VTestableCpu__ALL.a $(VOBJS)
+	$(CXX) $(CFLAGS) $(INCS) $^ -o $@
 
 define	mk-objdir
 	@bash -c "if [ ! -e $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi"
