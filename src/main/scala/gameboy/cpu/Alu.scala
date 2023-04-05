@@ -187,28 +187,28 @@ class Alu extends Module {
       io.flagOut.n := 0.U
     }
     is(Alu.Opcode.rlc) {
-      io.out := Cat(io.a(6, 0), io.a(7))
+      io.out := Cat(io.b(6, 0), io.b(7))
       io.flagOut.c := io.b(7)
       io.flagOut.h := 0.U
       io.flagOut.n := 0.U
       io.flagOut.z := io.out === 0.U
     }
     is(Alu.Opcode.rrc) {
-      io.out := Cat(io.a(0), io.a(7, 1))
+      io.out := Cat(io.b(0), io.b(7, 1))
       io.flagOut.c := io.b(0)
       io.flagOut.h := 0.U
       io.flagOut.n := 0.U
       io.flagOut.z := io.out === 0.U
     }
     is(Alu.Opcode.rl) {
-      io.out := Cat(io.a(6, 0), io.flagIn.c)
+      io.out := Cat(io.b(6, 0), io.flagIn.c)
       io.flagOut.c := io.b(7)
       io.flagOut.h := 0.U
       io.flagOut.n := 0.U
       io.flagOut.z := io.out === 0.U
     }
     is(Alu.Opcode.rr) {
-      io.out := Cat(io.flagIn.c, io.a(7, 1))
+      io.out := Cat(io.flagIn.c, io.b(7, 1))
       io.flagOut.c := io.b(0)
       io.flagOut.h := 0.U
       io.flagOut.n := 0.U

@@ -583,6 +583,15 @@ suite_start:
     AssertEquals $AB
     ld a, c
     AssertEquals $CD
+
+    ; ######### Test 30: Rotate 0
+    SetTestID 30
+    ld a, $00
+    add a, 1
+    ld b, $00
+    rlc b
+    ld a, b
+    AssertEquals $0
     
     ; ========================================
     ; If we made it here, suite is successful.

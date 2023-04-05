@@ -21,6 +21,7 @@ class TestableCpu extends Cpu {
   val xControlState = expose(control.state)
   val xIme = expose(control.ime)
   val xInstLoad = expose(control.io.instLoad)
+  val xDispatchPrefix = expose(control.dispatchPrefix)
 
   val xRegB = expose(registers(0))
   val xRegC = expose(registers(1))
