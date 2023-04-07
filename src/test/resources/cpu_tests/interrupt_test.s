@@ -115,7 +115,17 @@ suite_start:
     ld a, b
     AssertEquals $02
 
-    ; ########## Test 6: Test that EI has a 1 cycle delay before taking effect (TODO)
+    ; ########## Test 6: Test that EI has a 1 cycle delay before taking effect
+    SetTestID 6
+    di
+    ld b, $01
+    ld a, $04
+    ldh [$FFFF], a ; IE = $04
+    ldh [$FF0F], a ; IF = $04
+    ei
+    ld a, $A0
+    ; interrupt should fire *now*
+    AssertEquals $A1
 
     ; ########## Test 7: Test HALT (TODO)
 

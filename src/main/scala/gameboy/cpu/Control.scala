@@ -289,10 +289,14 @@ class Control extends Module {
     }
 
     // Maybe enable/disable IME.
-    switch (imeUpdate) {
-      // TODO: this is supposed to take effect after the next instruction?
-      is (ImeUpdate.enable) { ime := true.B }
-      is (ImeUpdate.disable) { ime := false.B }
+    val delayedImeSet = RegInit(false.B)
+    when (io.tCycle === 3.U) {
+      when(delayedImeSet) {
+        ime := true.B
+        delayedImeSet := false.B
+      }
+      when(imeUpdate === ImeUpdate.enable) { delayedImeSet := true.B }
+      when(imeUpdate === ImeUpdate.disable) { ime := false.B}
     }
   }
 }
