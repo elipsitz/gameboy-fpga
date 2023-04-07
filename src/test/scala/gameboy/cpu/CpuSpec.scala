@@ -126,4 +126,12 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
       assert(resultCode == 0)
     }
   }
+
+  "interrupts" in {
+    test(new TestableCpu) { dut =>
+      val (memory, _) = runProgram(dut, compileTest("interrupt_test.s"), maxSteps = 1000)
+      val resultCode = memory(memory.length - 1)
+      assert(resultCode == 0)
+    }
+  }
 }
