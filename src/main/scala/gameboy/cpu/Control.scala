@@ -274,6 +274,7 @@ class Control extends Module {
 
     // Maybe enable/disable IME.
     switch (imeUpdate) {
+      // TODO: this is supposed to take effect after the next instruction?
       is (ImeUpdate.enable) { ime <= true.B }
       is (ImeUpdate.disable) { ime <= false.B }
     }

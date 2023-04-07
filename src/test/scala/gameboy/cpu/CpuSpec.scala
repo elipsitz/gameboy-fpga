@@ -49,10 +49,10 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
 //            println(f"---> Write to $address%x data $data%x")
             if (address >= 0xC000 && address <= 0xDFFF) {
               memory.update(address - 0xC000, data)
-            } else if (address >= 0xFF02 && data == 0x81) {
+            } else if (address == 0xFF01) {
               // Serial out
-              print(highMemory(0x02).toChar)
-            } else if (address >= 0xFF00 && address <= 0xFFFF) {
+              print(data.toChar)
+            } else if (address >= 0xFF80 && address <= 0xFFFE) {
               highMemory.update(address - 0xFF00, data)
             }
           } else {
@@ -63,7 +63,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
               }
             } else if (address >= 0xC000 && address <= 0xDFFF) {
               output = memory(address - 0xC000)
-            } else if (address >= 0xFF00 && address <= 0xFFFF) {
+            } else if (address >= 0xFF80 && address <= 0xFFFE) {
               output = highMemory(address - 0xFF00)
             }
 //            println(f"---> Read from $address%x data $output%x")

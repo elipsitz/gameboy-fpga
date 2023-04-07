@@ -3,6 +3,19 @@ package gameboy.cpu
 import chisel3._
 import chisel3.util._
 
+object Cpu {
+  class InterruptFlags extends Bundle {
+    val joypad = Bool()
+    val serial = Bool()
+    val timer = Bool()
+    val lcdStat = Bool()
+    val vblank = Bool()
+  }
+
+  val REG_IE = 0xFFFF;
+  val REG_IF = 0xFF0F;
+}
+
 /** Gameboy CPU - Sharp SM83 */
 class Cpu extends Module {
   val io = IO(new Bundle {
@@ -23,16 +36,31 @@ class Cpu extends Module {
   val control = Module(new Control())
   val alu = Module(new Alu())
   val aluFlagNext = Wire(new Alu.Flags)
+  val memDataRead = WireDefault(io.memDataIn)
 
   // Clocking: T-Cycles
   val tCycle = RegInit(0.U(2.W))
   tCycle := tCycle + 1.U
   io.tCycle := tCycle
 
+  // Interrupts
+  // XXX: one of these is supposed to be 8 bits actually?
+  val regIE = RegInit(0.U.asTypeOf(new Cpu.InterruptFlags))
+  val regIF = RegInit(0.U.asTypeOf(new Cpu.InterruptFlags))
+  when (io.memEnable) {
+    when (io.memWrite) {
+      when (io.memAddress === Cpu.REG_IE.U) { regIE := io.memDataOut.asTypeOf(new Cpu.InterruptFlags) }
+      when (io.memAddress === Cpu.REG_IF.U) { regIF := io.memDataOut.asTypeOf(new Cpu.InterruptFlags) }
+    }.otherwise {
+      when (io.memAddress === Cpu.REG_IE.U) { memDataRead := regIE.asUInt }
+      when (io.memAddress === Cpu.REG_IF.U) { memDataRead := regIF.asUInt }
+    }
+  }
+
   // Control
   control.io.tCycle := tCycle
-  control.io.memDataIn := io.memDataIn
-  val instructionRegister = RegEnable(io.memDataIn, 0.U(8.W), tCycle === 3.U && control.io.instLoad)
+  control.io.memDataIn := memDataRead
+  val instructionRegister = RegEnable(memDataRead, 0.U(8.W), tCycle === 3.U && control.io.instLoad)
 
   // Registers
   // Includes incrementer/decrementer.
@@ -102,8 +130,8 @@ class Cpu extends Module {
         // Keep bottom 4 bits of Flags register 0
         registers(regWriteIndex) := Mux(
           regWriteIndex === 6.U,
-          Cat(io.memDataIn(7, 4), 0.U(4.W)),
-          io.memDataIn
+          Cat(memDataRead(7, 4), 0.U(4.W)),
+          memDataRead
         )
       }
     }
