@@ -103,8 +103,9 @@ suite_start:
     ldh a, [$FF0F]
     AssertEquals $00
 
-    ; ########## Test 5: Make sure instruction right after is called (TODO)
+    ; ########## Test 5: Make sure instruction right after is called
     SetTestID 5
+    ei
     ld b, $01
     ld a, $04
     ldh [$FFFF], a ; IE = $04

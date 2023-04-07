@@ -30,6 +30,8 @@ class Cpu extends Module {
     /** System bus data out */
     val memDataOut = Output(UInt(8.W))
 
+    // TODO: interrupt requests
+
     val tCycle = Output(UInt(2.W))
   })
 
@@ -44,17 +46,24 @@ class Cpu extends Module {
   io.tCycle := tCycle
 
   // Interrupts
-  // XXX: one of these is supposed to be 8 bits actually?
-  val regIE = RegInit(0.U.asTypeOf(new Cpu.InterruptFlags))
-  val regIF = RegInit(0.U.asTypeOf(new Cpu.InterruptFlags))
+  // XXX: IE is 8 bits actually? and IF top 3 bits are 1?
+  val regIE = RegInit(0.U(5.W))
+  val regIF = RegInit(0.U(5.W))
   when (io.memEnable) {
     when (io.memWrite) {
-      when (io.memAddress === Cpu.REG_IE.U) { regIE := io.memDataOut.asTypeOf(new Cpu.InterruptFlags) }
-      when (io.memAddress === Cpu.REG_IF.U) { regIF := io.memDataOut.asTypeOf(new Cpu.InterruptFlags) }
+      when (io.memAddress === Cpu.REG_IE.U) { regIE := io.memDataOut(4, 0) }
+      when (io.memAddress === Cpu.REG_IF.U) { regIF := io.memDataOut(4, 0) }
     }.otherwise {
-      when (io.memAddress === Cpu.REG_IE.U) { memDataRead := regIE.asUInt }
-      when (io.memAddress === Cpu.REG_IF.U) { memDataRead := regIF.asUInt }
+      when (io.memAddress === Cpu.REG_IE.U) { memDataRead := regIE }
+      when (io.memAddress === Cpu.REG_IF.U) { memDataRead := regIF }
     }
+  }
+  val pendingInterruptField = regIE & regIF
+  val pendingInterruptIndex = PriorityEncoder(pendingInterruptField)
+  control.io.interruptsPending := pendingInterruptField =/= 0.U
+  when (tCycle === 3.U && control.io.pcNext === PcNext.interrupt) {
+    // Final step of interrupt process: jump to interrupt (and ack it in 'IF').
+    regIF := regIF & (~(1.U(1.W) << pendingInterruptIndex)).asUInt
   }
 
   // Control
@@ -163,6 +172,10 @@ class Cpu extends Module {
       is (PcNext.rstAddr) {
         registers(12) := 0.U
         registers(13) := Cat(0.U(2.W), instructionRegister(5, 3), 0.U(3.W))
+      }
+      is (PcNext.interrupt) {
+        registers(12) := 0.U
+        registers(13) := Cat("b01".U(2.W), pendingInterruptIndex, 0.U(3.W))
       }
     }
     when (control.io.aluFlagSet =/= AluFlagSet.setNone) {

@@ -98,6 +98,10 @@ class Microcode(val source: Source) { self =>
   def numStates(): Int = entries.length
   def stateWidth(): Width = math.ceil(math.log(numStates()) / math.log(2)).toInt.W
 
+  def stateForLabel(label: String): Int = {
+    self.entries.zipWithIndex.find(_._1.label == label).get._2
+  }
+
   case class Entry
   (
     // Microcode
@@ -126,7 +130,7 @@ class Microcode(val source: Source) { self =>
   ) {
     def nextState(): Option[Int] = {
       Option.unless(nextStateLabel == "-") {
-        self.entries.zipWithIndex.find(_._1.label == this.nextStateLabel).get._2
+        stateForLabel(nextStateLabel)
       }
     }
   }
@@ -167,6 +171,7 @@ object Microcode {
     "Same" -> PcNext.same,
     "IncOut" -> PcNext.incOut,
     "RstAddr" -> PcNext.rstAddr,
+    "Interrupt" -> PcNext.interrupt,
   )
   private val mapRegOp = Map(
     "None" -> RegOp.none,

@@ -25,6 +25,8 @@ object PcNext extends ChiselEnum {
   val incOut = Value
   /** PC = computed reset address */
   val rstAddr = Value
+  /** PC = computed interrupt address */
+  val interrupt = Value
 }
 
 /** Control signal: 8-bit register select. */
@@ -167,6 +169,8 @@ class Control extends Module {
     val memDataIn = Input(UInt(8.W))
     /** Whether the current condition (in instruction register) is satisfied based on flags. */
     val condition = Input(Bool())
+    /** Whether interrupts are pending (IE & IF) =/= 0 */
+    val interruptsPending = Input(Bool())
 
     /** Control signal: how PC should be updated */
     val pcNext = Output(PcNext())
@@ -253,6 +257,17 @@ class Control extends Module {
     }
   }
 
+  val justFetched = RegInit(false.B)
+  justFetched := false.B
+  when (io.tCycle === 0.U && io.interruptsPending && justFetched) {
+    // Handle interrupts.
+    when (ime) {
+      // Note: IME is unset in microcode
+      state := microcode.stateForLabel("#Interrupt").U
+    }
+    // TODO exit HALT
+  }
+
   when (io.tCycle === 3.U) {
     // Advance the state machine.
     switch (microOp) {
@@ -263,6 +278,7 @@ class Control extends Module {
         val key = Cat(dispatchPrefix.asUInt, io.memDataIn)
         val dispatchTable = microcode.entries.zipWithIndex.flatMap(e => e._1.encoding.map((_, e._2.U)))
         state := Lookup(key, 1.U, dispatchTable)
+        justFetched := dispatchPrefix === DispatchPrefix.none
       }
       is (Microbranch.jump) {
         state := nextState
@@ -275,8 +291,8 @@ class Control extends Module {
     // Maybe enable/disable IME.
     switch (imeUpdate) {
       // TODO: this is supposed to take effect after the next instruction?
-      is (ImeUpdate.enable) { ime <= true.B }
-      is (ImeUpdate.disable) { ime <= false.B }
+      is (ImeUpdate.enable) { ime := true.B }
+      is (ImeUpdate.disable) { ime := false.B }
     }
   }
 }
