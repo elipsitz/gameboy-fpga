@@ -128,10 +128,62 @@ suite_start:
     ; interrupt should fire *now*
     AssertEquals $A1
 
-    ; ########## Test 7: Test HALT (TODO)
+    ; ########## Test 7: Test HALT: works without IME on
+    SetTestID 7
+    di
+    ld a, $04
+    ldh [$FFFF], a ; IE = $04
+    ld a, $00
+    ldh [$FF05], a ; Timer = a
+    ld a, $05
+    ldh [$FF07], a ; Timer control: enabled, tick every 4 clocks
+    ld a, $10
+    halt
+    rlca ; Rotate left, but interrupt doesn't fire.
+    AssertEquals $20
+
+    ; ########## Test 8: Test HALT with IME=1
+    SetTestID 8
+    di
+    ld a, $00
+    ldh [$FF0F], a ; IF = $00
+    ei
+    ld a, $04
+    ldh [$FFFF], a ; IE = $04
+    ld a, $00
+    ldh [$FF05], a ; Timer = a
+    ld a, $05
+    ldh [$FF07], a ; Timer control: enabled, tick every 4 clocks
+    ld a, $10
+    halt
+    rlca ; Rotate left, interrupt fires first
+    AssertEquals $22
+
+    ; ########## Test 9: HALT when IME=0, but interrupt is pending
+    SetTestID 9
+    di
+    ld a, $00
+    ldh [$FF07], a ; Timer control: disabled
+    ld a, $04
+    ldh [$FF0F], a ; IF = $04
+    ldh [$FFFF], a ; IE = $04
+    ld a, $10
+    halt
+    rlca ; HALT bug: on DMG, this would be called twice
+    AssertEquals $20
 
     ; ========================================
     ; If we made it here, suite is successful.
     SetTestID 0
 suite_end:
+    ; Output ':<CODE>;' to debug serial,
+    ; where <CODE> is ascii 'A' + # of test that failed, or 'A' for everything passed.
+    ld a, $3A ; ascii ':'
+    ldh [$FF01], a
+    ld hl, $DFFF
+    ld a, [hl]
+    add a, $41 ; ascii 'A' + code
+    ldh [$FF01], a
+    ld a, $0A ; ascii '\n'
+    ldh [$FF01], a
     stop
