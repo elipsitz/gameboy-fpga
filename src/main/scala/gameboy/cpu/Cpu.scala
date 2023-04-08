@@ -75,8 +75,8 @@ class Cpu extends Module {
   // Includes incrementer/decrementer.
   // 14 Registers: BC DE HL FA SP WZ PC
   //               01 23 45 67 89 AB CD
-//  val initialRegisterValues = Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
-  val initialRegisterValues = Seq.fill(14)(0x00)
+  val initialRegisterValues = Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
+//  val initialRegisterValues = Seq.fill(14)(0x00)
   val registers = RegInit(VecInit(initialRegisterValues.map(_.U(8.W))))
   val regR16IndexHi = Wire(UInt(4.W))
   regR16IndexHi := 0.U
@@ -243,4 +243,9 @@ class Cpu extends Module {
   }
   io.memEnable := control.io.memEnable
   io.memWrite := control.io.memWrite
+
+  // debug output
+  when (tCycle === 3.U) {
+//    printf(cf"* PC=$pc%x inst=${instructionRegister}%x B=${registers(0)}%x C=${registers(1)}%x D=${registers(2)}%x E=${registers(3)}%x HL=${Cat(registers(4), registers(5))}%x F=${registers(6)}%x A=${registers(7)}%x SP=${Cat(registers(8),registers(9))}%x\n")
+  }
 }
