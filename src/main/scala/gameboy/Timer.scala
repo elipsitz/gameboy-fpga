@@ -11,7 +11,7 @@ object Timer {
   }
 
   private def fallingEdgeDetector(in: Bool): Bool = {
-    ShiftRegister(in, 1, false.B) && (!in)
+    ShiftRegister(in, 1, false.B, true.B) && (!in)
   }
 }
 
@@ -33,7 +33,7 @@ class Timer extends Module {
   val counterIncrement = fallingEdgeDetector(dividerOut && regControl.enable)
   val counterReload = WireDefault(regModulo)
   val counterPostIncrement = regCounter +& 1.U
-  val counterCarryDelay = ShiftRegister(counterPostIncrement(8), 1, false.B)
+  val counterCarryDelay = ShiftRegister(counterPostIncrement(8), 1, false.B, true.B)
   val counterWritten = WireDefault(false.B)
 
   // Priority 3/3: memory mapped write to counter
