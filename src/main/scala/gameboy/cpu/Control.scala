@@ -257,13 +257,17 @@ class Control extends Module {
     }
   }
 
+  val halted = state === microcode.stateForLabel("HALT").U
   val justFetched = RegInit(false.B)
   justFetched := false.B
-  when (io.tCycle === 0.U && io.interruptsPending && justFetched) {
+  when (io.tCycle === 0.U && io.interruptsPending && (justFetched || halted)) {
     // Handle interrupts.
     when (ime) {
       // Note: IME is unset in microcode
       state := microcode.stateForLabel("#Interrupt").U
+    }
+    when (halted) {
+      state := microcode.stateForLabel("NOP").U
     }
     // TODO exit HALT
   }
