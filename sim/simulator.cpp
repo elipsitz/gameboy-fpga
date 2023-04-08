@@ -20,7 +20,7 @@ Simulator::~Simulator()
 
 void Simulator::reset()
 {
-    top->io_cartridge_dataIn = 0;
+    top->io_cartridge_dataRead = 0;
     top->reset = 1;
 
     uint64_t total = 4 - (cycles % 1);
@@ -35,14 +35,14 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
         // Handle memory.
         if (this->cycles % 4 == 3) {
             uint16_t address = top->io_cartridge_address;
-//            printf("mem access at [%.04X] => [%.02X]\n", address, top->io_cartridge_dataOut);
+//            printf("mem access at [%.04X] => [%.02X]\n", address, top->io_cartridge_dataWrite);
             if (top->io_cartridge_readEnable) {
                 uint8_t data = 0;
                 if (address >= 0x0000 && address <= 0x7FFF) {
                     data = rom[address];
                 }
 //                printf("mem read at [%.04X] => [%.02X]\n", address, data);
-                top->io_cartridge_dataIn = data;
+                top->io_cartridge_dataRead = data;
             }
             if (top->io_cartridge_writeEnable) {
                 // uint8_t data = top->cart_data_out;
