@@ -33,11 +33,18 @@ class Gameboy extends Module {
   })
 
   val cpu = Module(new Cpu())
+  cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
+  val phiPulse = cpu.io.tCycle === 3.U
+
   val workRam = SyncReadMem(8 * 1024, UInt(8.W)) // DMG: 0xC000 to 0xDFFF
   val debugSerial = Module(new DebugSerial)
   val highRam = Module(new HighRam)
 
-  val peripherals = Seq(debugSerial.io, highRam.io)
+  val timer = Module(new Timer)
+  timer.io.phiPulse := phiPulse
+  cpu.io.interruptRequest.timer := timer.io.interruptRequest
+
+  val peripherals = Seq(debugSerial.io, highRam.io, timer.io)
 
   // External bus read/write logic
   val busAddress = cpu.io.memAddress
@@ -45,7 +52,6 @@ class Gameboy extends Module {
   val busDataRead = WireDefault(0.U(8.W))
   val busMemEnable = cpu.io.memEnable
   val busMemWrite = cpu.io.memWrite
-  val phiPulse = cpu.io.tCycle === 3.U
 
   // Cartridge access signals
   val cartRomSelect = busAddress >= 0x0000.U && busAddress < 0x8000.U

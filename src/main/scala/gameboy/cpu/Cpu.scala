@@ -29,9 +29,8 @@ class Cpu extends Module {
     val memDataIn = Input(UInt(8.W))
     /** System bus data out */
     val memDataOut = Output(UInt(8.W))
-
-    // TODO: interrupt requests
-
+    /** Interrupt requests from peripherals */
+    val interruptRequest = Input(new Cpu.InterruptFlags)
     val tCycle = Output(UInt(2.W))
   })
 
@@ -49,10 +48,11 @@ class Cpu extends Module {
   // XXX: IE is 8 bits actually? and IF top 3 bits are 1?
   val regIE = RegInit(0.U(5.W))
   val regIF = RegInit(0.U(5.W))
+  regIF := regIF & io.interruptRequest.asUInt
   when (io.memEnable) {
     when (io.memWrite) {
       when (io.memAddress === Cpu.REG_IE.U) { regIE := io.memDataOut(4, 0) }
-      when (io.memAddress === Cpu.REG_IF.U) { regIF := io.memDataOut(4, 0) }
+      when (io.memAddress === Cpu.REG_IF.U) { regIF := io.memDataOut(4, 0) & io.interruptRequest.asUInt }
     }.otherwise {
       when (io.memAddress === Cpu.REG_IE.U) { memDataRead := regIE }
       when (io.memAddress === Cpu.REG_IF.U) { memDataRead := regIF }
