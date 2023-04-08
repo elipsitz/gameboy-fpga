@@ -1,4 +1,4 @@
-SECTION "ROM0", ROM0
+SECTION "MAIN", ROM0[$0100]
     ; Test load immediate instructions.
     ld a, $00
     ld b, $BB
@@ -12,14 +12,14 @@ SECTION "ROM0", ROM0
 
     ; Test jump.
     jp skip1
-    halt
+    stop
 skip1:
 
     ; Test compare and jump.
     ld a, $20
     cp a, $20
     jp z, skip2
-    halt
+    stop
 skip2:
     add a, $1
     cp a, $22
@@ -27,8 +27,8 @@ skip2:
     add a, $1
     jp skip3
 fail1:
-    halt
+    stop
 skip3:
 
     ; Finish.
-    halt
+    stop

@@ -11,7 +11,7 @@ MACRO AssertEquals
     jp nz, suite_end
 ENDM
 
-SECTION "ROM0", ROM0
+SECTION "VECTORS", ROM0[$0000]
     ; Reset Vectors
     jp suite_start
     DS 5, $00
@@ -42,6 +42,7 @@ SECTION "ROM0", ROM0
     ; interrupt joypad
     DS 8, $00
 
+SECTION "MAIN", ROM0[$0100]
 suite_start:
     ld sp, $C100
 
@@ -133,4 +134,4 @@ suite_start:
     ; If we made it here, suite is successful.
     SetTestID 0
 suite_end:
-    halt
+    stop

@@ -30,8 +30,8 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
 
         // Check state of the DUT.
         val instruction = dut.xInstructionRegister.peekInt()
-        if (instruction == 0x76) {
-          // HALT: exit
+        if (instruction == 0x10) {
+          // STOP: exit
           break()
         }
         if (dut.xControlState.peekInt() == 1) {
@@ -85,7 +85,9 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
 
   "nop" in {
     test(new TestableCpu) { dut =>
-      runProgram(dut, Array(0x00, 0x00, 0x00, 0x00, 0x00, 0x76))
+      // 256 + 10 NOPs followed by a 0x10 (STOP)
+      val program = (Seq.fill(256 + 10)(0x00.toByte) ++ Seq(0x10.toByte)).toArray
+      runProgram(dut, program)
     }
   }
 

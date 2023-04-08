@@ -1,7 +1,7 @@
-SECTION "ROM0", ROM0
+SECTION "MAIN", ROM0[$0100]
     ld b, $AB
     ld c, b
-    ld d, [hl]
+    ld d, $06
     ld hl, $C000
     ld [hl], d
     ld e, [hl]
@@ -75,6 +75,6 @@ skip4:
     nop
     
     ; End the test.
-    halt
+    stop
 
 data: db $AA

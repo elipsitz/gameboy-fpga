@@ -11,7 +11,7 @@ MACRO AssertEquals
     jp nz, suite_end
 ENDM
 
-SECTION "ROM0", ROM0
+SECTION "VECTORS", ROM0[$0000]
     ; Reset Vectors
     ; 0x00
     jp suite_start
@@ -26,6 +26,7 @@ SECTION "ROM0", ROM0
     DS 5, $00
     
 
+SECTION "MAIN", ROM0[$0100]
 suite_start:
     ; ######### Test 1: `ld r, n` and `ld r, r`
     SetTestID 1
@@ -114,12 +115,12 @@ suite_start:
     SetTestID 5
     ld a, $0
     jp :+
-    halt
+    stop
 :   ld a, $1
     AssertEquals $1
     ld hl, :+
     jp hl
-    halt
+    stop
 :   ld a, $2
     AssertEquals $2
 
@@ -339,7 +340,7 @@ suite_start:
     ; ######### Test 17: JR
     SetTestID 17
     jr :+             ; Forward Jump
-    halt
+    stop
 :   ld a, $71
     add a, $10
     add a, $01
@@ -359,13 +360,13 @@ suite_start:
     cp a, $99
     jr z, :+
     jp :++
-:   halt
+:   stop
 :   nop
     ;
     ld a, $70
     cp a, $70
     jr z, :+             
-    halt
+    stop
 :   add a, $1
     add a, $1
     AssertEquals $72
@@ -597,7 +598,7 @@ suite_start:
     ; If we made it here, suite is successful.
     SetTestID 0
 suite_end:
-    halt
+    stop
 
 data_2b:
     db $2b
