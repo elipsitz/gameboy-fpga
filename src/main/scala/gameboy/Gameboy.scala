@@ -37,7 +37,7 @@ class Gameboy extends Module {
   cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
   val phiPulse = cpu.io.tCycle === 3.U
 
-  val workRam = SyncReadMem(8 * 1024, UInt(8.W)) // DMG: 0xC000 to 0xDFFF
+  val workRam = Module(new SinglePortRam(8 * 1024)) // DMG: 0xC000 to 0xDFFF
 
   // Basic peripherals
   val debugSerial = Module(new DebugSerial)
@@ -51,13 +51,18 @@ class Gameboy extends Module {
   // External bus read/write logic
   val busAddress = cpu.io.memAddress
   val busDataWrite = cpu.io.memDataOut
-  val busDataRead = WireDefault(0.U(8.W))
   val busMemEnable = cpu.io.memEnable
   val busMemWrite = cpu.io.memWrite
-
-  // Cartridge access signals
   val cartRomSelect = busAddress >= 0x0000.U && busAddress < 0x8000.U
   val cartRamSelect = busAddress >= 0xA000.U && busAddress < 0xC000.U
+  val workRamSelect = busAddress >= 0xC000.U && busAddress < 0xFE00.U
+  val busDataRead = Mux1H(Seq(
+    (cartRomSelect || cartRamSelect, io.cartridge.dataRead),
+    (workRamSelect, workRam.io.dataRead),
+  ))
+  val busReadValid = cartRomSelect || cartRamSelect || workRamSelect
+
+  // Cartridge access signals
   io.cartridge.writeEnable := (cartRomSelect || cartRamSelect) && busMemEnable && busMemWrite
   io.cartridge.readEnable := !io.cartridge.writeEnable
   io.cartridge.chipSelect := !cartRomSelect
@@ -65,13 +70,11 @@ class Gameboy extends Module {
   io.cartridge.address := busAddress
   when (cartRomSelect || cartRamSelect) { busDataRead := io.cartridge.dataRead }
 
-  // External bus (cartridge and work ram)
-  val workRamSelect = busAddress >= 0xC000.U && busAddress < 0xFE00.U
-  when (busMemEnable && workRamSelect) {
-    val workRamAddress = busAddress(12, 0)
-    when (busMemWrite && phiPulse) { workRam.write(workRamAddress, busDataWrite) }
-      .otherwise { busDataRead := workRam.read(workRamAddress) }
-  }
+  // Work ram
+  workRam.io.address := busAddress(12, 0)
+  workRam.io.enabled := busMemEnable && workRamSelect
+  workRam.io.write := busMemWrite && phiPulse
+  workRam.io.dataWrite := busDataWrite
 
   // Peripheral bus
   val peripherals = Seq(debugSerial.io, highRam.io, timer.io)
@@ -86,12 +89,11 @@ class Gameboy extends Module {
   val peripheralDataRead = Mux1H(peripherals.map(p => (p.valid, p.dataRead)))
 
   // CPU connection to the busses
-  cpu.io.memDataIn := 0xFF.U
-  when (cpu.io.memAddress < 0xFE00.U) {
-    cpu.io.memDataIn := busDataRead
-  } .elsewhen (peripheralValid) {
-    cpu.io.memDataIn := peripheralDataRead
-  }
+  cpu.io.memDataIn := Mux1H(Seq(
+    (busReadValid, busDataRead),
+    (peripheralValid, peripheralDataRead),
+    (!(busReadValid || peripheralValid), 0xFF.U)
+  ))
 }
 
 object Gameboy extends App {
