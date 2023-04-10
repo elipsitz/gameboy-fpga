@@ -98,5 +98,5 @@ class Gameboy extends Module {
 
 object Gameboy extends App {
   emitVerilog(new Gameboy(), args)
-  emitVerilog(new TestableCpu(), args)
+//  emitVerilog(new TestableCpu(), args)
 }
