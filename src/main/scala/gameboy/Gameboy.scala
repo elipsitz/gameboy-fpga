@@ -24,7 +24,8 @@ class CartridgeIo extends Bundle {
  *
  * External interfaces: cartridge
  *
- * The "external bus" contains the cartridge (rom and ram), work ram, and video ram.
+ * The "external bus" contains the cartridge (rom and ram) and work ram.
+ * Video ram is on a separate bus (OAM DMA with it doesn't block wram).
  * The peripherals (0xFF**) are separate, and the OAM is also special.
  */
 class Gameboy extends Module {
@@ -37,14 +38,15 @@ class Gameboy extends Module {
   val phiPulse = cpu.io.tCycle === 3.U
 
   val workRam = SyncReadMem(8 * 1024, UInt(8.W)) // DMG: 0xC000 to 0xDFFF
+
+  // Basic peripherals
   val debugSerial = Module(new DebugSerial)
   val highRam = Module(new HighRam)
 
+  // Peripheral: Timer
   val timer = Module(new Timer)
   timer.io.phiPulse := phiPulse
   cpu.io.interruptRequest.timer := timer.io.interruptRequest
-
-  val peripherals = Seq(debugSerial.io, highRam.io, timer.io)
 
   // External bus read/write logic
   val busAddress = cpu.io.memAddress
@@ -63,29 +65,31 @@ class Gameboy extends Module {
   io.cartridge.address := busAddress
   when (cartRomSelect || cartRamSelect) { busDataRead := io.cartridge.dataRead }
 
-  // External bus
-  when (busMemEnable && busAddress >= 0xC000.U && busAddress < 0xFE00.U) {
+  // External bus (cartridge and work ram)
+  val workRamSelect = busAddress >= 0xC000.U && busAddress < 0xFE00.U
+  when (busMemEnable && workRamSelect) {
     val workRamAddress = busAddress(12, 0)
     when (busMemWrite && phiPulse) { workRam.write(workRamAddress, busDataWrite) }
       .otherwise { busDataRead := workRam.read(workRamAddress) }
   }
 
   // Peripheral bus
-  val peripheralDataRead = WireDefault(0xFF.U(8.W))
-  val peripheralActive = cpu.io.memAddress(15, 8) === 0xFF.U
+  val peripherals = Seq(debugSerial.io, highRam.io, timer.io)
+  val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {
     peripheral.address := cpu.io.memAddress(7, 0)
-    peripheral.enabled := peripheralActive && cpu.io.memEnable
+    peripheral.enabled := peripheralSelect && cpu.io.memEnable
     peripheral.write := cpu.io.memWrite && phiPulse
     peripheral.dataWrite := cpu.io.memDataOut
-    when (peripheral.valid) { peripheralDataRead := peripheral.dataRead }
   }
+  val peripheralValid = VecInit(peripherals.map(_.valid)).asUInt.orR
+  val peripheralDataRead = Mux1H(peripherals.map(p => (p.valid, p.dataRead)))
 
   // CPU connection to the busses
   cpu.io.memDataIn := 0xFF.U
   when (cpu.io.memAddress < 0xFE00.U) {
     cpu.io.memDataIn := busDataRead
-  } .elsewhen (peripheralActive) {
+  } .elsewhen (peripheralValid) {
     cpu.io.memDataIn := peripheralDataRead
   }
 }
