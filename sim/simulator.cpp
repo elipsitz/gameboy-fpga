@@ -63,33 +63,33 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
 
 void Simulator::stepFramebuffer()
 {
-//    bool vblank = top->ppu_vblank && !prev_vblank;
-//    if (vblank) {
-//        framebufferIndex = 0;
-//    }
-//    prev_hblank = top->ppu_hblank;
-//    prev_vblank = top->ppu_vblank;
-//
-//    if (top->pixel_valid) {
-//        if (framebufferIndex >= frameBuffer.size() - 4) {
-//            // TODO: make this a fatal error (framebuffer overrun).
-//            return;
-//        }
-//
-//        uint8_t pixel = top->pixel_out;
-//        uint32_t color = 0x000000; // RGB
-//        switch (pixel) {
-//            case 0: color = 0xfafbf6; break;
-//            case 1: color = 0xc6b7be; break;
-//            case 2: color = 0x565a75; break;
-//            case 3: color = 0x0f0f1b; break;
-//        }
-//
-//        frameBuffer[framebufferIndex++] = (color >> 0) & 0xFF;
-//        frameBuffer[framebufferIndex++] = (color >> 8) & 0xFF;
-//        frameBuffer[framebufferIndex++] = (color >> 16) & 0xFF;
-//        frameBuffer[framebufferIndex++] = 0xFF;
-//    }
+    bool vblank = top->io_ppu_vblank && !prev_vblank;
+    if (vblank) {
+        framebufferIndex = 0;
+    }
+    prev_hblank = top->io_ppu_hblank;
+    prev_vblank = top->io_ppu_vblank;
+
+    if (top->io_ppu_valid) {
+        if (framebufferIndex >= frameBuffer.size() - 4) {
+            // TODO: make this a fatal error (framebuffer overrun).
+            return;
+        }
+
+        uint8_t pixel = top->io_ppu_pixel;
+        uint32_t color = 0x000000; // RGB
+        switch (pixel) {
+            case 0: color = 0xfafbf6; break;
+            case 1: color = 0xc6b7be; break;
+            case 2: color = 0x565a75; break;
+            case 3: color = 0x0f0f1b; break;
+        }
+
+        frameBuffer[framebufferIndex++] = (color >> 0) & 0xFF;
+        frameBuffer[framebufferIndex++] = (color >> 8) & 0xFF;
+        frameBuffer[framebufferIndex++] = (color >> 16) & 0xFF;
+        frameBuffer[framebufferIndex++] = 0xFF;
+    }
 }
 
 void Simulator::simulate_frame()

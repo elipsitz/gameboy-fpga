@@ -3,6 +3,7 @@ package gameboy
 import chisel3._
 import chisel3.util._
 import gameboy.cpu.{Cpu, TestableCpu}
+import gameboy.ppu.{Ppu, PpuOutput}
 
 class CartridgeIo extends Bundle {
   /** Cartridge address selection */
@@ -22,7 +23,7 @@ class CartridgeIo extends Bundle {
 /**
  * The main Gameboy module.
  *
- * External interfaces: cartridge
+ * External interfaces: cartridge, PPU output
  *
  * The "external bus" contains the cartridge (rom and ram) and work ram.
  * Video ram is on a separate bus (OAM DMA with it doesn't block wram).
@@ -31,12 +32,19 @@ class CartridgeIo extends Bundle {
 class Gameboy extends Module {
   val io = IO(new Bundle {
     val cartridge = new CartridgeIo()
+    val ppu = new PpuOutput()
   })
 
+  // Module: CPU
   val cpu = Module(new Cpu())
   cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
   val phiPulse = cpu.io.tCycle === 3.U
 
+  // Module: PPU
+  val ppu = Module(new Ppu())
+  io.ppu := ppu.io.output
+
+  // Memories
   val workRam = Module(new SinglePortRam(8 * 1024)) // DMG: 0xC000 to 0xDFFF
   val videoRam = Module(new SinglePortRam(8 * 1024)) // 0x8000 to 0x9FFF
   val oam = Module(new SinglePortRam(160)) // 0xFE00 to 0xFE9F
