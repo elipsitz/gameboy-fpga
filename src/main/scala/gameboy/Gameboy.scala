@@ -109,7 +109,7 @@ class Gameboy extends Module {
   oam.io.dataWrite := cpu.io.memDataOut
 
   // Peripheral bus
-  val peripherals = Seq(debugSerial.io, highRam.io, timer.io)
+  val peripherals = Seq(debugSerial.io, highRam.io, timer.io, ppu.io.registers)
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {
     peripheral.address := cpu.io.memAddress(7, 0)
@@ -117,7 +117,7 @@ class Gameboy extends Module {
     peripheral.write := cpu.io.memWrite && phiPulse
     peripheral.dataWrite := cpu.io.memDataOut
   }
-  val peripheralValid = VecInit(peripherals.map(_.valid)).asUInt.orR
+  val peripheralValid = peripheralSelect && VecInit(peripherals.map(_.valid)).asUInt.orR
   val peripheralDataRead = Mux1H(peripherals.map(p => (p.valid, p.dataRead)))
 
   // CPU connection to the busses
