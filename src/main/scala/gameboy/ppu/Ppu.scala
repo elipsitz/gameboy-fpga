@@ -2,6 +2,7 @@ package gameboy.ppu
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.ChiselEnum
 import gameboy.PeripheralAccess
 
 class PpuOutput extends Bundle {
@@ -15,11 +16,47 @@ class PpuOutput extends Bundle {
   val vblank = Output(Bool())
 }
 
+object Ppu {
+  val Width = 160
+  val Height = 144
+  val NumScanlines = 154
+  val NumTicks = 456
+  val OamScanLength = 80
+}
+
 class Ppu extends Module {
   val io = IO(new Bundle {
     val output = new PpuOutput
     val registers = new PeripheralAccess
   })
+
+  /** Current scanline, [0, 154) */
+  val scanline = RegInit(0.U(8.W))
+  /** Current tick within scanline, [0, 456) */
+  val tick = RegInit(0.U(9.W))
+  /** Current number of pixels output in this scanline, [0, 160] */
+  val pixelsDrawn = RegInit(0.U(8.W))
+
+  // Tick and scanline adjustment
+  when (tick === (Ppu.NumTicks - 1).U) {
+    tick := 0.U
+    pixelsDrawn := 0.U
+    when (scanline === (Ppu.NumScanlines - 1).U) {
+      scanline := 0.U
+    } .otherwise {
+      scanline := scanline + 1.U
+    }
+  } .otherwise {
+    tick := tick + 1.U
+  }
+
+  // 1-hot current state wire
+  val stateVblank = scanline >= Ppu.Height.U
+  val stateOamSearch = !stateVblank && (tick < Ppu.OamScanLength.U)
+  val stateDrawing = !stateVblank && (tick >= Ppu.OamScanLength.U) && (pixelsDrawn < Ppu.Width.U)
+  val stateHblank = !stateVblank && (pixelsDrawn === Ppu.Width.U)
+  io.output.hblank := stateHblank
+  io.output.vblank := stateVblank
 
   /** $FF40 -- LCDC: LCD Control */
   val regLcdc = RegInit(0.U.asTypeOf(new RegisterLcdControl))
@@ -29,8 +66,6 @@ class Ppu extends Module {
   val regScy = RegInit(0.U(8.W))
   /** $FF43 -- SCX: Viewport X position */
   val regScx = RegInit(0.U(8.W))
-  /** $FF44 -- LY: LCD Y coordinate */
-  val regLy = RegInit(0.U(8.W))
   /** $FF45 -- LYC: LY compare */
   val regLyc = RegInit(0.U(8.W))
   /** $FF47 -- BGP: BG Palette data */
@@ -44,13 +79,13 @@ class Ppu extends Module {
   /** $FF4B -- WX: Window X position (plus 7) */
   val regWx = RegInit(0.U(8.W))
 
+  // Memory-mapped register access
   when (io.registers.enabled && io.registers.write) {
     switch (io.registers.address) {
       is (0x40.U) { regLcdc := io.registers.dataWrite.asTypeOf(new RegisterLcdControl) }
       is (0x41.U) { regStat := io.registers.dataWrite(6, 3).asTypeOf(new RegisterStatus) }
       is (0x42.U) { regScy := io.registers.dataWrite }
       is (0x43.U) { regScx := io.registers.dataWrite }
-      is (0x44.U) { regLy := io.registers.dataWrite }
       is (0x45.U) { regLyc := io.registers.dataWrite }
       // 0x46 -- DMA -- is *not* included
       is (0x47.U) { regBgp := io.registers.dataWrite.asTypeOf(new RegisterPalette) }
@@ -65,12 +100,13 @@ class Ppu extends Module {
     switch (io.registers.address) {
       is (0x40.U) { io.registers.dataRead := regLcdc.asUInt }
       is (0x41.U) {
-        // TODO last 3 bits: (LYC=LY Flag), (Mode Flag)
-        io.registers.dataRead := Cat(1.U(1.W), regStat.asUInt, 0.U(3.W))
+        val lyFlag = regLyc === scanline
+        val mode = OHToUInt(Seq(stateHblank, stateVblank, stateOamSearch, stateDrawing))
+        io.registers.dataRead := Cat(1.U(1.W), regStat.asUInt, lyFlag, mode)
       }
       is (0x42.U) { io.registers.dataRead := regScy }
       is (0x43.U) { io.registers.dataRead := regScx }
-      is (0x44.U) { io.registers.dataRead := regLy }
+      is (0x44.U) { io.registers.dataRead := scanline }
       is (0x45.U) { io.registers.dataRead := regLyc }
       is (0x47.U) { io.registers.dataRead := regBgp.asUInt }
       is (0x48.U) { io.registers.dataRead := regObp0.asUInt }
@@ -85,20 +121,12 @@ class Ppu extends Module {
         .map(io.registers.address === _.U)
     ).asUInt.orR
 
+
+
   // Test pattern
-  val regTestY = RegInit(0.U(8.W))
-  val regTestX = RegInit(0.U(9.W))
-  regTestX := regTestX + 1.U
-  when (regTestX === 455.U) {
-    regTestX := 0.U
-    when (regTestY === 153.U) {
-      regTestY := 0.U
-    } .otherwise {
-      regTestY := regTestY + 1.U
-    }
+  io.output.valid := stateDrawing
+  when (stateDrawing) {
+    pixelsDrawn := pixelsDrawn + 1.U
   }
-  io.output.hblank := regTestX >= 160.U
-  io.output.vblank := regTestY >= 144.U
-  io.output.valid := !io.output.hblank && !io.output.vblank
-  io.output.pixel := regTestX(1, 0)
+  io.output.pixel := tick(2, 1) + scanline(3, 2)
 }
