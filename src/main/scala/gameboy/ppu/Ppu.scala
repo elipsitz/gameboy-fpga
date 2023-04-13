@@ -145,18 +145,43 @@ class Ppu extends Module {
   io.statIrq := !ShiftRegister(statInterrupt, 1, false.B, true.B) && statInterrupt
 
   // Test reading from VRAM
-  val pixelGo = stateDrawing && (tick > 80.U)
-  io.output.valid := pixelGo
-  when(pixelGo) {
-    pixelsDrawn := pixelsDrawn + 1.U
-  }
-  val screenX = (tick - 80.U)
+  val testState = RegInit(0.U(8.W))
+  val buffHi = RegInit(0.U(8.W))
+  val buffLo = RegInit(0.U(8.W))
+
+  val screenX = pixelsDrawn
   val tileX = screenX(6, 3)
   val tileY = scanline(6, 3)
   val tileNum = Cat(tileY, tileX)
   val tileSx = screenX(2, 0)
   val tileSy = scanline(2, 0)
-  val tileByte = Cat(tileNum, tileSy, 0.U(1.W))
-  io.output.pixel := Reverse(io.vramDataRead)(tileSx)
+  val tileByte = Cat(tileNum, tileSy, testState === 11.U)
+
+  io.output.pixel := DontCare
+  io.output.valid := false.B
   io.vramAddress := tileByte
+
+  when(stateDrawing) {
+    when(testState === 0.U) {
+      testState := 11.U
+    } .otherwise {
+      testState := testState - 1.U
+    }
+
+    when (testState === 10.U) {
+      buffHi := Reverse(io.vramDataRead)
+    }
+    when (testState === 9.U) {
+      buffLo := Reverse(io.vramDataRead)
+    }
+    when (testState <= 8.U && testState >= 1.U) {
+      io.output.valid := true.B
+      io.output.pixel := Cat(buffHi(0), buffLo(0))
+      buffHi := buffHi >> 1
+      buffLo := buffLo >> 1
+      pixelsDrawn := pixelsDrawn + 1.U
+    }
+  } .otherwise {
+    testState := 0.U
+  }
 }
