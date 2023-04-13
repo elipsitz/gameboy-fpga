@@ -28,6 +28,9 @@ class Ppu extends Module {
   val io = IO(new Bundle {
     val output = new PpuOutput
     val registers = new PeripheralAccess
+
+    val vblankIrq = Output(Bool())
+    val statIrq = Output(Bool())
   })
 
   /** Current scanline, [0, 154) */
@@ -36,27 +39,6 @@ class Ppu extends Module {
   val tick = RegInit(0.U(9.W))
   /** Current number of pixels output in this scanline, [0, 160] */
   val pixelsDrawn = RegInit(0.U(8.W))
-
-  // Tick and scanline adjustment
-  when (tick === (Ppu.NumTicks - 1).U) {
-    tick := 0.U
-    pixelsDrawn := 0.U
-    when (scanline === (Ppu.NumScanlines - 1).U) {
-      scanline := 0.U
-    } .otherwise {
-      scanline := scanline + 1.U
-    }
-  } .otherwise {
-    tick := tick + 1.U
-  }
-
-  // 1-hot current state wire
-  val stateVblank = scanline >= Ppu.Height.U
-  val stateOamSearch = !stateVblank && (tick < Ppu.OamScanLength.U)
-  val stateDrawing = !stateVblank && (tick >= Ppu.OamScanLength.U) && (pixelsDrawn < Ppu.Width.U)
-  val stateHblank = !stateVblank && (pixelsDrawn === Ppu.Width.U)
-  io.output.hblank := stateHblank
-  io.output.vblank := stateVblank
 
   /** $FF40 -- LCDC: LCD Control */
   val regLcdc = RegInit(0.U.asTypeOf(new RegisterLcdControl))
@@ -79,6 +61,28 @@ class Ppu extends Module {
   /** $FF4B -- WX: Window X position (plus 7) */
   val regWx = RegInit(0.U(8.W))
 
+  // Tick and scanline adjustment
+  when (tick === (Ppu.NumTicks - 1).U) {
+    tick := 0.U
+    pixelsDrawn := 0.U
+    when (scanline === (Ppu.NumScanlines - 1).U) {
+      scanline := 0.U
+    } .otherwise {
+      scanline := scanline + 1.U
+    }
+  } .otherwise {
+    tick := tick + 1.U
+  }
+
+  // 1-hot current state wire
+  val stateVblank = scanline >= Ppu.Height.U
+  val stateOamSearch = !stateVblank && (tick < Ppu.OamScanLength.U)
+  val stateDrawing = !stateVblank && (tick >= Ppu.OamScanLength.U) && (pixelsDrawn < Ppu.Width.U)
+  val stateHblank = !stateVblank && (pixelsDrawn === Ppu.Width.U)
+  io.output.hblank := stateHblank
+  io.output.vblank := stateVblank
+  val lycEqualFlag = regLyc === scanline
+
   // Memory-mapped register access
   when (io.registers.enabled && io.registers.write) {
     switch (io.registers.address) {
@@ -100,9 +104,8 @@ class Ppu extends Module {
     switch (io.registers.address) {
       is (0x40.U) { io.registers.dataRead := regLcdc.asUInt }
       is (0x41.U) {
-        val lyFlag = regLyc === scanline
         val mode = OHToUInt(Seq(stateHblank, stateVblank, stateOamSearch, stateDrawing))
-        io.registers.dataRead := Cat(1.U(1.W), regStat.asUInt, lyFlag, mode)
+        io.registers.dataRead := Cat(1.U(1.W), regStat.asUInt, lycEqualFlag, mode)
       }
       is (0x42.U) { io.registers.dataRead := regScy }
       is (0x43.U) { io.registers.dataRead := regScx }
@@ -121,7 +124,15 @@ class Ppu extends Module {
         .map(io.registers.address === _.U)
     ).asUInt.orR
 
-
+  // Interrupt request generation
+  io.vblankIrq := !ShiftRegister(stateVblank, 1, false.B, true.B) && stateVblank
+  val statInterrupt = Cat(Seq(
+    (lycEqualFlag && regStat.interruptLyEnable),
+    (stateOamSearch && regStat.interruptOamEnable),
+    (stateVblank && regStat.interruptVblankEnable),
+    (stateHblank && regStat.interruptHblankEnable),
+  )).orR
+  io.statIrq := !ShiftRegister(statInterrupt, 1, false.B, true.B) && statInterrupt
 
   // Test pattern
   io.output.valid := stateDrawing

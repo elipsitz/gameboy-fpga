@@ -43,6 +43,8 @@ class Gameboy extends Module {
   // Module: PPU
   val ppu = Module(new Ppu())
   io.ppu := ppu.io.output
+  cpu.io.interruptRequest.vblank := ppu.io.vblankIrq
+  cpu.io.interruptRequest.lcdStat := ppu.io.statIrq
 
   // Memories
   val workRam = Module(new SinglePortRam(8 * 1024)) // DMG: 0xC000 to 0xDFFF
