@@ -89,15 +89,25 @@ class Gameboy extends Module {
   workRam.io.dataWrite := busDataWrite
 
   // Video ram
-  // TODO allow PPU and OAM DMA to access this
+  // TODO allow OAM DMA to access this
   // PPU locks it during pixel fetch mode (not hblank, vblank, oam search)
   // OAM DMA locks it if reading from this region
   // Priority: OAM DMA > PPU > CPU
   val videoRamSelect = busAddress >= 0x8000.U && busAddress < 0xA000.U
-  videoRam.io.address := cpu.io.memAddress
-  videoRam.io.enabled := cpu.io.memEnable && videoRamSelect
-  videoRam.io.write := cpu.io.memWrite && phiPulse
-  videoRam.io.dataWrite := cpu.io.memDataOut
+  when (ppu.io.vramEnabled) {
+    // PPU has control of VRAM bus
+    videoRam.io.address := ppu.io.vramAddress
+    videoRam.io.enabled := true.B
+    videoRam.io.write := false.B
+    videoRam.io.dataWrite := DontCare
+  } .otherwise {
+    // CPU is controlling VRAM bus
+    videoRam.io.address := cpu.io.memAddress
+    videoRam.io.enabled := cpu.io.memEnable && videoRamSelect
+    videoRam.io.write := cpu.io.memWrite && phiPulse
+    videoRam.io.dataWrite := cpu.io.memDataOut
+  }
+  ppu.io.vramDataRead := videoRam.io.dataRead
 
   // Oam ram
   // TODO allow PPU and OAM DMA to access this

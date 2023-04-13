@@ -29,8 +29,17 @@ class Ppu extends Module {
     val output = new PpuOutput
     val registers = new PeripheralAccess
 
+    // IRQs
     val vblankIrq = Output(Bool())
     val statIrq = Output(Bool())
+
+    // VRAM access
+    /** Whether the PPU is accessing VRAM */
+    val vramEnabled = Output(Bool())
+    /** Which VRAM address the PPU is accessing */
+    val vramAddress = Output(UInt(13.W))
+    /** Data read from VRAM (synchronous, in the next clock cycle) */
+    val vramDataRead = Input(UInt(8.W))
   })
 
   /** Current scanline, [0, 154) */
@@ -82,6 +91,7 @@ class Ppu extends Module {
   io.output.hblank := stateHblank
   io.output.vblank := stateVblank
   val lycEqualFlag = regLyc === scanline
+  io.vramEnabled := stateDrawing && regLcdc.enable
 
   // Memory-mapped register access
   when (io.registers.enabled && io.registers.write) {
@@ -134,10 +144,19 @@ class Ppu extends Module {
   )).orR
   io.statIrq := !ShiftRegister(statInterrupt, 1, false.B, true.B) && statInterrupt
 
-  // Test pattern
-  io.output.valid := stateDrawing
-  when (stateDrawing) {
+  // Test reading from VRAM
+  val pixelGo = stateDrawing && (tick > 80.U)
+  io.output.valid := pixelGo
+  when(pixelGo) {
     pixelsDrawn := pixelsDrawn + 1.U
   }
-  io.output.pixel := tick(2, 1) + scanline(3, 2)
+  val screenX = (tick - 80.U)
+  val tileX = screenX(6, 3)
+  val tileY = scanline(6, 3)
+  val tileNum = Cat(tileY, tileX)
+  val tileSx = screenX(2, 0)
+  val tileSy = scanline(2, 0)
+  val tileByte = Cat(tileNum, tileSy, 0.U(1.W))
+  io.output.pixel := Reverse(io.vramDataRead)(tileSx)
+  io.vramAddress := tileByte
 }
