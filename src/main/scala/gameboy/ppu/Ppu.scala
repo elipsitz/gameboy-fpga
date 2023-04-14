@@ -27,7 +27,7 @@ object Ppu {
 
 /**
  * BG-style FIFO
- * Can be popped from on the same cycle as it's reloaded
+ * Can be popped from on the same cycle as it's reloaded.
  */
 class PixelFifo[T <: Data](gen: T) extends Module {
   val io = IO(new Bundle {
@@ -42,27 +42,15 @@ class PixelFifo[T <: Data](gen: T) extends Module {
   val register = Reg(Vec(8, gen))
   val length = RegInit(0.U(4.W))
 
-  io.outData := DontCare
-  io.outValid := false.B
-  io.reloadAck := false.B
-  when (length =/= 0.U) {
-    io.outData := register(0)
-    io.outValid := true.B
-    when (io.popEnable) {
-      register := VecInit(register.slice(1, 8) ++ Seq(DontCare))
-      length := length - 1.U
-    }
-  } .elsewhen (io.reloadEnable) {
-    io.outData := io.reloadData(0)
-    io.outValid := true.B
-    io.reloadAck := true.B
-    when (io.popEnable) {
-      register := VecInit(io.reloadData.slice(1, 8) ++ Seq(DontCare))
-      length := 7.U
-    } .otherwise {
-      register := io.reloadData
-      length := 8.U
-    }
+  // The logicalRegister thing is sort of like a latch?
+  io.reloadAck := length === 0.U && io.reloadEnable
+  val logicalRegister = Mux(io.reloadAck, io.reloadData, register)
+  val logicalLength = Mux(io.reloadAck, 8.U, length)
+  io.outData := logicalRegister(0)
+  io.outValid := logicalLength =/= 0.U
+  when (logicalLength =/= 0.U && io.popEnable) {
+    register := VecInit(logicalRegister.slice(1, 8) ++ Seq(DontCare))
+    length := logicalLength - 1.U
   }
 }
 
@@ -72,8 +60,8 @@ class BgPixel extends Bundle {
 }
 
 object FetcherState extends ChiselEnum {
-  val id0, id1, lo0, lo1, hi0, hi1, push = Value
-  // In hi1 and push we try to push to the FIFO
+  val id0, id1, lo0, lo1, hi0, hi1 = Value
+  // In hi1 we try to push to the FIFO until it succeeds
 }
 
 class Ppu extends Module {
@@ -206,6 +194,8 @@ class Ppu extends Module {
   io.output.pixel := DontCare
   io.output.valid := false.B
   when (stateDrawing) {
+    // TODO handle palettes
+    // TODO mixing
     when (bgFifo.io.outValid) {
       io.output.pixel := bgFifo.io.outData.color
       bgFifo.io.popEnable := true.B
@@ -228,49 +218,33 @@ class Ppu extends Module {
   )
   when (stateDrawing) {
     switch(fetcherState) {
-      // Set tilemap address
+      // For the fetcher, we want to ensure that we can push on 'hi1'.
+      // We also need to ensure that fetcherTileId is set by lo0.
       is (FetcherState.id0) {
-        fetcherState := FetcherState.id1
-      }
-      // Store tilemap address
-      is (FetcherState.id1) {
+        // Set tile ID address
         // TODO handle window mode
         val tileY = (regLy + regScy)(7, 3)
         val tileX = (regLx + regScx + 7.U)(7, 3)
         io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
-        fetcherState := FetcherState.lo0
       }
-      // Set tile low address
-      is (FetcherState.lo0) {
-        fetcherTileId := io.vramDataRead
-        fetcherState := FetcherState.lo1
-      }
-      // Store tile low data
+      is (FetcherState.id1) { fetcherTileId := io.vramDataRead }
+      is (FetcherState.lo0) { io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W)) }
       is (FetcherState.lo1) {
-        io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W))
-        fetcherState := FetcherState.hi0
-      }
-      // Set tile high address
-      is (FetcherState.hi0) {
+        // Store this, but also start the address hi fetch so the data is stored by hi1.
         fetcherTileLo := io.vramDataRead
         io.vramAddress := Cat(fetcherTileAddress, 1.U(1.W))
-        fetcherState := FetcherState.hi1
       }
-      // Store tile high data
+      is (FetcherState.hi0) { fetcherTileHi := io.vramDataRead }
       is (FetcherState.hi1) {
-        fetcherTileHi := io.vramDataRead
-        fetcherState := FetcherState.push
-      }
-      is (FetcherState.push) {
+        // Push!
         bgFifo.io.reloadEnable := true.B
         bgFifo.io.reloadData := VecInit(
           (0 until 8).reverse.map(i => Cat(fetcherTileHi(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
         )
-        when (bgFifo.io.reloadAck) {
-          fetcherState := FetcherState.id0
-        }
       }
     }
+    when (fetcherState < FetcherState.hi1) { fetcherState := fetcherState.next }
+    when (fetcherState === FetcherState.hi1 && bgFifo.io.reloadAck) { fetcherState := FetcherState.id0 }
   }
 
   // On hblank, reset scanline registers
