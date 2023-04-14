@@ -25,6 +25,10 @@ object Ppu {
   val FifoSize = 8
 }
 
+/**
+ * BG-style FIFO
+ * Can be popped from on the same cycle as it's reloaded
+ */
 class PixelFifo[T <: Data](gen: T) extends Module {
   val io = IO(new Bundle {
     val reloadData = Input(Vec(8, gen))
@@ -37,17 +41,28 @@ class PixelFifo[T <: Data](gen: T) extends Module {
 
   val register = Reg(Vec(8, gen))
   val length = RegInit(0.U(4.W))
-  io.outData := register(0)
-  io.outValid := length =/= 0.U
 
+  io.outData := DontCare
+  io.outValid := false.B
   io.reloadAck := false.B
-  when (io.reloadEnable && (length === 0.U || (io.popEnable && length === 1.U))) {
-    register := io.reloadData
+  when (length =/= 0.U) {
+    io.outData := register(0)
+    io.outValid := true.B
+    when (io.popEnable) {
+      register := VecInit(register.slice(1, 8) ++ Seq(DontCare))
+      length := length - 1.U
+    }
+  } .elsewhen (io.reloadEnable) {
+    io.outData := io.reloadData(0)
+    io.outValid := true.B
     io.reloadAck := true.B
-    length := 8.U
-  } .elsewhen (io.popEnable && length > 0.U) {
-    register := VecInit(register.slice(1, 8) ++ Seq(DontCare))
-    length := length - 1.U
+    when (io.popEnable) {
+      register := VecInit(io.reloadData.slice(1, 8) ++ Seq(DontCare))
+      length := 7.U
+    } .otherwise {
+      register := io.reloadData
+      length := 8.U
+    }
   }
 }
 
@@ -215,29 +230,29 @@ class Ppu extends Module {
     switch(fetcherState) {
       // Set tilemap address
       is (FetcherState.id0) {
-        // TODO handle window mode
-        val tileY = (regLy + regScy)(7, 3)
-        val tileX = (regLx + regScx)(7, 3)
-        io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
         fetcherState := FetcherState.id1
       }
       // Store tilemap address
       is (FetcherState.id1) {
-        fetcherTileId := io.vramDataRead
+        // TODO handle window mode
+        val tileY = (regLy + regScy)(7, 3)
+        val tileX = (regLx + regScx + 7.U)(7, 3)
+        io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
         fetcherState := FetcherState.lo0
       }
       // Set tile low address
       is (FetcherState.lo0) {
-        io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W))
+        fetcherTileId := io.vramDataRead
         fetcherState := FetcherState.lo1
       }
       // Store tile low data
       is (FetcherState.lo1) {
-        fetcherTileLo := io.vramDataRead
+        io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W))
         fetcherState := FetcherState.hi0
       }
       // Set tile high address
       is (FetcherState.hi0) {
+        fetcherTileLo := io.vramDataRead
         io.vramAddress := Cat(fetcherTileAddress, 1.U(1.W))
         fetcherState := FetcherState.hi1
       }
@@ -245,16 +260,8 @@ class Ppu extends Module {
       is (FetcherState.hi1) {
         fetcherTileHi := io.vramDataRead
         fetcherState := FetcherState.push
-        bgFifo.io.reloadEnable := true.B
-        bgFifo.io.reloadData := VecInit(
-          (0 until 8).reverse.map(i => Cat(io.vramDataRead(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
-        )
-        when (bgFifo.io.reloadAck) {
-          fetcherState := FetcherState.id0
-        }
       }
       is (FetcherState.push) {
-        // Waiting for push... don't update fetcherState, wait here until the push is done
         bgFifo.io.reloadEnable := true.B
         bgFifo.io.reloadData := VecInit(
           (0 until 8).reverse.map(i => Cat(fetcherTileHi(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
