@@ -194,10 +194,11 @@ class Ppu extends Module {
   io.output.pixel := DontCare
   io.output.valid := false.B
   when (stateDrawing) {
-    // TODO handle palettes
     // TODO mixing
     when (bgFifo.io.outValid) {
-      io.output.pixel := bgFifo.io.outData.color
+      val bgIndex = bgFifo.io.outData.color
+      val bgColor = regBgp.colors(bgIndex)
+      io.output.pixel := bgColor
       bgFifo.io.popEnable := true.B
       regLx := regLx + 1.U
       io.output.valid := true.B

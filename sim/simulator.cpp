@@ -3,6 +3,11 @@
 #include "common.hpp"
 #include "simulator.hpp"
 
+// "hollow knight inspired" palette
+//static const uint32_t palette[4] = {0xfafbf6, 0xc6b7be, 0x565a75, 0x0f0f1b};
+// gray palette
+static const uint32_t palette[4] = {0xffffff, 0xaaaaaa, 0x555555, 0x000000};
+
 Simulator::Simulator(std::vector<uint8_t> rom)
 {
     this->top = new VGameboy;
@@ -77,14 +82,7 @@ void Simulator::stepFramebuffer()
         }
 
         uint8_t pixel = top->io_ppu_pixel;
-        uint32_t color = 0x000000; // RGB
-        switch (pixel) {
-            case 0: color = 0xfafbf6; break;
-            case 1: color = 0xc6b7be; break;
-            case 2: color = 0x565a75; break;
-            case 3: color = 0x0f0f1b; break;
-        }
-
+        uint32_t color = palette[pixel];
         frameBuffer[framebufferIndex++] = (color >> 0) & 0xFF;
         frameBuffer[framebufferIndex++] = (color >> 8) & 0xFF;
         frameBuffer[framebufferIndex++] = (color >> 16) & 0xFF;

@@ -45,7 +45,6 @@ class RegisterPalette extends Bundle {
    * Bit 5-4 - Color for index 2
    * Bit 3-2 - Color for index 1
    * Bit 1-0 - Color for index 0
-   * // TODO check ordering of this Vec
    */
   val colors = Vec(4, UInt(2.W))
 }
