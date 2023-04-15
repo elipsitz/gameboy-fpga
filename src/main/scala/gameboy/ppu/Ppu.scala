@@ -66,6 +66,15 @@ class BgPixel extends Bundle {
   val color = UInt(2.W)
 }
 
+class ObjPixel extends Bundle {
+  /** Color Index (0 is transparent) */
+  val color = UInt(2.W)
+  /** Palette number (DMG only) */
+  val palette = UInt(1.W)
+  /** BG priority (0: obj has priority, 1: bg colors 1-3 have priority) */
+  val bgPriority = Bool()
+}
+
 object FetcherState extends ChiselEnum {
   val id0, id1, lo0, lo1, hi0, hi1 = Value
   // In hi1 we try to push to the FIFO until it succeeds
@@ -217,22 +226,45 @@ class Ppu extends Module {
   bgFifo.io.reloadData := DontCare
 
   // Sprites
+  val objFifo = Module(new PixelFifo(new ObjPixel))
+  objFifo.io.popEnable := false.B
+  objFifo.io.reloadEnable := false.B
+  objFifo.io.reloadData := DontCare
   val oamBuffer = Reg(Vec(Ppu.OamBufferLength, new OamBufferEntry))
+  val oamBufferActive = VecInit((0 until Ppu.OamBufferLength).map(
+    i => oamBuffer(i).valid && (regLx + 8.U >= oamBuffer(i).x) && (regLx < oamBuffer(i).x))
+  )
+  /** Whether there is any sprite in the OAM buffer that is activated */
+  val objActive = oamBufferActive.asUInt.orR
+  /** The index of the sprite (in the OAM buffer) that is activated */
+  val objActiveIndex = PriorityEncoder(oamBufferActive)
+  io.oamAddress := 0.U
 
   // Output pixel logic
   // TODO handle discarding (SCX % 8) background pixels
   io.output.pixel := DontCare
   io.output.valid := false.B
   when (stateDrawing) {
+    // If objActive, we skip because we need to wait for the sprite to be fetched
     // TODO mixing
-    when (bgFifo.io.outValid) {
+    when (bgFifo.io.outValid && !objActive) {
+      // Background
       // CGB: LCDC.bgEnable has a different meaning (sprite priority)
+      bgFifo.io.popEnable := true.B
       val bgIndex = Mux(regLcdc.bgEnable, bgFifo.io.outData.color, 0.U)
       val bgColor = regBgp.colors(bgIndex)
-      io.output.pixel := bgColor
-      bgFifo.io.popEnable := true.B
-      regLx := regLx + 1.U
+      // Sprite
+      objFifo.io.popEnable := true.B
+      val objIndex = Mux(objFifo.io.outValid, objFifo.io.outData.color, 0.U)
+      // TODO use sprite palette
+      val objColor = objIndex
+      // Blend (todo actually do this properly)
+      val color = WireDefault(bgColor)
+      when (objIndex =/= 0.U) { color := objColor }
+      // Output
+      io.output.pixel := color
       io.output.valid := true.B
+      regLx := regLx + 1.U
     }
   }
 
@@ -248,6 +280,7 @@ class Ppu extends Module {
   val fetcherTileLo = RegInit(0.U(8.W))
   val fetcherTileHi = RegInit(0.U(8.W))
   val fetcherX = RegInit(0.U(8.W))
+  val fetcherIsObj = RegInit(false.B)
   // TODO handle vertical flip
   val fetcherTileAddress = Cat(
     !(regLcdc.bgTileDataArea | fetcherTileId(7)),
@@ -259,7 +292,7 @@ class Ppu extends Module {
       // For the fetcher, we want to ensure that we can push on 'hi1'.
       // We also need to ensure that fetcherTileId is set by lo0.
       is (FetcherState.id0) {
-        // Set tile ID address
+        // Set tile ID address (only relevant for BG/Window)
         when (windowActive) {
           // Window mode
           val tileY = windowY(7, 3)
@@ -271,8 +304,10 @@ class Ppu extends Module {
           val tileX = (fetcherX + regScx)(7, 3)
           io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
         }
+        // Start fetching from OAM (only relevant for OBJ)
+        io.oamAddress := Cat(oamBuffer(objActiveIndex).index, Ppu.OamByteTile.U(2.W))
       }
-      is (FetcherState.id1) { fetcherTileId := io.vramDataRead }
+      is (FetcherState.id1) { fetcherTileId := Mux(fetcherIsObj, io.oamDataRead, io.vramDataRead) }
       is (FetcherState.lo0) { io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W)) }
       is (FetcherState.lo1) {
         // Store this, but also start the address hi fetch so the data is stored by hi1.
@@ -282,17 +317,44 @@ class Ppu extends Module {
       is (FetcherState.hi0) { fetcherTileHi := io.vramDataRead }
       is (FetcherState.hi1) {
         // Push!
-        bgFifo.io.reloadEnable := true.B
-        bgFifo.io.reloadData := VecInit(
-          (0 until 8).reverse.map(i => Cat(fetcherTileHi(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
-        )
+        when (fetcherIsObj) {
+//          printf(cf"!!push ly=$regLy, lx=$regLx obj=${oamBuffer(objActiveIndex).index}\n")
+          oamBuffer(objActiveIndex).valid := false.B
+          // TODO: XXX make this merge with existing sprites (don't just push if empty)
+          objFifo.io.reloadEnable := true.B
+          objFifo.io.reloadData := VecInit((0 until 8).reverse.map(i => {
+            val pixel = Wire(new ObjPixel)
+            pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
+            pixel.palette := 0.U // TODO use obj attributes
+            pixel.bgPriority := 0.U // TODO use obj attributes
+            pixel
+          }))
+        } .otherwise {
+          bgFifo.io.reloadEnable := true.B
+          bgFifo.io.reloadData := VecInit(
+            (0 until 8).reverse.map(i => Cat(fetcherTileHi(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
+          )
+        }
       }
     }
     when (fetcherState < FetcherState.hi1) { fetcherState := fetcherState.next }
-    when (fetcherState === FetcherState.hi1 && bgFifo.io.reloadAck) {
+    // Handle sprite fetch.
+    // It's unclear exactly what's supposed to happen here, but it seems:
+    //  * a sprite has to be active
+    //  * the fetcher must be in the pushing state OR the background fifo isn't empty (?)
+    when(objActive && fetcherState === FetcherState.hi1 && bgFifo.io.outValid) {
+      // TODO: check that this allows for back-to-back sprite fetches for same X value
       fetcherState := FetcherState.id0
-      fetcherX := fetcherX + 8.U
+      fetcherIsObj := true.B
+    } .elsewhen (fetcherState === FetcherState.hi1 && (bgFifo.io.reloadAck || fetcherIsObj)) {
+      // Restart as BG fetcher if 1) we're pushing 2) push was successful
+      fetcherState := FetcherState.id0
+      fetcherIsObj := false.B
+      when (bgFifo.io.reloadAck) {
+        fetcherX := fetcherX + 8.U
+      }
     }
+    // TODO handle sprite fetch abort
   }
 
   // Window activation logic
@@ -306,7 +368,6 @@ class Ppu extends Module {
   }
 
   // OAM search logic
-  io.oamAddress := 0.U
   // The last part is a bit of a hack -- OAM here is synchronous,
   // so we need to set up the first read on the last dot of the previous scanline (during hblank)
   io.oamEnabled := regLcdc.enable && !stateVblank && (!stateHblank || tick === (Ppu.NumTicks - 1).U)
