@@ -205,17 +205,23 @@ class Ppu extends Module {
     }
   }
 
+  // Window registers
+  val windowHitWy = RegInit(false.B)
+  val windowActive = RegInit(false.B)
+  val windowY = Reg(UInt(8.W))
+
   // Background fetch logic
   io.vramAddress := DontCare
   val fetcherState = RegInit(FetcherState.id0)
   val fetcherTileId = RegInit(0.U(8.W))
   val fetcherTileLo = RegInit(0.U(8.W))
   val fetcherTileHi = RegInit(0.U(8.W))
+  val fetcherX = RegInit(0.U(8.W))
   // TODO handle vertical flip
   val fetcherTileAddress = Cat(
     !(regLcdc.bgTileDataArea | fetcherTileId(7)),
     fetcherTileId,
-    (regLy + regScy)(2, 0),
+    Mux(windowActive, windowY(2, 0),(regLy + regScy)(2, 0)),
   )
   when (stateDrawing) {
     switch(fetcherState) {
@@ -223,10 +229,17 @@ class Ppu extends Module {
       // We also need to ensure that fetcherTileId is set by lo0.
       is (FetcherState.id0) {
         // Set tile ID address
-        // TODO handle window mode
-        val tileY = (regLy + regScy)(7, 3)
-        val tileX = (regLx + regScx + 7.U)(7, 3)
-        io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
+        when (windowActive) {
+          // Window mode
+          val tileY = windowY(7, 3)
+          val tileX = fetcherX(7, 3)
+          io.vramAddress := Cat("b11".U(2.W), regLcdc.windowTileMapArea, tileY, tileX)
+        } .otherwise {
+          // Background mode
+          val tileY = (regLy + regScy)(7, 3)
+          val tileX = (fetcherX + regScx)(7, 3)
+          io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
+        }
       }
       is (FetcherState.id1) { fetcherTileId := io.vramDataRead }
       is (FetcherState.lo0) { io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W)) }
@@ -245,12 +258,35 @@ class Ppu extends Module {
       }
     }
     when (fetcherState < FetcherState.hi1) { fetcherState := fetcherState.next }
-    when (fetcherState === FetcherState.hi1 && bgFifo.io.reloadAck) { fetcherState := FetcherState.id0 }
+    when (fetcherState === FetcherState.hi1 && bgFifo.io.reloadAck) {
+      fetcherState := FetcherState.id0
+      fetcherX := fetcherX + 8.U
+    }
+  }
+
+  // Window activation logic
+  // XXX: windowHitWy should only activate at the beginning of oam search?
+  when(stateOamSearch && (regLy === regWy)) { windowHitWy := true.B }
+  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx >= (regWx - 8.U)) {
+    windowActive := true.B
+    fetcherState := FetcherState.id0
+    fetcherX := 0.U
+    bgFifo.reset := true.B
   }
 
   // On hblank, reset scanline registers
   when(stateHblank) {
     fetcherState := FetcherState.id0
+    fetcherX := 0.U
     bgFifo.reset := true.B
+    windowActive := false.B
+    when (windowActive) {
+      windowY := windowY + 1.U
+    }
+  }
+  // On vblank, reset frame registers
+  when (stateVblank) {
+    windowHitWy := false.B
+    windowY := 0.U
   }
 }
