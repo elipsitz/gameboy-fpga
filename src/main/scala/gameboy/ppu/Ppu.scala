@@ -23,6 +23,13 @@ object Ppu {
   val NumTicks = 456
   val OamScanLength = 80
   val FifoSize = 8
+  val OamBufferLength = 10
+
+  // Indices of bytes in OAM entries
+  val OamByteY = 0
+  val OamByteX = 1
+  val OamByteTile = 2
+  val OamByteAttributes = 3
 }
 
 /**
@@ -64,6 +71,17 @@ object FetcherState extends ChiselEnum {
   // In hi1 we try to push to the FIFO until it succeeds
 }
 
+class OamBufferEntry extends Bundle {
+  /** Whether the entry is valid */
+  val valid = Bool()
+  /** Index of this object in OAM */
+  val index = UInt(6.W)
+  /** (Object Y minus Scanline Y), [0, 16) */
+  val y = UInt(4.W)
+  /** Object X */
+  val x = UInt(8.W)
+}
+
 class Ppu extends Module {
   val io = IO(new Bundle {
     val output = new PpuOutput
@@ -80,6 +98,14 @@ class Ppu extends Module {
     val vramAddress = Output(UInt(13.W))
     /** Data read from VRAM (synchronous, in the next clock cycle) */
     val vramDataRead = Input(UInt(8.W))
+
+    // OAM access
+    /** Whether the PPU is accessing OAM */
+    val oamEnabled = Output(Bool())
+    /** Which OAM address the PPU is accessing */
+    val oamAddress = Output(UInt(8.W))
+    /** Data read from OAM (synchronous, in the next clock cycle) */
+    val oamDataRead = Input(UInt(8.W))
   })
 
   /** Current scanline, [0, 154) */
@@ -190,6 +216,9 @@ class Ppu extends Module {
   bgFifo.io.reloadEnable := false.B
   bgFifo.io.reloadData := DontCare
 
+  // Sprites
+  val oamBuffer = Reg(Vec(Ppu.OamBufferLength, new OamBufferEntry))
+
   // Output pixel logic
   // TODO handle discarding (SCX % 8) background pixels
   io.output.pixel := DontCare
@@ -276,6 +305,41 @@ class Ppu extends Module {
     bgFifo.reset := true.B
   }
 
+  // OAM search logic
+  io.oamAddress := 0.U
+  // The last part is a bit of a hack -- OAM here is synchronous,
+  // so we need to set up the first read on the last dot of the previous scanline (during hblank)
+  io.oamEnabled := regLcdc.enable && !stateVblank && (!stateHblank || tick === (Ppu.NumTicks - 1).U)
+  val oamSearchIndex = tick(6, 1) // index of OAM we're currently searching
+  val oamBufferLen = RegInit(0.U(4.W)) // number of objs in the current scanline buffer
+  val oamBufferSave = RegInit(false.B) // whether we're saving the current object
+  when (stateOamSearch) {
+    switch (tick(0).asUInt) {
+      //  cycle 0: load obj #n's y, set address to obj #n's x
+      is (0.U) {
+        val objY = io.oamDataRead
+        val objHeight = Mux(regLcdc.objSize.asBool, 16.U, 8.U)
+        val objActive = ((regLy + 16.U) >= objY) && ((regLy + 16.U) < (objY + objHeight))
+        oamBufferSave := false.B
+        when (objActive && oamBufferLen < Ppu.OamBufferLength.U) {
+          oamBufferSave := true.B
+          oamBuffer(oamBufferLen).valid := true.B
+          oamBuffer(oamBufferLen).index := oamSearchIndex
+          oamBuffer(oamBufferLen).y := objY - regLy
+        }
+        io.oamAddress := Cat(oamSearchIndex, Ppu.OamByteX.U(2.W))
+      }
+      //  cycle 1: load obj #n's x, set address to obj #n's y
+      is (1.U) {
+        io.oamAddress := Cat(oamSearchIndex + 1.U, Ppu.OamByteY.U(2.W))
+        when (oamBufferSave) {
+          oamBuffer(oamBufferLen).x := io.oamDataRead
+          oamBufferLen := oamBufferLen + 1.U
+        }
+      }
+    }
+  }
+
   // On hblank, reset scanline registers
   when(stateHblank) {
     fetcherState := FetcherState.id0
@@ -285,6 +349,10 @@ class Ppu extends Module {
     when (windowActive) {
       windowY := windowY + 1.U
     }
+    for (i <- 0 until Ppu.OamBufferLength) {
+      oamBuffer(i).valid := false.B
+    }
+    oamBufferLen := 0.U
   }
   // On vblank, reset frame registers
   when (stateVblank) {
