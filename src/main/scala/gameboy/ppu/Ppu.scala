@@ -191,12 +191,14 @@ class Ppu extends Module {
   bgFifo.io.reloadData := DontCare
 
   // Output pixel logic
+  // TODO handle discarding (SCX % 8) background pixels
   io.output.pixel := DontCare
   io.output.valid := false.B
   when (stateDrawing) {
     // TODO mixing
     when (bgFifo.io.outValid) {
-      val bgIndex = bgFifo.io.outData.color
+      // CGB: LCDC.bgEnable has a different meaning (sprite priority)
+      val bgIndex = Mux(regLcdc.bgEnable, bgFifo.io.outData.color, 0.U)
       val bgColor = regBgp.colors(bgIndex)
       io.output.pixel := bgColor
       bgFifo.io.popEnable := true.B
