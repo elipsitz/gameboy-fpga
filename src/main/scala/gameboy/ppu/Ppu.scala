@@ -261,15 +261,16 @@ class Ppu extends Module {
   /** The index of the sprite (in the OAM buffer) that is activated */
   val objActiveIndex = PriorityEncoder(oamBufferActive)
   io.oamAddress := 0.U
+  /** Whether we're waiting to fetch or actively fetching an object. */
+  val objFetchWaiting = Wire(Bool())
 
   // Output pixel logic
   // TODO handle discarding (SCX % 8) background pixels
   io.output.pixel := DontCare
   io.output.valid := false.B
   when (stateDrawing) {
-    // If objActive, we skip because we need to wait for the sprite to be fetched
     // TODO mixing
-    when (bgFifo.io.outValid && !objActive) {
+    when (bgFifo.io.outValid && !objFetchWaiting) {
       // Background
       // CGB: LCDC.bgEnable has a different meaning (sprite priority)
       bgFifo.io.popEnable := true.B
@@ -315,6 +316,7 @@ class Ppu extends Module {
     fetcherTileId,
     Mux(fetcherTileAttrs.flipY, Reverse(fetcherTileRow), fetcherTileRow),
   )
+  objFetchWaiting := objActive || fetcherIsObj
   when (stateDrawing) {
     switch(fetcherState) {
       // For the fetcher, we want to ensure that we can push on 'hi1'.
