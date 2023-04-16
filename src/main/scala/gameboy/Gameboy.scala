@@ -46,6 +46,13 @@ class Gameboy extends Module {
   cpu.io.interruptRequest.vblank := ppu.io.vblankIrq
   cpu.io.interruptRequest.lcdStat := ppu.io.statIrq
 
+  // Module: OAM DMA
+  val oamDma = Module(new OamDma)
+  val oamDmaData = WireDefault(0xFF.U(8.W))
+  oamDma.io.phiPulse := phiPulse
+  val oamDmaSelectExternal = oamDma.io.dmaAddress(15, 8) < 0x80.U || oamDma.io.dmaAddress(15, 8) >= 0xA0.U
+  val oamDmaSelectVram = !oamDmaSelectExternal
+
   // Memories
   val workRam = Module(new SinglePortRam(8 * 1024)) // DMG: 0xC000 to 0xDFFF
   val videoRam = Module(new SinglePortRam(8 * 1024)) // 0x8000 to 0x9FFF
@@ -61,10 +68,10 @@ class Gameboy extends Module {
   cpu.io.interruptRequest.timer := timer.io.interruptRequest
 
   // External bus read/write logic
-  val busAddress = cpu.io.memAddress
-  val busDataWrite = cpu.io.memDataOut
-  val busMemEnable = cpu.io.memEnable
-  val busMemWrite = cpu.io.memWrite
+  val busAddress = WireDefault(cpu.io.memAddress)
+  val busDataWrite = WireDefault(cpu.io.memDataOut)
+  val busMemEnable = WireDefault(cpu.io.memEnable)
+  val busMemWrite = WireDefault(cpu.io.memWrite)
   val cartRomSelect = busAddress >= 0x0000.U && busAddress < 0x8000.U
   val cartRamSelect = busAddress >= 0xA000.U && busAddress < 0xC000.U
   val workRamSelect = busAddress >= 0xC000.U && busAddress < 0xFE00.U
@@ -72,7 +79,16 @@ class Gameboy extends Module {
     (cartRomSelect || cartRamSelect, io.cartridge.dataRead),
     (workRamSelect, workRam.io.dataRead),
   ))
-  val busReadValid = cartRomSelect || cartRamSelect || workRamSelect
+  when (oamDma.io.active && oamDmaSelectExternal) {
+    busAddress := oamDma.io.dmaAddress
+    busMemEnable := true.B
+    busMemWrite := false.B
+    busDataWrite := DontCare
+    oamDmaData := busDataRead
+  }
+  val cpuExternalBusSelect =
+    cpu.io.memAddress < 0x8000.U ||
+    (cpu.io.memAddress >= 0xA000.U && cpu.io.memAddress < 0xFE00.U)
 
   // Cartridge access signals
   io.cartridge.writeEnable := (cartRomSelect || cartRamSelect) && busMemEnable && busMemWrite
@@ -89,12 +105,17 @@ class Gameboy extends Module {
   workRam.io.dataWrite := busDataWrite
 
   // Video ram
-  // TODO allow OAM DMA to access this
   // PPU locks it during pixel fetch mode (not hblank, vblank, oam search)
   // OAM DMA locks it if reading from this region
   // Priority: OAM DMA > PPU > CPU
-  val videoRamSelect = busAddress >= 0x8000.U && busAddress < 0xA000.U
-  when (ppu.io.vramEnabled) {
+  val cpuVideoRamSelect = cpu.io.memAddress >= 0x8000.U && cpu.io.memAddress < 0xA000.U
+  when (oamDma.io.active && oamDmaSelectVram) {
+    videoRam.io.address := oamDma.io.dmaAddress(12, 0)
+    videoRam.io.enabled := true.B
+    videoRam.io.write := false.B
+    videoRam.io.dataWrite := DontCare
+    oamDmaData := videoRam.io.dataRead
+  } .elsewhen (ppu.io.vramEnabled) {
     // PPU has control of VRAM bus
     videoRam.io.address := ppu.io.vramAddress
     videoRam.io.enabled := true.B
@@ -103,19 +124,24 @@ class Gameboy extends Module {
   } .otherwise {
     // CPU is controlling VRAM bus
     videoRam.io.address := cpu.io.memAddress
-    videoRam.io.enabled := cpu.io.memEnable && videoRamSelect
+    videoRam.io.enabled := cpu.io.memEnable && cpuVideoRamSelect
     videoRam.io.write := cpu.io.memWrite && phiPulse
     videoRam.io.dataWrite := cpu.io.memDataOut
   }
   ppu.io.vramDataRead := videoRam.io.dataRead
 
   // Oam ram
-  // TODO allow OAM DMA to access this
   // PPU locks it during oam dma and pixel fetch mode (not hblank, vblank)
   // OAM DMA locks it if writing
   // Priority: OAM DMA > PPU > CPU
-  val oamSelect = busAddress >= 0xFE00.U && busAddress < 0xFEA0.U
-  when (ppu.io.oamEnabled) {
+  val cpuOamSelect = cpu.io.memAddress >= 0xFE00.U && cpu.io.memAddress < 0xFEA0.U
+  when (oamDma.io.active) {
+    // OAM DMA is writing
+    oam.io.address := oamDma.io.dmaAddress(7, 0)
+    oam.io.enabled := true.B
+    oam.io.write := phiPulse
+    oam.io.dataWrite := oamDmaData
+  } .elsewhen (ppu.io.oamEnabled) {
     // PPU has control of OAM bus
     oam.io.address := ppu.io.oamAddress
     oam.io.enabled := true.B
@@ -124,14 +150,14 @@ class Gameboy extends Module {
   } .otherwise {
     // CPU is controlling OAM bus
     oam.io.address := cpu.io.memAddress(7, 0)
-    oam.io.enabled := cpu.io.memEnable && oamSelect
+    oam.io.enabled := cpu.io.memEnable && cpuOamSelect
     oam.io.write := cpu.io.memWrite && phiPulse
     oam.io.dataWrite := cpu.io.memDataOut
   }
   ppu.io.oamDataRead := oam.io.dataRead
 
   // Peripheral bus
-  val peripherals = Seq(debugSerial.io, highRam.io, timer.io, ppu.io.registers)
+  val peripherals = Seq(debugSerial.io, highRam.io, timer.io, ppu.io.registers, oamDma.io)
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {
     peripheral.address := cpu.io.memAddress(7, 0)
@@ -145,10 +171,10 @@ class Gameboy extends Module {
   // CPU connection to the busses
   // TODO bootrom
   val cpuInputs = Seq(
-    (busReadValid, busDataRead),
+    (cpuExternalBusSelect, busDataRead),
     (peripheralValid, peripheralDataRead),
-    (videoRamSelect, videoRam.io.dataRead),
-    (oamSelect, oam.io.dataRead),
+    (cpuVideoRamSelect, videoRam.io.dataRead),
+    (cpuOamSelect, oam.io.dataRead),
   )
   val cpuInputsValid = VecInit(cpuInputs.map(_._1)).asUInt.orR
   cpu.io.memDataIn := Mux1H(cpuInputs ++ Seq((!cpuInputsValid, 0xFF.U)))
