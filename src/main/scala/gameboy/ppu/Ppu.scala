@@ -44,10 +44,12 @@ class PixelFifo[T <: Data](gen: T, mustBeEmpty: Boolean) extends Module {
     val outData = Output(gen)
     val outValid = Output(Bool())
     val reloadAck = Output(Bool())
+    val register = Output(Vec(8, gen))
   })
 
   val register = Reg(Vec(8, gen))
   val length = RegInit(0.U(4.W))
+  io.register := register
 
   // The logicalRegister thing is sort of like a latch?
   if (mustBeEmpty) {
@@ -60,7 +62,7 @@ class PixelFifo[T <: Data](gen: T, mustBeEmpty: Boolean) extends Module {
   io.outData := logicalRegister(0)
   io.outValid := logicalLength =/= 0.U
   when (logicalLength =/= 0.U && io.popEnable) {
-    register := VecInit(logicalRegister.slice(1, 8) ++ Seq(DontCare))
+    register := VecInit(logicalRegister.slice(1, 8) ++ Seq(0.U.asTypeOf(gen)))
     length := logicalLength - 1.U
   } .elsewhen (io.reloadAck) {
     register := io.reloadData
@@ -353,13 +355,15 @@ class Ppu extends Module {
         // Push!
         when (fetcherIsObj) {
 //          printf(cf"!!push ly=$regLy, lx=$regLx obj=${oamBuffer(fetcherObjIndex).index} tile=${fetcherTileId}%x addr=${Cat(fetcherTileAddress, 0.U(1.W))}%x\n")
-          // TODO: XXX make this merge with existing sprites (don't just push if empty)
           objFifo.io.reloadEnable := true.B
           objFifo.io.reloadData := VecInit((0 until 8).reverse.map(i => {
-            val pixel = Wire(new ObjPixel)
-            pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
-            pixel.palette := fetcherTileAttrs.palette
-            pixel.bgPriority := fetcherTileAttrs.priority
+            val pixel = WireDefault(objFifo.io.register(i))
+            // Merge with existing contents. Only overwrite if the pixel index is 0.
+            when (objFifo.io.register(i).color === 0.U) {
+              pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
+              pixel.palette := fetcherTileAttrs.palette
+              pixel.bgPriority := fetcherTileAttrs.priority
+            }
             pixel
           }))
         } .otherwise {
@@ -376,7 +380,6 @@ class Ppu extends Module {
     //  * a sprite has to be active
     //  * the fetcher must be in the pushing state OR the background fifo isn't empty (?)
     when(objActive && fetcherState === FetcherState.hi1 && bgFifo.io.outValid) {
-      // TODO: check that this allows for back-to-back sprite fetches for same X value
       fetcherState := FetcherState.id0
       fetcherIsObj := true.B
       fetcherObjIndex := objActiveIndex
