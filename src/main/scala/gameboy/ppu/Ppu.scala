@@ -269,22 +269,19 @@ class Ppu extends Module {
   io.output.pixel := DontCare
   io.output.valid := false.B
   when (stateDrawing) {
-    // TODO mixing
     when (bgFifo.io.outValid && !objFetchWaiting) {
-      // Background
       // CGB: LCDC.bgEnable has a different meaning (sprite priority)
       bgFifo.io.popEnable := true.B
       val bgIndex = Mux(regLcdc.bgEnable, bgFifo.io.outData.color, 0.U)
       val bgColor = regBgp.colors(bgIndex)
-      // Sprite
       objFifo.io.popEnable := true.B
       val objIndex = Mux(objFifo.io.outValid, objFifo.io.outData.color, 0.U)
       val objColor = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp0).colors(objIndex)
-      // Blend (todo actually do this properly)
-      val color = WireDefault(bgColor)
-      when (objIndex =/= 0.U) { color := objColor }
-      // Output
-      io.output.pixel := color
+      // Mix pixels and output
+      io.output.pixel := Mux(
+        objIndex === 0.U || (objFifo.io.outData.bgPriority && bgIndex =/= 0.U),
+        bgColor, objColor
+      )
       io.output.valid := true.B
       regLx := regLx + 1.U
     }
