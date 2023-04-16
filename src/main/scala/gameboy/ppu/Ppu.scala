@@ -36,7 +36,7 @@ object Ppu {
  * BG-style FIFO
  * Can be popped from on the same cycle as it's reloaded.
  */
-class PixelFifo[T <: Data](gen: T) extends Module {
+class PixelFifo[T <: Data](gen: T, mustBeEmpty: Boolean) extends Module {
   val io = IO(new Bundle {
     val reloadData = Input(Vec(8, gen))
     val reloadEnable = Input(Bool())
@@ -50,7 +50,11 @@ class PixelFifo[T <: Data](gen: T) extends Module {
   val length = RegInit(0.U(4.W))
 
   // The logicalRegister thing is sort of like a latch?
-  io.reloadAck := length === 0.U && io.reloadEnable
+  if (mustBeEmpty) {
+    io.reloadAck := length === 0.U && io.reloadEnable
+  } else {
+    io.reloadAck := io.reloadEnable
+  }
   val logicalRegister = Mux(io.reloadAck, io.reloadData, register)
   val logicalLength = Mux(io.reloadAck, 8.U, length)
   io.outData := logicalRegister(0)
@@ -58,6 +62,9 @@ class PixelFifo[T <: Data](gen: T) extends Module {
   when (logicalLength =/= 0.U && io.popEnable) {
     register := VecInit(logicalRegister.slice(1, 8) ++ Seq(DontCare))
     length := logicalLength - 1.U
+  } .elsewhen (io.reloadAck) {
+    register := io.reloadData
+    length := 8.U
   }
 }
 
@@ -85,10 +92,25 @@ class OamBufferEntry extends Bundle {
   val valid = Bool()
   /** Index of this object in OAM */
   val index = UInt(6.W)
-  /** (Object Y minus Scanline Y), [0, 16) */
+  /** Object Y */
   val y = UInt(4.W)
   /** Object X */
   val x = UInt(8.W)
+}
+
+class TileAttributes extends Bundle {
+  /** OBJ: BG and window over OBJ? (0: no, 1: bg colors 1-3 over the OBJ) */
+  val priority = Bool()
+  /** Vertical flip */
+  val flipY = Bool()
+  /** Horizontal flip */
+  val flipX = Bool()
+  /** Palette number (DMG, obj only) */
+  val palette = UInt(1.W)
+  /** CGB: tile vram bank */
+  val vramBank = UInt(1.W)
+  /** CGB: palette number */
+  val paletteCgb = UInt(3.W)
 }
 
 class Ppu extends Module {
@@ -220,13 +242,13 @@ class Ppu extends Module {
   io.statIrq := !ShiftRegister(statInterrupt, 1, false.B, true.B) && statInterrupt
 
   // Background FIFO
-  val bgFifo = Module(new PixelFifo(new BgPixel))
+  val bgFifo = Module(new PixelFifo(new BgPixel, true))
   bgFifo.io.popEnable := false.B
   bgFifo.io.reloadEnable := false.B
   bgFifo.io.reloadData := DontCare
 
   // Sprites
-  val objFifo = Module(new PixelFifo(new ObjPixel))
+  val objFifo = Module(new PixelFifo(new ObjPixel, false))
   objFifo.io.popEnable := false.B
   objFifo.io.reloadEnable := false.B
   objFifo.io.reloadData := DontCare
@@ -256,8 +278,7 @@ class Ppu extends Module {
       // Sprite
       objFifo.io.popEnable := true.B
       val objIndex = Mux(objFifo.io.outValid, objFifo.io.outData.color, 0.U)
-      // TODO use sprite palette
-      val objColor = objIndex
+      val objColor = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp1).colors(objIndex)
       // Blend (todo actually do this properly)
       val color = WireDefault(bgColor)
       when (objIndex =/= 0.U) { color := objColor }
@@ -276,16 +297,23 @@ class Ppu extends Module {
   // Background fetch logic
   io.vramAddress := DontCare
   val fetcherState = RegInit(FetcherState.id0)
+  val fetcherTileAttrs = Reg(new TileAttributes)
   val fetcherTileId = RegInit(0.U(8.W))
   val fetcherTileLo = RegInit(0.U(8.W))
   val fetcherTileHi = RegInit(0.U(8.W))
   val fetcherX = RegInit(0.U(8.W))
   val fetcherIsObj = RegInit(false.B)
-  // TODO handle vertical flip
+  /** if fetcherIsObj, the oam buffer index of the object we're fetching */
+  val fetcherObjIndex = Reg(UInt(log2Ceil(Ppu.OamBufferLength).W))
+  val fetcherTileRow = Wire(UInt(3.W))
+  when (fetcherIsObj) { fetcherTileRow := (regLy - oamBuffer(fetcherObjIndex).y)(2, 0) }
+    .elsewhen (windowActive) { fetcherTileRow := windowY(2, 0) }
+    .otherwise { fetcherTileRow := (regLy + regScy)(2, 0) }
+  // TODO handle 16-tall OBJ
   val fetcherTileAddress = Cat(
-    !(regLcdc.bgTileDataArea | fetcherTileId(7)),
+    !fetcherIsObj && !(regLcdc.bgTileDataArea | fetcherTileId(7)),
     fetcherTileId,
-    Mux(windowActive, windowY(2, 0),(regLy + regScy)(2, 0)),
+    Mux(fetcherTileAttrs.flipY, Reverse(fetcherTileRow), fetcherTileRow),
   )
   when (stateDrawing) {
     switch(fetcherState) {
@@ -305,28 +333,34 @@ class Ppu extends Module {
           io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
         }
         // Start fetching from OAM (only relevant for OBJ)
-        io.oamAddress := Cat(oamBuffer(objActiveIndex).index, Ppu.OamByteTile.U(2.W))
+        io.oamAddress := Cat(oamBuffer(fetcherObjIndex).index, Ppu.OamByteTile.U(2.W))
+
+        // Read the tile attributes we started reading when we started sprite fetch
+        // DMG: BG doesn't have attributes, set this to 0
+        fetcherTileAttrs := io.oamDataRead.asTypeOf(new TileAttributes)
+        when (!fetcherIsObj) { fetcherTileAttrs := 0.U.asTypeOf(new TileAttributes) }
       }
       is (FetcherState.id1) { fetcherTileId := Mux(fetcherIsObj, io.oamDataRead, io.vramDataRead) }
       is (FetcherState.lo0) { io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W)) }
       is (FetcherState.lo1) {
         // Store this, but also start the address hi fetch so the data is stored by hi1.
-        fetcherTileLo := io.vramDataRead
+        fetcherTileLo := Mux(fetcherTileAttrs.flipX, Reverse(io.vramDataRead), io.vramDataRead)
         io.vramAddress := Cat(fetcherTileAddress, 1.U(1.W))
       }
-      is (FetcherState.hi0) { fetcherTileHi := io.vramDataRead }
+      is (FetcherState.hi0) {
+        fetcherTileHi := Mux(fetcherTileAttrs.flipX, Reverse(io.vramDataRead), io.vramDataRead)
+      }
       is (FetcherState.hi1) {
         // Push!
         when (fetcherIsObj) {
-//          printf(cf"!!push ly=$regLy, lx=$regLx obj=${oamBuffer(objActiveIndex).index}\n")
-          oamBuffer(objActiveIndex).valid := false.B
+//          printf(cf"!!push ly=$regLy, lx=$regLx obj=${oamBuffer(fetcherObjIndex).index} tile=${fetcherTileId}%x addr=${Cat(fetcherTileAddress, 0.U(1.W))}%x\n")
           // TODO: XXX make this merge with existing sprites (don't just push if empty)
           objFifo.io.reloadEnable := true.B
           objFifo.io.reloadData := VecInit((0 until 8).reverse.map(i => {
             val pixel = Wire(new ObjPixel)
             pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
-            pixel.palette := 0.U // TODO use obj attributes
-            pixel.bgPriority := 0.U // TODO use obj attributes
+            pixel.palette := fetcherTileAttrs.palette
+            pixel.bgPriority := fetcherTileAttrs.priority
             pixel
           }))
         } .otherwise {
@@ -346,6 +380,15 @@ class Ppu extends Module {
       // TODO: check that this allows for back-to-back sprite fetches for same X value
       fetcherState := FetcherState.id0
       fetcherIsObj := true.B
+      fetcherObjIndex := objActiveIndex
+      // Mark this object as invalid (now that we're starting the fetch)
+      oamBuffer(objActiveIndex).valid := false.B
+      // Set the address to start fetching the OAM data
+      io.oamAddress := Cat(oamBuffer(objActiveIndex).index, Ppu.OamByteAttributes.U(2.W))
+      when (bgFifo.io.reloadAck) {
+        fetcherX := fetcherX + 8.U
+      }
+//      printf(cf"start lx=$regLx obj=${oamBuffer(objActiveIndex).index} objX=${oamBuffer(objActiveIndex).x}\n")
     } .elsewhen (fetcherState === FetcherState.hi1 && (bgFifo.io.reloadAck || fetcherIsObj)) {
       // Restart as BG fetcher if 1) we're pushing 2) push was successful
       fetcherState := FetcherState.id0
@@ -383,10 +426,11 @@ class Ppu extends Module {
         val objActive = ((regLy + 16.U) >= objY) && ((regLy + 16.U) < (objY + objHeight))
         oamBufferSave := false.B
         when (objActive && oamBufferLen < Ppu.OamBufferLength.U) {
+//          printf(cf"ly=$regLy, save ${oamSearchIndex}\n")
           oamBufferSave := true.B
           oamBuffer(oamBufferLen).valid := true.B
           oamBuffer(oamBufferLen).index := oamSearchIndex
-          oamBuffer(oamBufferLen).y := objY - regLy
+          oamBuffer(oamBufferLen).y := objY
         }
         io.oamAddress := Cat(oamSearchIndex, Ppu.OamByteX.U(2.W))
       }
