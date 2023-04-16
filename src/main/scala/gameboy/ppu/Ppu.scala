@@ -94,7 +94,7 @@ class OamBufferEntry extends Bundle {
   val valid = Bool()
   /** Index of this object in OAM */
   val index = UInt(6.W)
-  /** Object Y */
+  /** Scanline minus Object Y (row within the object), [0, 16) */
   val y = UInt(4.W)
   /** Object X */
   val x = UInt(8.W)
@@ -306,13 +306,18 @@ class Ppu extends Module {
   /** if fetcherIsObj, the oam buffer index of the object we're fetching */
   val fetcherObjIndex = Reg(UInt(log2Ceil(Ppu.OamBufferLength).W))
   val fetcherTileRow = Wire(UInt(3.W))
-  when (fetcherIsObj) { fetcherTileRow := (regLy - oamBuffer(fetcherObjIndex).y)(2, 0) }
+  when (fetcherIsObj) { fetcherTileRow := oamBuffer(fetcherObjIndex).y(2, 0) }
     .elsewhen (windowActive) { fetcherTileRow := windowY(2, 0) }
     .otherwise { fetcherTileRow := (regLy + regScy)(2, 0) }
-  // TODO handle 16-tall OBJ
+  val fetcherTileIdLsb = WireDefault(fetcherTileId(0))
+  when (fetcherIsObj && regLcdc.objSize.asBool) {
+    // For an 8x16 object, the lower bit is 0 for the top half, 1 for the bottom (inverted if flipped)
+    fetcherTileIdLsb := oamBuffer(fetcherObjIndex).y(3) ^ fetcherTileAttrs.flipY
+  }
   val fetcherTileAddress = Cat(
     !fetcherIsObj && !(regLcdc.bgTileDataArea | fetcherTileId(7)),
-    fetcherTileId,
+    fetcherTileId(7, 1),
+    fetcherTileIdLsb,
     Mux(fetcherTileAttrs.flipY, ~fetcherTileRow, fetcherTileRow),
   )
   objFetchWaiting := objActive || fetcherIsObj
@@ -432,7 +437,7 @@ class Ppu extends Module {
           oamBufferSave := true.B
           oamBuffer(oamBufferLen).valid := true.B
           oamBuffer(oamBufferLen).index := oamSearchIndex
-          oamBuffer(oamBufferLen).y := objY
+          oamBuffer(oamBufferLen).y := regLy - objY
         }
         io.oamAddress := Cat(oamSearchIndex, Ppu.OamByteX.U(2.W))
       }
