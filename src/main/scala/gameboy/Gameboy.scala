@@ -79,6 +79,10 @@ class Gameboy extends Module {
   timer.io.phiPulse := phiPulse
   cpu.io.interruptRequest.timer := timer.io.interruptRequest
 
+  // Peripheral: Joypad
+  val joypad = Module(new Joypad)
+  joypad.io.state := io.joypad
+
   // External bus read/write logic
   val busAddress = WireDefault(cpu.io.memAddress)
   val busDataWrite = WireDefault(cpu.io.memDataOut)
@@ -169,7 +173,7 @@ class Gameboy extends Module {
   ppu.io.oamDataRead := oam.io.dataRead
 
   // Peripheral bus
-  val peripherals = Seq(debugSerial.io, highRam.io, timer.io, ppu.io.registers, oamDma.io)
+  val peripherals = Seq(debugSerial.io, highRam.io, timer.io, ppu.io.registers, oamDma.io, joypad.io)
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {
     peripheral.address := cpu.io.memAddress(7, 0)
