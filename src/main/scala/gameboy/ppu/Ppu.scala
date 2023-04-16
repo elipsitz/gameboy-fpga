@@ -279,7 +279,7 @@ class Ppu extends Module {
       // Sprite
       objFifo.io.popEnable := true.B
       val objIndex = Mux(objFifo.io.outValid, objFifo.io.outData.color, 0.U)
-      val objColor = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp1).colors(objIndex)
+      val objColor = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp0).colors(objIndex)
       // Blend (todo actually do this properly)
       val color = WireDefault(bgColor)
       when (objIndex =/= 0.U) { color := objColor }
