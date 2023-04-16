@@ -2,11 +2,23 @@
 
 #include "VGameboy.h"
 
+struct JoypadState {
+    bool start;
+    bool select;
+    bool b;
+    bool a;
+    bool down;
+    bool up;
+    bool left;
+    bool right;
+};
+
 class Simulator {
 public:
     Simulator(std::vector<uint8_t> rom);
     ~Simulator();
 
+    void set_joypad_state(JoypadState state);
     void simulate_cycles(uint64_t cycles);
     void simulate_frame();
     void reset();

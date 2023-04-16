@@ -20,6 +20,20 @@ std::vector<uint8_t> read_file(const char* path) {
     return buffer;
 }
 
+JoypadState read_joypad_state() {
+    const uint8_t* keyboard = SDL_GetKeyboardState(nullptr);
+    JoypadState joypad = {};
+    joypad.start = keyboard[SDL_SCANCODE_RETURN];
+    joypad.select = keyboard[SDL_SCANCODE_RSHIFT];
+    joypad.b = keyboard[SDL_SCANCODE_X];
+    joypad.a = keyboard[SDL_SCANCODE_Z];
+    joypad.down = keyboard[SDL_SCANCODE_DOWN];
+    joypad.up = keyboard[SDL_SCANCODE_UP];
+    joypad.left = keyboard[SDL_SCANCODE_LEFT];
+    joypad.right = keyboard[SDL_SCANCODE_RIGHT];
+    return joypad;
+}
+
 int main(int argc, char** argv) {
     if (argc != 2) {
         std::cout << "Usage: sim [rom.gb]" << std::endl;
@@ -53,6 +67,7 @@ int main(int argc, char** argv) {
 
         // Simulate for a frame.
         if (!paused) {
+            simulator.set_joypad_state(read_joypad_state());
             simulator.simulate_frame();
             frame_counter++;
         }

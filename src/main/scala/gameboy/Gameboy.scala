@@ -20,6 +20,17 @@ class CartridgeIo extends Bundle {
   val dataWrite = Output(UInt(8.W))
 }
 
+class JoypadState extends Bundle {
+  val start = Bool()
+  val select = Bool()
+  val b = Bool()
+  val a = Bool()
+  val down = Bool()
+  val up = Bool()
+  val left = Bool()
+  val right = Bool()
+}
+
 /**
  * The main Gameboy module.
  *
@@ -33,6 +44,7 @@ class Gameboy extends Module {
   val io = IO(new Bundle {
     val cartridge = new CartridgeIo()
     val ppu = new PpuOutput()
+    val joypad = Input(new JoypadState)
   })
 
   // Module: CPU

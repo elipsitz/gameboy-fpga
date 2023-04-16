@@ -34,6 +34,18 @@ void Simulator::reset()
     top->reset = 0;
 }
 
+void Simulator::set_joypad_state(JoypadState state)
+{
+    top->io_joypad_start = state.start;
+    top->io_joypad_select = state.select;
+    top->io_joypad_b = state.b;
+    top->io_joypad_a = state.a;
+    top->io_joypad_down = state.down;
+    top->io_joypad_up = state.up;
+    top->io_joypad_left = state.left;
+    top->io_joypad_right = state.right;
+}
+
 void Simulator::simulate_cycles(uint64_t num_cycles)
 {
     for (uint64_t i = 0; i < num_cycles; i++) {
