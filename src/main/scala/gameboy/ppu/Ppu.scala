@@ -314,7 +314,7 @@ class Ppu extends Module {
   val fetcherTileAddress = Cat(
     !fetcherIsObj && !(regLcdc.bgTileDataArea | fetcherTileId(7)),
     fetcherTileId,
-    Mux(fetcherTileAttrs.flipY, Reverse(fetcherTileRow), fetcherTileRow),
+    Mux(fetcherTileAttrs.flipY, ~fetcherTileRow, fetcherTileRow),
   )
   objFetchWaiting := objActive || fetcherIsObj
   when (stateDrawing) {
