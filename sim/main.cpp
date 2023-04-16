@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
 
     Simulator simulator(rom);
 
+    bool paused = false;
     uint64_t frame_timer = 0;
     int frame_counter = 0;
     while (true) {
@@ -41,13 +42,21 @@ int main(int argc, char** argv) {
         if (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 break;
+            } else if (event.type == SDL_KEYDOWN) {
+                auto key = event.key.keysym;
+                bool command = (key.mod & KMOD_GUI) != 0;
+                if (key.sym == SDLK_p && command) {
+                    paused = !paused;
+                }
             }
         }
 
         // Simulate for a frame.
-        simulator.simulate_frame();
+        if (!paused) {
+            simulator.simulate_frame();
+            frame_counter++;
+        }
         window.update(simulator.getFramebuffer());
-        frame_counter++;
 
         // Update title.
         if (SDL_GetTicks64() - frame_timer >= 1000) {
