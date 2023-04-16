@@ -259,7 +259,7 @@ class Ppu extends Module {
     i => oamBuffer(i).valid && (regLx + 8.U >= oamBuffer(i).x) && (regLx < oamBuffer(i).x))
   )
   /** Whether there is any sprite in the OAM buffer that is activated */
-  val objActive = oamBufferActive.asUInt.orR
+  val objActive = oamBufferActive.asUInt.orR && regLcdc.objEnable
   /** The index of the sprite (in the OAM buffer) that is activated */
   val objActiveIndex = PriorityEncoder(oamBufferActive)
   io.oamAddress := 0.U
@@ -277,7 +277,7 @@ class Ppu extends Module {
       val bgIndex = Mux(regLcdc.bgEnable, bgFifo.io.outData.color, 0.U)
       val bgColor = regBgp.colors(bgIndex)
       objFifo.io.popEnable := true.B
-      val objIndex = Mux(objFifo.io.outValid, objFifo.io.outData.color, 0.U)
+      val objIndex = Mux(objFifo.io.outValid && regLcdc.objEnable, objFifo.io.outData.color, 0.U)
       val objColor = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp0).colors(objIndex)
       // Mix pixels and output
       io.output.pixel := Mux(
@@ -404,7 +404,11 @@ class Ppu extends Module {
         fetcherX := fetcherX + 8.U
       }
     }
-    // TODO handle sprite fetch abort
+    // Sprite fetch abort (note that this may not be how it actually works)
+    when (fetcherIsObj && !regLcdc.objEnable) {
+      fetcherState := FetcherState.id0
+      fetcherIsObj := false.B
+    }
   }
 
   // Window activation logic
