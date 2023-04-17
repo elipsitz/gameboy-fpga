@@ -1,7 +1,7 @@
 package gameboy
 
 import chisel3._
-import chisel3.util._
+import chisel3.util.Mux1H
 import gameboy.cpu.Cpu
 import gameboy.ppu.{Ppu, PpuOutput}
 
@@ -204,5 +204,5 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
 }
 
 object Gameboy extends App {
-  emitVerilog(new Gameboy(), args)
+  circt.stage.ChiselStage.emitSystemVerilogFile(new Gameboy(), args)
 }

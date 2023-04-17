@@ -15,8 +15,8 @@ VOBJS   := $(OBJDIR)/verilated.o $(OBJDIR)/verilated_vcd_c.o $(OBJDIR)/verilated
 PROGRAMS := $(BUILD_DIR)/simulator
 all:	$(PROGRAMS)
 
-$(BUILD_DIR)/V%__ALL.a: $(BUILD_DIR)/%.v
-	$(SUBMAKE) verilator --cc $(BUILD_DIR)/$*.v --build --Mdir $(BUILD_DIR)
+$(BUILD_DIR)/V%__ALL.a: $(BUILD_DIR)/%.sv
+	$(SUBMAKE) verilator --cc $(BUILD_DIR)/$*.sv --build --Mdir $(BUILD_DIR)
 
 %.o: $(OBJDIR)/%.o
 $(OBJDIR)/%.o: %.cpp
