@@ -350,18 +350,19 @@ class Ppu extends Module {
       is (FetcherState.lo0) { io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W)) }
       is (FetcherState.lo1) {
         // Store this, but also start the address hi fetch so the data is stored by hi1.
-        fetcherTileLo := Mux(fetcherTileAttrs.flipX, Reverse(io.vramDataRead), io.vramDataRead)
+        // The most significant bit is the first, so we reverse the order if it's *not* flipped.
+        fetcherTileLo := Mux(fetcherTileAttrs.flipX, io.vramDataRead, Reverse(io.vramDataRead))
         io.vramAddress := Cat(fetcherTileAddress, 1.U(1.W))
       }
       is (FetcherState.hi0) {
-        fetcherTileHi := Mux(fetcherTileAttrs.flipX, Reverse(io.vramDataRead), io.vramDataRead)
+        fetcherTileHi := Mux(fetcherTileAttrs.flipX, io.vramDataRead, Reverse(io.vramDataRead))
       }
       is (FetcherState.hi1) {
         // Push!
         when (fetcherIsObj) {
 //          printf(cf"!!push ly=$regLy, lx=$regLx obj=${oamBuffer(fetcherObjIndex).index} tile=${fetcherTileId}%x addr=${Cat(fetcherTileAddress, 0.U(1.W))}%x\n")
           objFifo.io.reloadEnable := true.B
-          objFifo.io.reloadData := VecInit((0 until 8).reverse.map(i => {
+          objFifo.io.reloadData := VecInit((0 until 8).map(i => {
             val pixel = WireDefault(objFifo.io.register(i))
             // Merge with existing contents. Only overwrite if the pixel index is 0.
             when (objFifo.io.register(i).color === 0.U) {
@@ -374,7 +375,7 @@ class Ppu extends Module {
         } .otherwise {
           bgFifo.io.reloadEnable := true.B
           bgFifo.io.reloadData := VecInit(
-            (0 until 8).reverse.map(i => Cat(fetcherTileHi(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
+            (0 until 8).map(i => Cat(fetcherTileHi(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
           )
         }
       }
