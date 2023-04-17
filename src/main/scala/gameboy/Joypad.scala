@@ -6,18 +6,21 @@ import chisel3.util._
 class Joypad extends Module {
   val io = IO(new PeripheralAccess {
     val state = Input(new JoypadState())
+    val interruptRequest = Output(Bool())
   })
 
   val selectDirection = RegInit(false.B)
   val selectAction = RegInit(false.B)
-
-  io.dataRead := Cat(
-    "b1100".U(4.W),
+  val readState = Cat(
     !((io.state.down && selectDirection) || (io.state.start && selectAction)),
     !((io.state.up && selectDirection) || (io.state.select && selectAction)),
     !((io.state.left && selectDirection) || (io.state.b && selectAction)),
     !((io.state.right && selectDirection) || (io.state.a && selectAction)),
   )
+
+  io.dataRead := Cat("b1100".U(4.W), readState)
+  // IRQ when any bit in readState goes from high to low
+  io.interruptRequest := (RegNext(readState, 0.U) & (~readState).asUInt).orR
 
   io.valid := false.B
   when (io.enabled && io.address === 0x00.U) {

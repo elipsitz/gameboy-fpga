@@ -82,6 +82,7 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
   // Peripheral: Joypad
   val joypad = Module(new Joypad)
   joypad.io.state := io.joypad
+  cpu.io.interruptRequest.joypad := joypad.io.interruptRequest
 
   // Boot rom
   val bootRom = Module(new BootRom(skipBoot))
