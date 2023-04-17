@@ -1,6 +1,6 @@
 BUILD_DIR := ../build
 VERILATOR := verilator
-VFLAGS := -Wall -Wno-fatal -MMD -cc
+#VFLAGS := -Wall -Wno-fatal -MMD -cc
 CXX	:= g++
 OBJDIR  := $(BUILD_DIR)
 ifeq ($(VERILATOR_ROOT),)
@@ -16,7 +16,7 @@ PROGRAMS := $(BUILD_DIR)/simulator
 all:	$(PROGRAMS)
 
 $(BUILD_DIR)/V%__ALL.a: $(BUILD_DIR)/%.v
-	$(SUBMAKE) verilator --cc $(BUILD_DIR)/$*.v --build --Mdir $(BUILD_DIR)
+	$(SUBMAKE) verilator --cc $(BUILD_DIR)/$*.v --build --Mdir $(BUILD_DIR) -CFLAGS -g -Wno-width
 
 %.o: $(OBJDIR)/%.o
 $(OBJDIR)/%.o: %.cpp
