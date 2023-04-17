@@ -13,6 +13,8 @@ class PpuOutput extends Bundle {
   val hblank = Output(Bool())
   /** Whether the PPU is in vblank */
   val vblank = Output(Bool())
+  /** Whether the LCD is enabled */
+  val lcdEnable = Output(Bool())
 }
 
 object Ppu {
@@ -145,7 +147,7 @@ class Ppu extends Module {
   /** Current tick within scanline, [0, 456) */
   val tick = RegInit(0.U(9.W))
   /** Current number of pixels output in this scanline, [0, 168]. First 8 aren't output (for window and obj x < 8) */
-  val regLx = RegInit(0.U(8.W))
+  val regLx = RegInit((Ppu.Width + 8).U(8.W))
 
   /** $FF40 -- LCDC: LCD Control */
   val regLcdc = RegInit(0.U.asTypeOf(new RegisterLcdControl))
@@ -200,6 +202,7 @@ class Ppu extends Module {
   io.output.vblank := stateVblank
   val lycEqualFlag = regLyc === regLy
   io.vramEnabled := stateDrawing && regLcdc.enable
+  io.output.lcdEnable := regLcdc.enable
 
   // Memory-mapped register access
   when (io.registers.enabled && io.registers.write) {
@@ -243,14 +246,14 @@ class Ppu extends Module {
     ).asUInt.orR
 
   // Interrupt request generation
-  io.vblankIrq := !ShiftRegister(stateVblank, 1, false.B, true.B) && stateVblank
+  io.vblankIrq := !ShiftRegister(stateVblank, 1, false.B, true.B) && stateVblank && regLcdc.enable
   val statInterrupt = Cat(Seq(
     (lycEqualFlag && regStat.interruptLyEnable),
     (stateOamSearch && regStat.interruptOamEnable),
     (stateVblank && regStat.interruptVblankEnable),
     (stateHblank && regStat.interruptHblankEnable),
   )).orR
-  io.statIrq := !ShiftRegister(statInterrupt, 1, false.B, true.B) && statInterrupt
+  io.statIrq := !ShiftRegister(statInterrupt, 1, false.B, true.B) && statInterrupt && regLcdc.enable
 
   // Background FIFO
   val bgFifo = Module(new PixelFifo(new BgPixel, true))
@@ -279,7 +282,7 @@ class Ppu extends Module {
   // Output pixel logic
   io.output.pixel := DontCare
   io.output.valid := false.B
-  when (stateDrawing && bgFifo.io.outValid) {
+  when (regLcdc.enable && stateDrawing && bgFifo.io.outValid) {
     when (bgScrollCounter > 0.U) {
       // If we have bg pixels to discard (for SCX % 8) do that now.
       bgFifo.io.popEnable := true.B
@@ -497,5 +500,11 @@ class Ppu extends Module {
   when (stateVblank) {
     windowHitWy := false.B
     windowY := 0.U
+  }
+  // When LCD/PPU is turned off, reset state
+  when (!regLcdc.enable) {
+    regLy := 0.U
+    tick := Ppu.OamScanLength.U
+    regLx := (Ppu.Width + 8).U
   }
 }

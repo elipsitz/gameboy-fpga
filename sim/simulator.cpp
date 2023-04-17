@@ -98,6 +98,13 @@ void Simulator::stepFramebuffer()
         frameBuffer[framebufferIndex++] = (color >> 16) & 0xFF;
         frameBuffer[framebufferIndex++] = 0xFF;
     }
+
+    // Blank the screen if the LCD is disabled.
+    if (prev_lcd_enabled && !top->io_ppu_lcdEnable) {
+        std::fill(frameBuffer.begin(), frameBuffer.end(), 0xFF);
+        framebufferIndex = frameBuffer.size();
+    }
+    prev_lcd_enabled = top->io_ppu_lcdEnable;
 }
 
 void Simulator::simulate_frame()

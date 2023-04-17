@@ -35,4 +35,5 @@ private:
     size_t framebufferIndex = 0;
     bool prev_vblank = false;
     bool prev_hblank = false;
+    bool prev_lcd_enabled = false;
 };
