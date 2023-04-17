@@ -83,6 +83,10 @@ class Gameboy extends Module {
   val joypad = Module(new Joypad)
   joypad.io.state := io.joypad
 
+  // Boot rom
+  val bootRom = Module(new BootRom)
+  bootRom.io.address := cpu.io.memAddress
+
   // External bus read/write logic
   val busAddress = WireDefault(cpu.io.memAddress)
   val busDataWrite = WireDefault(cpu.io.memDataOut)
@@ -173,7 +177,9 @@ class Gameboy extends Module {
   ppu.io.oamDataRead := oam.io.dataRead
 
   // Peripheral bus
-  val peripherals = Seq(debugSerial.io, highRam.io, timer.io, ppu.io.registers, oamDma.io, joypad.io)
+  val peripherals = Seq(
+    debugSerial.io, highRam.io, timer.io, ppu.io.registers, oamDma.io, joypad.io, bootRom.io.peripheral
+  )
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {
     peripheral.address := cpu.io.memAddress(7, 0)
@@ -185,9 +191,9 @@ class Gameboy extends Module {
   val peripheralDataRead = Mux1H(peripherals.map(p => (p.valid, p.dataRead)))
 
   // CPU connection to the busses
-  // TODO bootrom
   val cpuInputs = Seq(
-    (cpuExternalBusSelect, busDataRead),
+    (bootRom.io.valid, bootRom.io.dataRead),
+    (cpuExternalBusSelect && !bootRom.io.valid, busDataRead),
     (peripheralValid, peripheralDataRead),
     (cpuVideoRamSelect, videoRam.io.dataRead),
     (cpuOamSelect, oam.io.dataRead),

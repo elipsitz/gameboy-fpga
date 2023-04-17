@@ -75,7 +75,9 @@ class Cpu extends Module {
   // Includes incrementer/decrementer.
   // 14 Registers: BC DE HL FA SP WZ PC
   //               01 23 45 67 89 AB CD
+  // State *after* boot rom:
   val initialRegisterValues = Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
+  // Blank state (will do boot rom):
 //  val initialRegisterValues = Seq.fill(14)(0x00)
   val registers = RegInit(VecInit(initialRegisterValues.map(_.U(8.W))))
   val regR16IndexHi = Wire(UInt(4.W))
