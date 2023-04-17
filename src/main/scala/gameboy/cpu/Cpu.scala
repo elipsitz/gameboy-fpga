@@ -17,7 +17,7 @@ object Cpu {
 }
 
 /** Gameboy CPU - Sharp SM83 */
-class Cpu extends Module {
+class Cpu(skipBoot: Boolean = true) extends Module {
   val io = IO(new Bundle {
     /** System bus address selection */
     val memAddress = Output(UInt(16.W))
@@ -75,10 +75,12 @@ class Cpu extends Module {
   // Includes incrementer/decrementer.
   // 14 Registers: BC DE HL FA SP WZ PC
   //               01 23 45 67 89 AB CD
-  // State *after* boot rom:
-  val initialRegisterValues = Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
-  // Blank state (will do boot rom):
-//  val initialRegisterValues = Seq.fill(14)(0x00)
+  val initialRegisterValues = if (skipBoot) {
+    // State *after* DMG boot rom:
+    Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
+  } else {
+    Seq.fill(14)(0x00)
+  }
   val registers = RegInit(VecInit(initialRegisterValues.map(_.U(8.W))))
   val regR16IndexHi = Wire(UInt(4.W))
   regR16IndexHi := 0.U

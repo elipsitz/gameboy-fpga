@@ -3,7 +3,7 @@ package gameboy
 import chisel3._
 import chisel3.util._
 
-class BootRom extends Module {
+class BootRom(skipBoot: Boolean) extends Module {
   val io = IO(new Bundle {
     val peripheral = new PeripheralAccess
     val address = Input(UInt(16.W))
@@ -13,7 +13,7 @@ class BootRom extends Module {
 
   val data = getClass.getResourceAsStream("/dmg_boot.bin").readAllBytes()
   val rom = VecInit(data.map(x => (x & 0xFF).U(8.W)).toIndexedSeq)
-  val regBootOff = RegInit(false.B)
+  val regBootOff = RegInit(skipBoot.B)
 
   io.valid := false.B
   io.dataRead := DontCare
