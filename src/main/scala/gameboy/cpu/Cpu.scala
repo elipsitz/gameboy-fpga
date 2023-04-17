@@ -35,6 +35,7 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
   })
 
   val control = Module(new Control())
+  val controlSignals = control.io.signals
   val alu = Module(new Alu())
   val aluFlagNext = Wire(new Alu.Flags)
   val memDataRead = WireDefault(io.memDataIn)
@@ -61,7 +62,7 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
   val pendingInterruptField = regIE & regIF
   val pendingInterruptIndex = PriorityEncoder(pendingInterruptField)
   control.io.interruptsPending := pendingInterruptField =/= 0.U
-  when (tCycle === 3.U && control.io.pcNext === PcNext.interrupt) {
+  when (tCycle === 3.U && controlSignals.pcNext === PcNext.interrupt) {
     // Final step of interrupt process: jump to interrupt (and ack it in 'IF').
     regIF := regIF & (~(1.U(1.W) << pendingInterruptIndex)).asUInt
   }
@@ -69,7 +70,7 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
   // Control
   control.io.tCycle := tCycle
   control.io.memDataIn := memDataRead
-  val instructionRegister = RegEnable(memDataRead, 0.U(8.W), tCycle === 3.U && control.io.instLoad)
+  val instructionRegister = RegEnable(memDataRead, 0.U(8.W), tCycle === 3.U && controlSignals.instLoad)
 
   // Registers
   // Includes incrementer/decrementer.
@@ -112,9 +113,9 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
     }
     index
   }
-  val regRead1Index = genRegisterIndex(control.io.regRead1Sel)
-  val regRead2Index = genRegisterIndex(control.io.regRead2Sel)
-  val regWriteIndex = genRegisterIndex(control.io.regWriteSel)
+  val regRead1Index = genRegisterIndex(controlSignals.regRead1Sel)
+  val regRead2Index = genRegisterIndex(controlSignals.regRead2Sel)
+  val regWriteIndex = genRegisterIndex(controlSignals.regWriteSel)
   val flagRead = registers(6)(7, 4).asTypeOf(new Alu.Flags)
   val pc = Cat(registers(12), registers(13))
   val regRead1Out = registers(regRead1Index)
@@ -122,7 +123,7 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
   // Incrementer
   val incIn = WireDefault(0.U(16.W))
   val incOut = WireDefault(0.U(16.W))
-  switch (control.io.incReg) {
+  switch (controlSignals.incReg) {
     is (IncReg.pc) { incIn := pc }
     is (IncReg.hl) { incIn := Cat(registers(4), registers(5)) }
     is (IncReg.sp) { incIn := Cat(registers(8), registers(9)) }
@@ -130,14 +131,14 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
     is (IncReg.inst16) { incIn := Cat(registers(regR16IndexHi), registers(regR16IndexLo)) }
     is (IncReg.pcAlu) { incIn := Cat(alu.io.out, registers(13)) }
   }
-  switch (control.io.incOp) {
+  switch (controlSignals.incOp) {
     is (IncOp.none) { incOut := incIn }
     is (IncOp.inc, IncOp.incNoWrite) { incOut := incIn + 1.U }
     is (IncOp.dec) { incOut := incIn - 1.U }
   }
   // Register write
   when (tCycle === 3.U) {
-    switch (control.io.regOp) {
+    switch (controlSignals.regOp) {
       is (RegOp.writeAlu) { registers(regWriteIndex) := alu.io.out }
       is (RegOp.writeMem) {
         // Keep bottom 4 bits of Flags register 0
@@ -148,8 +149,8 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
         )
       }
     }
-    when (control.io.incOp === IncOp.inc | control.io.incOp === IncOp.dec) {
-      switch (control.io.incReg) {
+    when (controlSignals.incOp === IncOp.inc | controlSignals.incOp === IncOp.dec) {
+      switch (controlSignals.incReg) {
         is (IncReg.hl) {
           registers(4) := incOut(15, 8)
           registers(5) := incOut(7, 0)
@@ -168,7 +169,7 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
         }
       }
     }
-    switch (control.io.pcNext) {
+    switch (controlSignals.pcNext) {
       is (PcNext.incOut) {
         registers(12) := incOut(15, 8)
         registers(13) := incOut(7, 0)
@@ -182,26 +183,26 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
         registers(13) := Cat("b01".U(2.W), pendingInterruptIndex, 0.U(3.W))
       }
     }
-    when (control.io.aluFlagSet =/= AluFlagSet.setNone) {
+    when (controlSignals.aluFlagSet =/= AluFlagSet.setNone) {
       registers(6) := Cat(aluFlagNext.asUInt, 0.U(4.W))
     }
   }
 
   // ALU
-  val aluCarry = RegEnable(alu.io.flagOut.c, 0.B, tCycle === 3.U & control.io.aluOp === AluOp.addLo)
+  val aluCarry = RegEnable(alu.io.flagOut.c, 0.B, tCycle === 3.U & controlSignals.aluOp === AluOp.addLo)
   alu.io.a := DontCare
-  switch (control.io.aluSelA) {
+  switch (controlSignals.aluSelA) {
     is (AluSelA.regA) { alu.io.a := registers(7) }
     is (AluSelA.reg1) { alu.io.a := regRead1Out }
   }
   alu.io.b := DontCare
-  switch (control.io.aluSelB) {
+  switch (controlSignals.aluSelB) {
     is (AluSelB.reg2) { alu.io.b := regRead2Out }
     is (AluSelB.signReg2) { alu.io.b := Fill(8, regRead2Out(7)) }
   }
   alu.io.op := DontCare
   alu.io.flagIn := flagRead
-  switch (control.io.aluOp) {
+  switch (controlSignals.aluOp) {
     is (AluOp.copyA) { alu.io.op := Alu.Opcode.copyA }
     is (AluOp.copyB) { alu.io.op := Alu.Opcode.copyB }
     is (AluOp.incB) { alu.io.op := Alu.Opcode.incB }
@@ -218,7 +219,7 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
   }
   alu.io.bitIndex := instructionRegister(5, 3)
   aluFlagNext := alu.io.flagOut
-  switch (control.io.aluFlagSet) {
+  switch (controlSignals.aluFlagSet) {
     is (AluFlagSet.setNone) { aluFlagNext := alu.io.flagIn }
     is (AluFlagSet.setAll) { aluFlagNext := alu.io.flagOut }
     is (AluFlagSet.set_NHC) {
@@ -241,12 +242,12 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
   // Memory accesses
   io.memDataOut := alu.io.out
   io.memAddress := DontCare
-  switch (control.io.memAddrSel) {
+  switch (controlSignals.memAddrSel) {
     is (MemAddrSel.incrementer) { io.memAddress := incIn }
     is (MemAddrSel.high) { io.memAddress := Cat(0xFF.U(8.W), regRead2Out) }
   }
-  io.memEnable := control.io.memEnable
-  io.memWrite := control.io.memWrite
+  io.memEnable := controlSignals.memEnable
+  io.memWrite := controlSignals.memWrite
 
   // debug output
   when (tCycle === 3.U) {

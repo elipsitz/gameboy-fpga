@@ -16,7 +16,7 @@ PROGRAMS := $(BUILD_DIR)/simulator
 all:	$(PROGRAMS)
 
 $(BUILD_DIR)/V%__ALL.a: $(BUILD_DIR)/%.v
-	$(SUBMAKE) verilator --cc $(BUILD_DIR)/$*.v --build --Mdir $(BUILD_DIR)
+	$(SUBMAKE) verilator --cc $(BUILD_DIR)/$*.v --build --Mdir $(BUILD_DIR) -Wno-width
 
 %.o: $(OBJDIR)/%.o
 $(OBJDIR)/%.o: %.cpp

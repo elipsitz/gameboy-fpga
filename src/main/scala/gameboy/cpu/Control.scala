@@ -1,7 +1,10 @@
 package gameboy.cpu
 
 import chisel3._
+import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util._
+import chisel3.experimental.{ChiselAnnotation, annotate}
+import firrtl.annotations.MemoryArrayInitAnnotation
 
 import scala.io.Source
 
@@ -160,6 +163,53 @@ object MemAddrSel extends ChiselEnum {
   val high = Value
 }
 
+class MemROM(w: Int, contents: Seq[BigInt]) extends Module {
+  val abits = log2Ceil(contents.length)
+  val io = IO(new Bundle {
+    val addr = Input(UInt(abits.W))
+    val data = Output(UInt(w.W))
+  })
+
+  val mem = Mem(contents.length, chiselTypeOf(io.data))
+  annotate(new ChiselAnnotation {
+    override def toFirrtl = MemoryArrayInitAnnotation(mem.toTarget, contents)
+  })
+  io.data := mem.read(io.addr)
+}
+
+class ControlSignals extends Bundle {
+  /** how PC should be updated */
+  val pcNext = PcNext()
+  /** if the instruction reg. should be loaded with memory read */
+  val instLoad = Bool()
+  /** the first register we're reading */
+  val regRead1Sel = RegSel()
+  /** the second register we're reading */
+  val regRead2Sel = RegSel()
+  /** the register we're (maybe) writing to */
+  val regWriteSel = RegSel()
+  /** register write operation to perform */
+  val regOp = RegOp()
+  /** incrementer/decrementer operation to perform */
+  val incOp = IncOp()
+  /** incrementer/decrementer register target */
+  val incReg = IncReg()
+  /** ALU operation */
+  val aluOp = AluOp()
+  /** ALU select A */
+  val aluSelA = AluSelA()
+  /** ALU select B */
+  val aluSelB = AluSelB()
+  /** whether ALU should update flags */
+  val aluFlagSet = AluFlagSet()
+  /** whether we're accessing memory */
+  val memEnable = Bool()
+  /** whether we're writing to memory (if `mem_enable`). */
+  val memWrite = Bool()
+  /** where the memory address comes from */
+  val memAddrSel = MemAddrSel()
+}
+
 class Control extends Module {
   val io = IO(new Bundle {
     val tCycle = Input(UInt(2.W))
@@ -171,90 +221,55 @@ class Control extends Module {
     /** Whether interrupts are pending (IE & IF) =/= 0 */
     val interruptsPending = Input(Bool())
 
-    /** Control signal: how PC should be updated */
-    val pcNext = Output(PcNext())
-    /** Control signal: if the instruction reg. should be loaded with memory read */
-    val instLoad = Output(Bool())
-    /** Control signal: the first register we're reading */
-    val regRead1Sel = Output(RegSel())
-    /** Control signal: the second register we're reading */
-    val regRead2Sel = Output(RegSel())
-    /** Control signal: the register we're (maybe) writing to */
-    val regWriteSel = Output(RegSel())
-    /** Control signal: register write operation to perform */
-    val regOp = Output(RegOp())
-    /** Control signal: incrementer/decrementer operation to perform */
-    val incOp = Output(IncOp())
-    /** Control signal: incrementer/decrementer register target */
-    val incReg = Output(IncReg())
-    /** Control signal: ALU operation */
-    val aluOp = Output(AluOp())
-    /** Control signal: ALU select A */
-    val aluSelA = Output(AluSelA())
-    /** Control signal: ALU select B */
-    val aluSelB = Output(AluSelB())
-    /** Control signal: whether ALU should update flags */
-    val aluFlagSet = Output(AluFlagSet())
-    /** Control signal: whether we're accessing memory */
-    val memEnable = Output(Bool())
-    /** Control signal: whether we're writing to memory (if `mem_enable`). */
-    val memWrite = Output(Bool())
-    /** Control signal: where the memory address comes from */
-    val memAddrSel = Output(MemAddrSel())
+    /** Control signals */
+    val signals = Output(new ControlSignals)
   })
 
   val microcode = new Microcode(Source.fromResource("microcode.csv"))
 
+  class MicrocodeRow extends Bundle {
+    val microOp = Microbranch()
+    val nextState = UInt(microcode.stateWidth())
+    val dispatchPrefix = DispatchPrefix()
+    val imeUpdate = ImeUpdate()
+    val signals = new ControlSignals
+  }
+
   val state = RegInit(0.U(microcode.stateWidth()))
   val ime = RegInit(false.B)
 
-  // Control signals
-  val dispatchPrefix = Wire(DispatchPrefix())
-  val microOp = Wire(Microbranch())
-  val nextState = Wire(UInt(microcode.stateWidth()))
-  val imeUpdate = Wire(ImeUpdate())
-  imeUpdate := DontCare
-  dispatchPrefix := DontCare
-  microOp := DontCare
-  nextState := DontCare
-  io.pcNext := DontCare
-  io.instLoad := DontCare
-  io.regRead1Sel := DontCare
-  io.regRead2Sel := DontCare
-  io.regWriteSel := DontCare
-  io.regOp := DontCare
-  io.incOp := DontCare
-  io.incReg := DontCare
-  io.aluOp := DontCare
-  io.aluSelA := DontCare
-  io.aluSelB := DontCare
-  io.aluFlagSet := DontCare
-  io.memEnable := DontCare
-  io.memWrite := DontCare
-  io.memAddrSel := DontCare
-  for ((e, index) <- microcode.entries.zipWithIndex) {
-    when (state === index.U) {
-      microOp := e.microOp
-      e.nextState().foreach(nextState := _.U)
-      e.dispatchPrefix.foreach(dispatchPrefix := _)
-      e.imeUpdate.foreach(imeUpdate := _)
-      e.pcNext.foreach(io.pcNext := _)
-      e.instLoad.foreach(io.instLoad := _.B)
-      e.regRead1Sel.foreach(io.regRead1Sel := _)
-      e.regRead2Sel.foreach(io.regRead2Sel := _)
-      e.regWriteSel.foreach(io.regWriteSel := _)
-      e.regOp.foreach(io.regOp := _)
-      e.incOp.foreach(io.incOp := _)
-      e.incReg.foreach(io.incReg := _)
-      e.aluOp.foreach(io.aluOp := _)
-      e.aluSelA.foreach(io.aluSelA := _)
-      e.aluSelB.foreach(io.aluSelB := _)
-      e.aluFlagSet.foreach(io.aluFlagSet := _)
-      e.memEnable.foreach(io.memEnable := _.B)
-      e.memWrite.foreach(io.memWrite := _.B)
-      e.memAddrSel.foreach(io.memAddrSel := _)
-    }
-  }
+  val controlTable = Module(new MemROM(
+    (new MicrocodeRow).getWidth,
+    microcode.entries.map(e => {
+      val row = (new MicrocodeRow).Lit(
+        _.microOp -> e.microOp,
+        _.nextState -> e.nextState().getOrElse(0).U,
+        _.dispatchPrefix -> e.dispatchPrefix.getOrElse(DispatchPrefix.none),
+        _.imeUpdate -> e.imeUpdate.getOrElse(ImeUpdate.same),
+        _.signals -> (new ControlSignals).Lit(
+          _.pcNext -> e.pcNext.getOrElse(PcNext.same),
+          _.instLoad -> e.instLoad.getOrElse(false).B,
+          _.regRead1Sel -> e.regRead1Sel.getOrElse(RegSel.a),
+          _.regRead2Sel -> e.regRead2Sel.getOrElse(RegSel.a),
+          _.regWriteSel -> e.regWriteSel.getOrElse(RegSel.a),
+          _.regOp -> e.regOp.getOrElse(RegOp.none),
+          _.incOp -> e.incOp.getOrElse(IncOp.none),
+          _.incReg -> e.incReg.getOrElse(IncReg.pc),
+          _.aluOp -> e.aluOp.getOrElse(AluOp.copyA),
+          _.aluSelA -> e.aluSelA.getOrElse(AluSelA.regA),
+          _.aluSelB -> e.aluSelB.getOrElse(AluSelB.reg2),
+          _.aluFlagSet -> e.aluFlagSet.getOrElse(AluFlagSet.setNone),
+          _.memEnable -> e.memEnable.getOrElse(false).B,
+          _.memWrite -> e.memWrite.getOrElse(false).B,
+          _.memAddrSel -> e.memAddrSel.getOrElse(MemAddrSel.incrementer),
+        )
+      )
+      row.litValue
+    })
+  ))
+  controlTable.io.addr := state
+  val row = controlTable.io.data.asTypeOf(new MicrocodeRow)
+  io.signals := row.signals
 
   val halted = state === microcode.stateForLabel("HALT").U
   val justFetched = RegInit(false.B)
@@ -268,26 +283,35 @@ class Control extends Module {
     when (halted) {
       state := microcode.stateForLabel("NOP").U
     }
-    // TODO exit HALT
   }
 
   when (io.tCycle === 3.U) {
     // Advance the state machine.
-    switch (microOp) {
+    switch (row.microOp) {
       is (Microbranch.next) {
         state := state + 1.U
       }
       is (Microbranch.dispatch) {
-        val key = Cat(dispatchPrefix.asUInt, io.memDataIn)
-        val dispatchTable = microcode.entries.zipWithIndex.flatMap(e => e._1.encoding.map((_, e._2.U)))
-        state := Lookup(key, 1.U, dispatchTable)
-        justFetched := dispatchPrefix === DispatchPrefix.none
+        val dispatchTable = Module(new MemROM(
+          microcode.stateWidth().get,
+          (0 until 512).map(i =>
+            microcode.entries.zipWithIndex
+              .flatMap(e => e._1.encoding.map((_, e._2)))
+              .find(e => e._1.value == (i & e._1.mask))
+              .map(e => BigInt(e._2))
+              .getOrElse(BigInt(microcode.stateForLabel("_INVALID")))
+          )
+        ))
+        val dispatchKey = Cat(row.dispatchPrefix.asUInt, io.memDataIn)
+        dispatchTable.io.addr := dispatchKey
+        state := dispatchTable.io.data
+        justFetched := row.dispatchPrefix === DispatchPrefix.none
       }
       is (Microbranch.jump) {
-        state := nextState
+        state := row.nextState
       }
       is (Microbranch.cond) {
-        state := Mux(io.condition, nextState, state + 1.U)
+        state := Mux(io.condition, row.nextState, state + 1.U)
       }
     }
 
@@ -298,8 +322,8 @@ class Control extends Module {
         ime := true.B
         delayedImeSet := false.B
       }
-      when(imeUpdate === ImeUpdate.enable) { delayedImeSet := true.B }
-      when(imeUpdate === ImeUpdate.disable) { ime := false.B}
+      when(row.imeUpdate === ImeUpdate.enable) { delayedImeSet := true.B }
+      when(row.imeUpdate === ImeUpdate.disable) { ime := false.B}
     }
   }
 }
