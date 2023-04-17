@@ -2,7 +2,7 @@ package gameboy
 
 import chisel3._
 import chisel3.util._
-import gameboy.cpu.{Cpu, TestableCpu}
+import gameboy.cpu.Cpu
 import gameboy.ppu.{Ppu, PpuOutput}
 
 class CartridgeIo extends Bundle {
@@ -205,5 +205,4 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
 
 object Gameboy extends App {
   emitVerilog(new Gameboy(), args)
-//  emitVerilog(new TestableCpu(), args)
 }
