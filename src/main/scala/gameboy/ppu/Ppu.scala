@@ -413,8 +413,9 @@ class Ppu extends Module {
 
   // Window activation logic
   // XXX: windowHitWy should only activate at the beginning of oam search?
+  // TODO: properly deal with WX < 7 (hiding left side?)
   when(stateOamSearch && (regLy === regWy)) { windowHitWy := true.B }
-  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx >= (regWx - 8.U)) {
+  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx + 7.U >= regWx) {
     windowActive := true.B
     fetcherState := FetcherState.id0
     fetcherX := 0.U
