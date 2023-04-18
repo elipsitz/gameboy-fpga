@@ -22,7 +22,7 @@ uint8_t Cartridge::read(uint16_t address, bool select_rom) {
 }
 
 void Cartridge::write(uint16_t address, bool select_rom, uint8_t data) {
-    if (!select_rom && ram.size() > 0) {
+    if (ram_enable && !select_rom && ram.size() > 0) {
         size_t index = (ram_bank << 13) | (address & 0x1FFF);
         ram[index % ram.size()] = data;
     }
@@ -65,7 +65,6 @@ private:
     uint8_t bank_reg_0 = 1;
     uint8_t bank_reg_1 = 0;
     uint8_t bank_mode = 0;
-    bool ram_enable = false;
 };
 
 
@@ -97,11 +96,14 @@ public:
             ram_bank = data & 0xF;
         } else if (address >= 0x6000 && address < 0x8000) {
             // TODO clock: "latch clock data"
+        } else if (address >= 0xA000 && address < 0xBFFF && !select_rom) {
+            if ((ram_bank & 0x8) == 0) {
+                Cartridge::write(address, select_rom, data);
+            }
         }
     }
 
 private:
-    bool ram_enable = false;
     bool has_timer = false;
 };
 
