@@ -12,7 +12,7 @@ uint8_t Cartridge::read(uint16_t address, bool select_rom) {
         }
         return rom[index % rom.size()];
     } else {
-        if (ram.size() > 0) {
+        if (ram_enable && ram.size() > 0) {
             size_t index = (ram_bank << 13) | (address & 0x1FFF);
             return ram[index % ram.size()];
         } else {
@@ -28,18 +28,42 @@ void Cartridge::write(uint16_t address, bool select_rom, uint8_t data) {
     }
 }
 
-//class CartridgeRom : Cartridge {
-//public:
-//    CartridgeRom(std::vector<uint8_t> rom) : rom(rom) {}
-//
-//    uint8_t read(uint16_t address, bool select_rom) {
-//        return Cartridge::read(address, select_rom);
-//    }
-//
-//    void write(uint16_t address, bool select_rom, uint8_t data) {
-//        Cartridge::write(address, select_rom, data);
-//    }
-//};
+class CartridgeMBC1 : public Cartridge {
+public:
+    CartridgeMBC1(std::vector<uint8_t> rom, size_t ram_size) : Cartridge(rom, ram_size) {}
+
+    // Use superclass read
+
+    void write(uint16_t address, bool select_rom, uint8_t data) {
+        if (!select_rom) {
+            Cartridge::write(address, select_rom, data);
+        } else if (address >= 0x0000 && address < 0x2000) {
+            ram_enable = data & 0xF;
+        } else if (address >= 0x2000 && address < 0x4000) {
+            bank_reg_0 = data & 0x1F;
+        } else if (address >= 0x4000 && address < 0x6000) {
+            bank_reg_1 = data & 0x3;
+        } else if (address >= 0x6000 && address < 0x8000) {
+            bank_mode = data;
+        }
+
+        if (bank_mode == 0) {
+            rom_bank_a = 0;
+            rom_bank_b = (bank_reg_0) | (bank_reg_1 << 5);
+            ram_bank = 0;
+        } else {
+            rom_bank_a = bank_reg_1 << 5;
+            rom_bank_b = (bank_reg_0) | (bank_reg_1 << 5);
+            ram_bank = bank_reg_1;
+        }
+    }
+
+private:
+    uint8_t bank_reg_0 = 1;
+    uint8_t bank_reg_1 = 0;
+    uint8_t bank_mode = 0;
+    bool ram_enable = false;
+};
 
 std::unique_ptr<Cartridge>
 Cartridge::create(std::vector<uint8_t> rom)
@@ -65,6 +89,13 @@ Cartridge::create(std::vector<uint8_t> rom)
         // ROM ONLY
         case 0x00:
             return std::make_unique<Cartridge>(rom, ram_size);
+        // MBC1
+        case 0x01:
+            return std::make_unique<CartridgeMBC1>(rom, ram_size);
+        // MBC1+RAM, MBC2+RAM+BATTERY
+        case 0x02:
+        case 0x03:
+            return std::make_unique<CartridgeMBC1>(rom, ram_size);
         default:
             throw std::runtime_error("Unknown cartridge type");
     }

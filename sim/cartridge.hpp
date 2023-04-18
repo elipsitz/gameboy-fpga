@@ -21,4 +21,5 @@ protected:
     size_t rom_bank_a = 0;
     size_t rom_bank_b = 1;
     size_t ram_bank = 0;
+    bool ram_enable = false;
 };
