@@ -114,7 +114,7 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
   // Cartridge access signals
   io.cartridge.writeEnable := (cartRomSelect || cartRamSelect) && busMemEnable && busMemWrite
   io.cartridge.readEnable := !io.cartridge.writeEnable
-  io.cartridge.chipSelect := !cartRomSelect
+  io.cartridge.chipSelect := cartRomSelect
   io.cartridge.dataWrite := busDataWrite
   io.cartridge.address := busAddress
   when (cartRomSelect || cartRamSelect) { busDataRead := io.cartridge.dataRead }

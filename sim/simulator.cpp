@@ -11,7 +11,7 @@ static const uint32_t palette[4] = {0xffffff, 0xaaaaaa, 0x555555, 0x000000};
 Simulator::Simulator(std::vector<uint8_t> rom)
 {
     this->top = new VGameboy;
-    this->rom = rom;
+    this->cart = Cartridge::create(rom);
     this->frameBuffer.resize(WIDTH * HEIGHT * 4, 0xFF);
 
     reset();
@@ -52,18 +52,16 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
         // Handle memory.
         if (this->cycles % 4 == 3) {
             uint16_t address = top->io_cartridge_address;
-//            printf("mem access at [%.04X] => [%.02X]\n", address, top->io_cartridge_dataWrite);
+            bool rom_select = top->io_cartridge_chipSelect;
+//             printf("mem access at [%.04X] => [%.02X]\n", address, top->io_cartridge_dataWrite);
             if (top->io_cartridge_readEnable) {
-                uint8_t data = 0;
-                if (address >= 0x0000 && address <= 0x7FFF) {
-                    data = rom[address];
-                }
-//                printf("mem read at [%.04X] => [%.02X]\n", address, data);
+                uint8_t data = cart->read(address, rom_select);
+//                 printf("cart read at [%.04X] => [%.02X]\n", address, data);
                 top->io_cartridge_dataRead = data;
-            }
-            if (top->io_cartridge_writeEnable) {
-                // uint8_t data = top->cart_data_out;
-                // printf("cart write at [%.04X] <= [%.02X]\n", address, data);
+            } else if (top->io_cartridge_writeEnable) {
+                uint8_t data = top->io_cartridge_dataWrite;
+//                 printf("cart write at [%.04X] <= [%.02X]\n", address, data);
+                cart->write(address, rom_select, data);
             }
         }
 

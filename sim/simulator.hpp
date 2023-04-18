@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cartridge.hpp"
 #include "VGameboy.h"
 
 struct JoypadState {
@@ -27,7 +28,7 @@ public:
 private:
     void stepFramebuffer();
 
-    std::vector<uint8_t> rom;
+    std::unique_ptr<Cartridge> cart;
     std::vector<uint8_t> frameBuffer;
     uint64_t cycles = 0;
     VGameboy* top = nullptr;
