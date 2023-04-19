@@ -46,7 +46,7 @@ class PixelFifo[T <: Data](gen: T, mustBeEmpty: Boolean) extends Module {
     val register = Output(Vec(8, gen))
   })
 
-  val register = Reg(Vec(8, gen))
+  val register = RegInit(VecInit(Seq.fill(8)(0.U.asTypeOf(gen))))
   val length = RegInit(0.U(4.W))
   io.register := register
 
@@ -462,6 +462,7 @@ class Ppu extends Module {
     fetcherState := FetcherState.id0
     fetcherX := 0.U
     bgFifo.reset := true.B
+    objFifo.reset := true.B
     windowActive := false.B
     when (windowActive) {
       windowY := windowY + 1.U
