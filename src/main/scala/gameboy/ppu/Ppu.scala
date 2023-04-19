@@ -247,6 +247,7 @@ class Ppu extends Module {
   bgFifo.io.popEnable := false.B
   bgFifo.io.reloadEnable := false.B
   bgFifo.io.reloadData := DontCare
+  val bgScrollCounter = RegInit(0.U(3.W))
 
   // Sprites
   val objFifo = Module(new PixelFifo(new ObjPixel, false))
@@ -266,11 +267,14 @@ class Ppu extends Module {
   val objFetchWaiting = Wire(Bool())
 
   // Output pixel logic
-  // TODO handle discarding (SCX % 8) background pixels
   io.output.pixel := DontCare
   io.output.valid := false.B
-  when (stateDrawing) {
-    when (bgFifo.io.outValid && !objFetchWaiting) {
+  when (stateDrawing && bgFifo.io.outValid) {
+    when (bgScrollCounter > 0.U) {
+      // If we have bg pixels to discard (for SCX % 8) do that now.
+      bgFifo.io.popEnable := true.B
+      bgScrollCounter := bgScrollCounter - 1.U
+    } .elsewhen (!objFetchWaiting) {
       // CGB: LCDC.bgEnable has a different meaning (sprite priority)
       bgFifo.io.popEnable := true.B
       val bgIndex = Mux(regLcdc.bgEnable, bgFifo.io.outData.color, 0.U)
@@ -420,6 +424,7 @@ class Ppu extends Module {
     fetcherState := FetcherState.id0
     fetcherX := 0.U
     bgFifo.reset := true.B
+    bgScrollCounter := 0.U
   }
 
   // OAM search logic
@@ -455,6 +460,10 @@ class Ppu extends Module {
         }
       }
     }
+
+    // Latch the lower 3 bits of SCX for the bg pixel skip register.
+    // Ensure we do this at the beginning of each scanline, including the first (thus, in oam search, not hblank).
+    bgScrollCounter := regScx(2, 0)
   }
 
   // On hblank, reset scanline registers
