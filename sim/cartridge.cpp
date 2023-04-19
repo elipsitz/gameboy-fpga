@@ -96,7 +96,7 @@ public:
             ram_bank = data & 0xF;
         } else if (address >= 0x6000 && address < 0x8000) {
             // TODO clock: "latch clock data"
-        } else if (address >= 0xA000 && address < 0xBFFF && !select_rom) {
+        } else if (address >= 0xA000 && address < 0xC000 && !select_rom) {
             if ((ram_bank & 0x8) == 0) {
                 Cartridge::write(address, select_rom, data);
             }
@@ -105,6 +105,27 @@ public:
 
 private:
     bool has_timer = false;
+};
+
+class CartridgeMBC5 : public Cartridge {
+public:
+    CartridgeMBC5(std::vector<uint8_t> rom, size_t ram_size)
+        : Cartridge(rom, ram_size) {
+    }
+
+    void write(uint16_t address, bool select_rom, uint8_t data) {
+        if (address >= 0x0000 && address < 0x2000) {
+            ram_enable = (data & 0xA) == 0xA;
+        } else if (address >= 0x2000 && address < 0x3000) {
+            rom_bank_b = (rom_bank_b & (~0xFF)) | data;
+        } else if (address >= 0x3000 && address < 0x4000) {
+            rom_bank_b = (rom_bank_b & (~0x100)) | ((data & 1) << 8);
+        } else if (address >= 0x4000 && address < 0x6000) {
+            ram_bank = data;
+        } else if (address >= 0xA000 && address < 0xC000 && !select_rom) {
+            Cartridge::write(address, select_rom, data);
+        }
+    }
 };
 
 std::unique_ptr<Cartridge>
@@ -153,6 +174,14 @@ Cartridge::create(std::vector<uint8_t> rom)
         // MBC3+RAM+BATTERY
         case 0x13:
             return std::make_unique<CartridgeMBC3>(rom, ram_size, false);
+        case 0x19: // MBC5
+        case 0x1C: // MBC5+RUMBLE
+            return std::make_unique<CartridgeMBC5>(rom, 0);
+        case 0x1A: // MBC5+RAM
+        case 0x1B: // MBC5+RAM+BATTERY
+        case 0x1D: // MBC5+RUMBLE+RAM
+        case 0x1E: // MBC5+RUMBLE+RAM+BATTERY
+            return std::make_unique<CartridgeMBC5>(rom, ram_size);
         default:
             throw std::runtime_error("Unknown cartridge type");
     }
