@@ -181,6 +181,16 @@ class Ppu extends Module {
     tick := tick + 1.U
   }
 
+  /*
+   * TODO: properly handle PPU enable/disable bit.
+   *  When disabled: stat mode reads as 0 (hblank)
+   *  Something with interrupts? None fire?
+   *  Nothing is drawn
+   *  Lcd goes "white" -- or perhaps just freezes what was on it for a bit
+   *  VRAM/OAM are immediately accessible by CPU
+   *  regLy goes to 0?
+   */
+
   // 1-hot current state wire
   val stateVblank = regLy >= Ppu.Height.U
   val stateOamSearch = !stateVblank && (tick < Ppu.OamScanLength.U)
