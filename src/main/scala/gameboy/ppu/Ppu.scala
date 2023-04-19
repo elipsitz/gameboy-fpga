@@ -144,7 +144,7 @@ class Ppu extends Module {
   val regLy = RegInit(0.U(8.W))
   /** Current tick within scanline, [0, 456) */
   val tick = RegInit(0.U(9.W))
-  /** Current number of pixels output in this scanline, [0, 160] */
+  /** Current number of pixels output in this scanline, [0, 168]. First 8 aren't output (for window and obj x < 8) */
   val regLx = RegInit(0.U(8.W))
 
   /** $FF40 -- LCDC: LCD Control */
@@ -184,8 +184,8 @@ class Ppu extends Module {
   // 1-hot current state wire
   val stateVblank = regLy >= Ppu.Height.U
   val stateOamSearch = !stateVblank && (tick < Ppu.OamScanLength.U)
-  val stateDrawing = !stateVblank && (tick >= Ppu.OamScanLength.U) && (regLx < Ppu.Width.U)
-  val stateHblank = !stateVblank && (regLx === Ppu.Width.U)
+  val stateDrawing = !stateVblank && (tick >= Ppu.OamScanLength.U) && (regLx < (Ppu.Width + 8).U)
+  val stateHblank = !stateVblank && (regLx === (Ppu.Width + 8).U)
   io.output.hblank := stateHblank
   io.output.vblank := stateVblank
   val lycEqualFlag = regLyc === regLy
@@ -256,7 +256,7 @@ class Ppu extends Module {
   objFifo.io.reloadData := DontCare
   val oamBuffer = Reg(Vec(Ppu.OamBufferLength, new OamBufferEntry))
   val oamBufferActive = VecInit((0 until Ppu.OamBufferLength).map(
-    i => oamBuffer(i).valid && (regLx + 8.U >= oamBuffer(i).x) && (regLx < oamBuffer(i).x))
+    i => oamBuffer(i).valid && (regLx >= oamBuffer(i).x) && (regLx < oamBuffer(i).x + 8.U))
   )
   /** Whether there is any sprite in the OAM buffer that is activated */
   val objActive = oamBufferActive.asUInt.orR && regLcdc.objEnable
@@ -287,7 +287,8 @@ class Ppu extends Module {
         objIndex === 0.U || (objFifo.io.outData.bgPriority && bgIndex =/= 0.U),
         bgColor, objColor
       )
-      io.output.valid := true.B
+      // Skip the first 8 pixels to output
+      io.output.valid := regLx >= 8.U
       regLx := regLx + 1.U
     }
   }
@@ -304,7 +305,7 @@ class Ppu extends Module {
   val fetcherTileId = RegInit(0.U(8.W))
   val fetcherTileLo = RegInit(0.U(8.W))
   val fetcherTileHi = RegInit(0.U(8.W))
-  val fetcherX = RegInit(0.U(8.W))
+  val fetcherBgX = RegInit(0.U(8.W))
   val fetcherIsObj = RegInit(false.B)
   /** if fetcherIsObj, the oam buffer index of the object we're fetching */
   val fetcherObjIndex = Reg(UInt(log2Ceil(Ppu.OamBufferLength).W))
@@ -333,12 +334,12 @@ class Ppu extends Module {
         when (windowActive) {
           // Window mode
           val tileY = windowY(7, 3)
-          val tileX = fetcherX(7, 3)
+          val tileX = fetcherBgX(7, 3)
           io.vramAddress := Cat("b11".U(2.W), regLcdc.windowTileMapArea, tileY, tileX)
         } .otherwise {
           // Background mode
           val tileY = (regLy + regScy)(7, 3)
-          val tileX = (fetcherX + regScx)(7, 3)
+          val tileX = (fetcherBgX + regScx)(7, 3)
           io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
         }
         // Start fetching from OAM (only relevant for OBJ)
@@ -396,16 +397,18 @@ class Ppu extends Module {
       oamBuffer(objActiveIndex).valid := false.B
       // Set the address to start fetching the OAM data
       io.oamAddress := Cat(oamBuffer(objActiveIndex).index, Ppu.OamByteAttributes.U(2.W))
-      when (bgFifo.io.reloadAck) {
-        fetcherX := fetcherX + 8.U
+      // The first fetch is repeated twice (only increment if we're not at the start).
+      when (bgFifo.io.reloadAck && regLx =/= 0.U) {
+        fetcherBgX := fetcherBgX + 8.U
       }
 //      printf(cf"start lx=$regLx obj=${oamBuffer(objActiveIndex).index} objX=${oamBuffer(objActiveIndex).x}\n")
     } .elsewhen (fetcherState === FetcherState.hi1 && (bgFifo.io.reloadAck || fetcherIsObj)) {
       // Restart as BG fetcher if 1) we're pushing 2) push was successful
       fetcherState := FetcherState.id0
       fetcherIsObj := false.B
-      when (bgFifo.io.reloadAck) {
-        fetcherX := fetcherX + 8.U
+      // The first fetch is repeated twice (only increment if we're not at the start).
+      when (bgFifo.io.reloadAck && regLx =/= 0.U) {
+        fetcherBgX := fetcherBgX + 8.U
       }
     }
     // Sprite fetch abort (note that this may not be how it actually works)
@@ -417,12 +420,11 @@ class Ppu extends Module {
 
   // Window activation logic
   // XXX: windowHitWy should only activate at the beginning of oam search?
-  // TODO: properly deal with WX < 7 (hiding left side?)
   when(stateOamSearch && (regLy === regWy)) { windowHitWy := true.B }
-  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx + 7.U >= regWx) {
+  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx >= regWx) {
     windowActive := true.B
     fetcherState := FetcherState.id0
-    fetcherX := 0.U
+    fetcherBgX := 0.U
     bgFifo.reset := true.B
     bgScrollCounter := 0.U
   }
@@ -469,7 +471,7 @@ class Ppu extends Module {
   // On hblank, reset scanline registers
   when(stateHblank) {
     fetcherState := FetcherState.id0
-    fetcherX := 0.U
+    fetcherBgX := 0.U
     bgFifo.reset := true.B
     objFifo.reset := true.B
     windowActive := false.B
