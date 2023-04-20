@@ -12,7 +12,8 @@ Simulator::Simulator(std::vector<uint8_t> rom)
 {
     this->top = new VGameboy;
     this->cart = Cartridge::create(rom);
-    this->frameBuffer.resize(WIDTH * HEIGHT * 4, 0xFF);
+    this->framebuffer0.resize(WIDTH * HEIGHT * 4, 0xFF);
+    this->framebuffer1.resize(WIDTH * HEIGHT * 4, 0xFF);
 
     reset();
 }
@@ -81,28 +82,30 @@ void Simulator::stepFramebuffer()
     bool vblank = top->io_ppu_vblank && !prev_vblank;
     if (vblank) {
         framebufferIndex = 0;
+        activeFramebuffer = !activeFramebuffer;
     }
     prev_hblank = top->io_ppu_hblank;
     prev_vblank = top->io_ppu_vblank;
+    std::vector<uint8_t>& framebuffer = activeFramebuffer ? framebuffer1 : framebuffer0;
 
     if (top->io_ppu_valid) {
-        if (framebufferIndex >= frameBuffer.size() - 4) {
+        if (framebufferIndex >= framebuffer.size() - 4) {
             // TODO: make this a fatal error (framebuffer overrun).
             return;
         }
 
         uint8_t pixel = top->io_ppu_pixel;
         uint32_t color = palette[pixel];
-        frameBuffer[framebufferIndex++] = (color >> 0) & 0xFF;
-        frameBuffer[framebufferIndex++] = (color >> 8) & 0xFF;
-        frameBuffer[framebufferIndex++] = (color >> 16) & 0xFF;
-        frameBuffer[framebufferIndex++] = 0xFF;
+        framebuffer[framebufferIndex++] = (color >> 0) & 0xFF;
+        framebuffer[framebufferIndex++] = (color >> 8) & 0xFF;
+        framebuffer[framebufferIndex++] = (color >> 16) & 0xFF;
+        framebuffer[framebufferIndex++] = 0xFF;
     }
 
     // Blank the screen if the LCD is disabled.
     if (prev_lcd_enabled && !top->io_ppu_lcdEnable) {
-        std::fill(frameBuffer.begin(), frameBuffer.end(), 0xFF);
-        framebufferIndex = frameBuffer.size();
+        std::fill(framebuffer.begin(), framebuffer.end(), 0xFF);
+        framebufferIndex = framebuffer.size();
     }
     prev_lcd_enabled = top->io_ppu_lcdEnable;
 }
@@ -114,5 +117,6 @@ void Simulator::simulate_frame()
 
 std::vector<uint8_t>& Simulator::getFramebuffer()
 {
-    return this->frameBuffer;
+    // Return framebuffer we're not writing to.
+    return activeFramebuffer ? framebuffer0 : framebuffer1;
 }

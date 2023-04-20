@@ -29,7 +29,9 @@ private:
     void stepFramebuffer();
 
     std::unique_ptr<Cartridge> cart;
-    std::vector<uint8_t> frameBuffer;
+    std::vector<uint8_t> framebuffer0;
+    std::vector<uint8_t> framebuffer1;
+    bool activeFramebuffer = false;
     uint64_t cycles = 0;
     VGameboy* top = nullptr;
     size_t framebufferIndex = 0;
