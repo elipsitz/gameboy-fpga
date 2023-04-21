@@ -10,6 +10,9 @@ public:
     Audio();
     ~Audio();
 
+    // Push samples (up to the maximum limit).
+    void push(uint16_t* data, uint32_t length);
+
 private:
 	SDL_AudioDeviceID device;
 };

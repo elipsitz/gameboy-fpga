@@ -3,6 +3,7 @@
 #include <format>
 #include <vector>
 #include <cstdio>
+#include <cmath>
 
 #include <SDL2/SDL.h>
 
@@ -73,6 +74,7 @@ int main(int argc, char** argv) {
             simulator.simulate_frame();
             frame_counter++;
         }
+        // audio.push(samples.data(), samples.size());
         window.update(simulator.getFramebuffer());
 
         // Update title.
