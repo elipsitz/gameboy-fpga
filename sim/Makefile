@@ -10,7 +10,7 @@ VROOT   := $(VERILATOR_ROOT)
 VINCD   := $(VROOT)/include
 CFLAGS	:= -Wall -Og -g -faligned-new -std=c++20
 INCS	:= -I$(BUILD_DIR)/ -I$(VINCD) -I$(VINCD)/vltstd
-OBJS    := $(OBJDIR)/simulator.o $(OBJDIR)/window.o $(OBJDIR)/cartridge.o
+OBJS    := $(OBJDIR)/simulator.o $(OBJDIR)/window.o $(OBJDIR)/cartridge.o $(OBJDIR)/audio.o
 VOBJS   := $(OBJDIR)/verilated.o $(OBJDIR)/verilated_vcd_c.o $(OBJDIR)/verilated_threads.o
 PROGRAMS := $(BUILD_DIR)/simulator
 all:	$(PROGRAMS)

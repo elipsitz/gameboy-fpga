@@ -6,6 +6,7 @@
 
 #include <SDL2/SDL.h>
 
+#include "audio.hpp"
 #include "simulator.hpp"
 #include "window.hpp"
 
@@ -42,8 +43,9 @@ int main(int argc, char** argv) {
     auto rom = read_file(argv[1]);
 
     // Initialize SDL.
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO);
     Window window;
+    Audio audio;
 
     Simulator simulator(rom);
 
@@ -82,4 +84,6 @@ int main(int argc, char** argv) {
             frame_timer = SDL_GetTicks64();
         }
     }
+
+    SDL_Quit();
 }
