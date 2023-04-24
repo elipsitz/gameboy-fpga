@@ -33,7 +33,7 @@ class Timer extends Module {
   val counterIncrement = fallingEdgeDetector(dividerOut && regControl.enable)
   val counterReload = WireDefault(regModulo)
   val counterPostIncrement = regCounter +& 1.U
-  val counterCarryDelay = ShiftRegister(counterPostIncrement(8), 1, false.B, true.B)
+  val counterOverflowDelay = ShiftRegister(counterIncrement && counterPostIncrement(8), 1, false.B, true.B)
   val counterWritten = WireDefault(false.B)
 
   // Priority 3/3: memory mapped write to counter
@@ -75,7 +75,7 @@ class Timer extends Module {
     }
   }
 
-  val counterOverflowed = counterCarryDelay && !counterWritten
+  val counterOverflowed = counterOverflowDelay && !counterWritten
   io.interruptRequest := counterOverflowed
   when (counterOverflowed) {
     // Priority 1/3: reload overflowing counter
