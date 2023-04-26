@@ -2,6 +2,7 @@ package gameboy
 
 import chisel3._
 import chisel3.util._
+import gameboy.apu.{Apu, ApuOutput}
 import gameboy.cpu.Cpu
 import gameboy.ppu.{Ppu, PpuOutput}
 
@@ -45,6 +46,7 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
     val cartridge = new CartridgeIo()
     val ppu = new PpuOutput()
     val joypad = Input(new JoypadState)
+    val apu = new ApuOutput
   })
 
   // Module: CPU
@@ -64,6 +66,10 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
   oamDma.io.phiPulse := phiPulse
   val oamDmaSelectExternal = oamDma.io.dmaAddress(15, 8) < 0x80.U || oamDma.io.dmaAddress(15, 8) >= 0xA0.U
   val oamDmaSelectVram = !oamDmaSelectExternal
+
+  // Module: APU
+  val apu = Module(new Apu)
+  io.apu := apu.io.output
 
   // Memories
   val workRam = Module(new SinglePortRam(8 * 1024)) // DMG: 0xC000 to 0xDFFF
