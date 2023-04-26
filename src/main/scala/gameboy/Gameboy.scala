@@ -193,7 +193,7 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
     oamDma.io,
     joypad.io,
     bootRom.io.peripheral,
-    apu.io.registers,
+    apu.io.reg,
   )
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {
