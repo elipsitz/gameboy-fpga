@@ -84,6 +84,7 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
   val timer = Module(new Timer)
   timer.io.phiPulse := phiPulse
   cpu.io.interruptRequest.timer := timer.io.interruptRequest
+  apu.io.divApu := timer.io.divApu
 
   // Peripheral: Joypad
   val joypad = Module(new Joypad)
@@ -185,7 +186,14 @@ class Gameboy(skipBoot: Boolean = true) extends Module {
 
   // Peripheral bus
   val peripherals = Seq(
-    debugSerial.io, highRam.io, timer.io, ppu.io.registers, oamDma.io, joypad.io, bootRom.io.peripheral
+    debugSerial.io,
+    highRam.io,
+    timer.io,
+    ppu.io.registers,
+    oamDma.io,
+    joypad.io,
+    bootRom.io.peripheral,
+    apu.io.registers,
   )
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {

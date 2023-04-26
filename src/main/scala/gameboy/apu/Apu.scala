@@ -2,6 +2,7 @@ package gameboy.apu
 
 import chisel3._
 import chisel3.util._
+import gameboy.PeripheralAccess
 
 class ApuOutput extends Bundle {
   /** Left sample value */
@@ -23,8 +24,13 @@ class ApuOutput extends Bundle {
 class Apu extends Module {
   val io = IO(new Bundle {
     val output = new ApuOutput
+    val registers = new PeripheralAccess
+    val divApu = Input(Bool())
   })
 
+  // Register access
+  io.registers.valid := false.B
+  io.registers.dataRead := DontCare
 
   // Test tone, 440 Hz
   val period = (4 * 1024 * 1024) / 440
