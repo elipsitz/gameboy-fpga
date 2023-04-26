@@ -32,7 +32,6 @@ class Apu extends Module {
   val regApuEnable = RegInit(false.B)
   val regPanning = RegInit(0.U.asTypeOf(new RegisterSoundPanning))
   val regVolume = RegInit(0.U.asTypeOf(new RegisterMasterVolume))
-  val regDacEnable = RegInit(VecInit(Seq.fill(4)(false.B)))
   val regChannelEnable = RegInit(VecInit(Seq.fill(4)(false.B)))
   val channelTrigger = WireDefault(VecInit(Seq.fill(4)(false.B)))
   val regLengthEnable = RegInit(VecInit(Seq.fill(4)(false.B)))
@@ -42,6 +41,17 @@ class Apu extends Module {
   val channel1Duty = RegInit(0.U(2.W))
   val channel1Volume = RegInit(0.U.asTypeOf(new RegisterPulseVolume))
   val channel1Wavelength = RegInit(0.U(11.W))
+  // DAC
+  val dacEnable = VecInit(
+    channel1Volume.asUInt(7, 3) =/= 0.U,
+    false.B, false.B, false.B)
+
+  // Channel modules
+  val channel1 = Module(new SilentChannel)
+  val channel2 = Module(new SilentChannel)
+  val channel3 = Module(new SilentChannel)
+  val channel4 = Module(new SilentChannel)
+  val channelOutput = VecInit(Seq(channel1.io.out, channel2.io.out, channel3.io.out, channel4.io.out))
 
   // Register memory mapping
   io.reg.valid := false.B
@@ -79,15 +89,12 @@ class Apu extends Module {
   }
   io.reg.valid := io.reg.address >= 0x10.U && io.reg.address <= 0x3F.U
 
-  // TODO: if APU is disabled, zero out registers
-
-  // Test tone, 440 Hz
-  val period = (4 * 1024 * 1024) / 440
-  val value = RegInit(false.B)
-  val (counterValue, counterWrap) = Counter(true.B, period / 2)
-  when (counterWrap) {
-    value := !value
-  }
-  io.output.left := Mux(value, -480.S, 480.S)
-  io.output.right := Mux(value, -480.S, 480.S)
+  // Mixer
+  val dacOutput = VecInit((0 to 3).map(i =>
+    Mux(dacEnable(i), 0xF.S(5.W) - (channelOutput(i) << 1).asSInt, 0.S)
+  ))
+  val mixerLeft = VecInit((0 to 3).map(i => Mux(regPanning.left(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
+  val mixerRight = VecInit((0 to 3).map(i => Mux(regPanning.right(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
+  io.output.left := ((regVolume.leftVolume +& 1.U) * mixerLeft)
+  io.output.right := ((regVolume.leftVolume +& 1.U) * mixerRight)
 }
