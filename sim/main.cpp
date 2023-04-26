@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
 
     Simulator simulator(rom);
 
+    bool single_step = false;
     bool paused = false;
     uint64_t frame_timer = 0;
     int frame_counter = 0;
@@ -64,12 +65,15 @@ int main(int argc, char** argv) {
                 bool command = (key.mod & KMOD_GUI) != 0;
                 if (key.sym == SDLK_p && command) {
                     paused = !paused;
+                } else if (key.sym == SDLK_n && command) {
+                    paused = true;
+                    single_step = true;
                 }
             }
         }
 
         // Simulate for a frame.
-        if (!paused) {
+        if (!paused || single_step) {
             simulator.set_joypad_state(read_joypad_state());
             simulator.simulate_frame();
             frame_counter++;
@@ -79,6 +83,7 @@ int main(int argc, char** argv) {
             samples.clear();
         }
         window.update(simulator.getFramebuffer());
+        single_step = false;
 
         // Update title.
         if (SDL_GetTicks64() - frame_timer >= 1000) {
