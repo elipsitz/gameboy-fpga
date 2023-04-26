@@ -1,5 +1,4 @@
-#include <iostream>
-
+#include "audio.hpp"
 #include "common.hpp"
 #include "simulator.hpp"
 
@@ -67,6 +66,7 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
         }
 
         this->stepFramebuffer();
+        this->stepAudio();
 
         top->clock = 0;
         top->eval();
@@ -119,4 +119,19 @@ std::vector<uint8_t>& Simulator::getFramebuffer()
 {
     // Return framebuffer we're not writing to.
     return activeFramebuffer ? framebuffer0 : framebuffer1;
+}
+
+void Simulator::stepAudio()
+{
+    audioTimer++;
+    if (audioTimer == (CLOCK_RATE / AUDIO_SAMPLE_RATE)) {
+        audioTimer = 0;
+        audioSampleBuffer.push_back(top->io_apu_left);
+        audioSampleBuffer.push_back(top->io_apu_right);
+    }
+}
+
+std::vector<int16_t>& Simulator::getAudioSampleBuffer()
+{
+    return audioSampleBuffer;
 }

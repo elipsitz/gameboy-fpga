@@ -73,8 +73,11 @@ int main(int argc, char** argv) {
             simulator.set_joypad_state(read_joypad_state());
             simulator.simulate_frame();
             frame_counter++;
+            // Audio
+            std::vector<int16_t>& samples = simulator.getAudioSampleBuffer();
+            audio.push(samples.data(), samples.size());
+            samples.clear();
         }
-        // audio.push(samples.data(), samples.size());
         window.update(simulator.getFramebuffer());
 
         // Update title.

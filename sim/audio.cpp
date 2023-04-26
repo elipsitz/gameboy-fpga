@@ -26,7 +26,7 @@ Audio::Audio() {
 }
 
 // Each sample is a sample 16-bit (left, right) pair (4 bytes total per sample).
-void Audio::push(uint16_t* data, uint32_t length) {
+void Audio::push(int16_t* data, uint32_t length) {
     uint32_t samples_queued = SDL_GetQueuedAudioSize(device) / 4;
     // Target maximum of 2 frames of samples in the buffer.
     uint32_t samples_max = 2 * AUDIO_SAMPLE_RATE / 60;

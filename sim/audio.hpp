@@ -11,7 +11,8 @@ public:
     ~Audio();
 
     // Push samples (up to the maximum limit).
-    void push(uint16_t* data, uint32_t length);
+    // Each sample is signed (left, right) pair.
+    void push(int16_t* data, uint32_t length);
 
 private:
 	SDL_AudioDeviceID device;

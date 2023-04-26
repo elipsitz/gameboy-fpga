@@ -24,9 +24,11 @@ public:
     void simulate_frame();
     void reset();
     std::vector<uint8_t>& getFramebuffer();
+    std::vector<int16_t>& getAudioSampleBuffer();
 
 private:
     void stepFramebuffer();
+    void stepAudio();
 
     std::unique_ptr<Cartridge> cart;
     std::vector<uint8_t> framebuffer0;
@@ -38,4 +40,6 @@ private:
     bool prev_vblank = false;
     bool prev_hblank = false;
     bool prev_lcd_enabled = false;
+    std::vector<int16_t> audioSampleBuffer;
+    int audioTimer = 0;
 };
