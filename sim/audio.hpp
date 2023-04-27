@@ -2,7 +2,7 @@
 
 #include <SDL2/SDL.h>
 
-const int AUDIO_SAMPLE_RATE = 32768;
+const int AUDIO_SAMPLE_RATE = 256 * 1024;
 const int AUDIO_CHANNELS = 2;
 
 class Audio {

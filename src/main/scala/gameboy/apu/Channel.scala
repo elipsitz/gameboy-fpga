@@ -24,6 +24,7 @@ class PulseChannel extends Module {
   val io = IO(new ChannelIO {
     val wavelength = Input(UInt(11.W))
     val duty = Input(UInt(2.W))
+    val volume = Input(UInt(4.W))
   })
 
   // Counter within the wave table. Only reset when APU turns off.
@@ -35,7 +36,6 @@ class PulseChannel extends Module {
 
   when (io.trigger) {
     waveCounter := waveCounterMax
-    printf(cf"trigger! wavelength=${io.wavelength} max=${waveCounterMax}\n");
   }
 
   when (waveCounter === 0.U) {
@@ -45,5 +45,5 @@ class PulseChannel extends Module {
     waveCounter := waveCounter - 1.U
   }
 
-  io.out := Mux(waveIndex < 4.U, 0xF.U, 0.U)
+  io.out := Mux(VecInit(waveIndex < 1.U, waveIndex < 2.U, waveIndex < 4.U, waveIndex < 6.U)(io.duty), io.volume, 0.U)
 }
