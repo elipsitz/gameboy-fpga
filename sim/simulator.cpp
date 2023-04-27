@@ -123,11 +123,17 @@ std::vector<uint8_t>& Simulator::getFramebuffer()
 
 void Simulator::stepAudio()
 {
+    static int test_timer = 0;
+
     audioTimer++;
     if (audioTimer == (CLOCK_RATE / AUDIO_SAMPLE_RATE)) {
+        int16_t mask = 1U << (10 - 1);
+        int16_t left = (top->io_apu_left ^ mask) - mask;
+        int16_t right = (top->io_apu_right ^ mask) - mask;
+
         audioTimer = 0;
-        audioSampleBuffer.push_back(top->io_apu_left);
-        audioSampleBuffer.push_back(top->io_apu_right);
+        audioSampleBuffer.push_back(left);
+        audioSampleBuffer.push_back(right);
     }
 }
 
