@@ -182,8 +182,8 @@ class Apu extends Module {
   ))
   val mixerLeft = VecInit((0 to 3).map(i => Mux(regPanning.left(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
   val mixerRight = VecInit((0 to 3).map(i => Mux(regPanning.right(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
-  io.output.left := mixerLeft * (regVolume.leftVolume +& 1.U).asSInt
-  io.output.right := mixerRight * (regVolume.rightVolume +& 1.U).asSInt
+  io.output.left := mixerLeft * (regVolume.leftVolume +& 1.U).zext
+  io.output.right := mixerRight * (regVolume.rightVolume +& 1.U).zext
 
   // val test = RegInit(0.U(7.W))
   // test := test + 1.U

@@ -123,7 +123,6 @@ std::vector<uint8_t>& Simulator::getFramebuffer()
 
 void Simulator::stepAudio()
 {
-    static int test_timer = 0;
 
     audioTimer++;
     if (audioTimer == (CLOCK_RATE / AUDIO_SAMPLE_RATE)) {
@@ -134,6 +133,13 @@ void Simulator::stepAudio()
         audioTimer = 0;
         audioSampleBuffer.push_back(left);
         audioSampleBuffer.push_back(right);
+
+        // static int test_timer = 0;
+        // test_timer++;
+        // if (test_timer >= 8) {
+        //     test_timer = 0;
+        //     printf("sample: %d   , %d\n", top->io_apu_left, left);
+        // }
     }
 }
 
