@@ -3,9 +3,9 @@ package gameboy.apu
 import chisel3._
 
 
-class LengthControlConfig extends Bundle {
+class LengthControlConfig(bits: Int) extends Bundle {
   /** Raw length input (inverted + 1 when loaded) */
-  val length = UInt(6.W)
+  val length = UInt(bits.W)
   /** Whether length is being loaded this cycle */
   val lengthLoad = Bool()
   /** Whether the length control is enabled */
@@ -17,7 +17,7 @@ class LengthControl(bits: Int) extends Module {
     /** Pulsed on when triggered. */
     val trigger = Input(Bool())
     /** Configuration registers */
-    val config = Input(new LengthControlConfig)
+    val config = Input(new LengthControlConfig(bits))
     /** Length control tick pulse from frame sequencer (256 Hz) */
     val tick = Input(Bool())
     /** Output channel enabled */

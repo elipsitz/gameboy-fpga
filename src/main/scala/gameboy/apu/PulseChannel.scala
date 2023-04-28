@@ -3,7 +3,7 @@ package gameboy.apu
 import chisel3._
 
 class PulseChannelIO extends ChannelIO {
-  val lengthConfig = Input(new LengthControlConfig)
+  val lengthConfig = Input(new LengthControlConfig(6))
   val volumeConfig = Input(new VolumeEnvelopeConfig)
 
   val wavelength = Input(UInt(11.W))

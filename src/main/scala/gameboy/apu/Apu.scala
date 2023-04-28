@@ -68,7 +68,19 @@ class Apu extends Module {
   channel2.io.wavelength := channel2Wavelength
   channel2.io.duty := channel2Duty
 
-  val channel3 = Module(new SilentChannel)
+  // Channel 3
+  val channel3DacEnable = RegInit(false.B)
+  val channel3Volume = RegInit(0.U(2.W))
+  val channel3Wavelength = RegInit(0.U(11.W))
+  val channel3 = Module(new WaveChannel)
+  channel3.io.lengthConfig.length := DontCare
+  channel3.io.lengthConfig.lengthLoad := false.B
+  channel3.io.lengthConfig.enabled := regLengthEnable(3)
+  channel3.io.dacEnable := channel3DacEnable
+  channel3.io.volume := channel3Volume
+  channel3.io.wavelength := channel3Wavelength
+
+  // Channel 4
   val channel4 = Module(new SilentChannel)
 
   // Shared channel stuff
@@ -120,6 +132,24 @@ class Apu extends Module {
         channel2.io.wavelength := newWavelength
         when (io.reg.dataWrite(7)) { channelTrigger(1) := true.B }
       }
+
+      // Channel 3 Registers
+      is (0x1A.U) { channel3DacEnable := io.reg.dataWrite(7) }
+      is (0x1B.U) {
+        channel3.io.lengthConfig.length := io.reg.dataWrite
+        channel3.io.lengthConfig.lengthLoad := true.B
+      }
+      is (0x1C.U) { channel3.io.volume := io.reg.dataWrite(6, 5) }
+      is (0x1D.U) { channel3Wavelength := Cat(channel3Wavelength(10, 8), io.reg.dataWrite) }
+      is (0x1E.U) {
+        regLengthEnable(2) := io.reg.dataWrite(6)
+        val newWavelength = Cat(io.reg.dataWrite(2, 0), channel3Wavelength(7, 0))
+        channel3Wavelength := newWavelength
+        channel3.io.wavelength := newWavelength
+        when (io.reg.dataWrite(7)) {
+          channelTrigger(2) := true.B
+        }
+      }
     }
 
     // Wave RAM -- TODO, handle conflicts?
@@ -148,6 +178,11 @@ class Apu extends Module {
       is (0x16.U) { io.reg.dataRead := Cat(channel1Duty, "b111111".U(6.W)) }
       is (0x17.U) { io.reg.dataRead := channel1VolumeConfig.asUInt }
       is (0x19.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(1), "b111111".U(6.W)) }
+
+      // Channel 3 Registers
+      is (0x1A.U) { io.reg.dataRead := Cat(channel3DacEnable, "b1111111".U(7.W)) }
+      is (0x1C.U) { io.reg.dataRead := Cat("b1".U(1.W), channel3.io.volume, "b11111".U(5.W)) }
+      is (0x1E.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(2), "b111111".U(6.W)) }
     }
 
     when(io.reg.address >= 0x30.U && io.reg.address < 0x40.U) {
