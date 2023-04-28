@@ -41,22 +41,18 @@ class Apu extends Module {
   val channel1Length = RegInit(0.U(6.W))
   val channel1Duty = RegInit(0.U(2.W))
   val channel1Wavelength = RegInit(0.U(11.W))
+
   // DAC
   val dacEnable = VecInit(
     channel1Volume.asUInt(7, 3) =/= 0.U,
     false.B, false.B, false.B)
 
   // Frame sequencer
-  val divPulse = RegNext(io.divApu, false.B) && !io.divApu
-  val divCounter = RegInit(0.U(3.W))
-  when (divPulse) { divCounter := divCounter + 1.U }
-  val divPrevCounter = RegNext(divCounter, 0.U)
-  val tickEnvelope = divCounter(2) && !divPrevCounter(2)
-  val tickLength = divCounter(0) && !divPrevCounter(0)
-  val tickFreqSweep = divCounter(1) && !divPrevCounter(1)
+  val frameSequencer = Module(new FrameSequencer)
+  frameSequencer.io.divApu := io.divApu
 
   // Length
-  when (tickLength) {
+  when (frameSequencer.io.tick.length) {
     when(channel1Length =/= 0.U && regLengthEnable(0)) {
       val newLength = channel1Length - 1.U
       channel1Length := newLength
@@ -71,7 +67,7 @@ class Apu extends Module {
   val freqSweepShadow = RegInit(0.U(11.W))
   val freqSweepEnabled = RegInit(false.B)
   val freqSweepTimer = RegInit(0.U(3.W))
-  when (tickFreqSweep && freqSweepEnabled) {
+  when (frameSequencer.io.tick.frequency && freqSweepEnabled) {
     freqSweepTimer := freqSweepTimer - 1.U
     when (freqSweepTimer === 0.U) {
       freqSweepTimer := channel1Sweep.pace
@@ -93,7 +89,7 @@ class Apu extends Module {
   // Channel modules
   val channel1VolumeUnit = Module(new VolumeEnvelope)
   channel1VolumeUnit.io.trigger := channelTrigger(0)
-  channel1VolumeUnit.io.tick := tickEnvelope
+  channel1VolumeUnit.io.tick := frameSequencer.io.tick.volume
   channel1VolumeUnit.io.config := channel1Volume
   val channel1 = Module(new PulseChannel)
   channel1.io.wavelength := freqSweepShadow // channel1Wavelength
