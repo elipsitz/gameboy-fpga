@@ -47,8 +47,8 @@ class PulseChannel extends Module {
     waveCounter := waveCounter - 1.U
   }
 
-  val dacEnable = io.volumeConfig.initialVolume =/= 0.U || io.volumeConfig.modeIncrease
-  io.enabled := dacEnable && lengthUnit.io.channelEnable
+  io.dacEnabled := io.volumeConfig.initialVolume =/= 0.U || io.volumeConfig.modeIncrease
+  io.active := lengthUnit.io.channelEnable
   io.out := Mux(
     VecInit(waveIndex < 1.U, waveIndex < 2.U, waveIndex < 4.U, waveIndex < 6.U)(io.duty),
     volumeUnit.io.out, 0.U

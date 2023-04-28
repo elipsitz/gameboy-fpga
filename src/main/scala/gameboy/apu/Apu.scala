@@ -121,8 +121,8 @@ class Apu extends Module {
   when (io.reg.enabled && !io.reg.write) {
     switch (io.reg.address) {
       is (0x26.U) {
-        val channelsEnabled = VecInit(channels.reverse.map(c => c.enabled))
-        io.reg.dataRead := Cat(regApuEnable, "b111".U(3.W), channelsEnabled.asUInt)
+        val channelsActive = VecInit(channels.reverse.map(c => c.active))
+        io.reg.dataRead := Cat(regApuEnable, "b111".U(3.W), channelsActive.asUInt)
       }
       is (0x25.U) { io.reg.dataRead := regPanning.asUInt }
       is (0x24.U) { io.reg.dataRead := regVolume.asUInt }
@@ -136,7 +136,7 @@ class Apu extends Module {
 
   // Mixer
   val dacOutput = VecInit((0 to 3).map(i =>
-    Mux(channels(i).enabled, 0xF.S(5.W) - (channels(i).out << 1).asSInt, 0.S)
+    Mux(channels(i).active && channels(i).dacEnabled, 0xF.S(5.W) - (channels(i).out << 1).asSInt, 0.S)
   ))
   val mixerLeft = VecInit((0 to 3).map(i => Mux(regPanning.left(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
   val mixerRight = VecInit((0 to 3).map(i => Mux(regPanning.right(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
