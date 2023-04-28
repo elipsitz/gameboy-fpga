@@ -36,10 +36,10 @@ class Apu extends Module {
   val regLengthEnable = RegInit(VecInit(Seq.fill(4)(false.B)))
   val channelTrigger = VecInit(Seq.fill(4)(false.B))
   // Channel 1
+  val channel1Volume = RegInit(0.U.asTypeOf(new VolumeEnvelopeConfig))
   val channel1Sweep = RegInit(0.U.asTypeOf(new RegisterPulseSweep))
   val channel1Length = RegInit(0.U(6.W))
   val channel1Duty = RegInit(0.U(2.W))
-  val channel1Volume = RegInit(0.U.asTypeOf(new RegisterPulseVolume))
   val channel1Wavelength = RegInit(0.U(11.W))
   // DAC
   val dacEnable = VecInit(
@@ -89,32 +89,16 @@ class Apu extends Module {
     }
   }
 
-  // Channel 1 volume envelope
-  val channel1EnvelopeEnabled = RegInit(false.B)
-  val channel1EnvelopeVolume = RegInit(0.U(4.W))
-  val channel1EnvelopeTimer = RegInit(0.U(3.W))
-  when (tickEnvelope && channel1EnvelopeEnabled) {
-    channel1EnvelopeTimer := channel1EnvelopeTimer - 1.U
-    when (channel1EnvelopeTimer === 0.U) {
-      channel1EnvelopeTimer := channel1Volume.sweepPace
-      when (channel1Volume.envelopeIncrease && channel1EnvelopeVolume < 15.U) {
-        channel1EnvelopeVolume := channel1EnvelopeVolume + 1.U
-      } .elsewhen (!channel1Volume.envelopeIncrease && channel1EnvelopeVolume > 0.U) {
-        channel1EnvelopeVolume := channel1EnvelopeVolume - 1.U
-      } .otherwise {
-        channel1EnvelopeEnabled := false.B
-        printf(cf"chan 1 envelope disable\n")
-      }
-      printf(cf"       chan 1 envelope , val = ${channel1EnvelopeVolume}\n")
-    }
-  }
-
 
   // Channel modules
+  val channel1VolumeUnit = Module(new VolumeEnvelope)
+  channel1VolumeUnit.io.trigger := channelTrigger(0)
+  channel1VolumeUnit.io.tick := tickEnvelope
+  channel1VolumeUnit.io.config := channel1Volume
   val channel1 = Module(new PulseChannel)
   channel1.io.wavelength := freqSweepShadow // channel1Wavelength
   channel1.io.duty := channel1Duty
-  channel1.io.volume := channel1EnvelopeVolume
+  channel1.io.volume := channel1VolumeUnit.io.out
   val channel2 = Module(new SilentChannel)
   val channel3 = Module(new SilentChannel)
   val channel4 = Module(new SilentChannel)
@@ -136,12 +120,7 @@ class Apu extends Module {
         channel1Duty := io.reg.dataWrite(7, 6)
         channel1Length := ~io.reg.dataWrite(5, 0)
       }
-      is (0x12.U) {
-        channel1Volume := io.reg.dataWrite.asTypeOf(new RegisterPulseVolume)
-
-        val d = io.reg.dataWrite.asTypeOf(new RegisterPulseVolume)
-        printf(cf"vol write <- init=${d.initialVolume}, inc=${d.envelopeIncrease}, pace=${d.sweepPace}\n")
-      }
+      is (0x12.U) { channel1Volume := io.reg.dataWrite.asTypeOf(new VolumeEnvelopeConfig) }
       is (0x13.U) { channel1Wavelength := Cat(channel1Wavelength(10, 8), io.reg.dataWrite) }
       is (0x14.U) {
         regLengthEnable(0) := io.reg.dataWrite(6)
@@ -155,9 +134,6 @@ class Apu extends Module {
           freqSweepShadow := newWavelength
           freqSweepTimer := channel1Sweep.pace
           freqSweepEnabled := (channel1Sweep.pace =/= 0.U) || (channel1Sweep.slope =/= 0.U)
-          channel1EnvelopeVolume := channel1Volume.initialVolume
-          channel1EnvelopeEnabled := channel1Volume.sweepPace =/= 0.U
-          channel1EnvelopeTimer := channel1Volume.sweepPace
         }
       }
     }

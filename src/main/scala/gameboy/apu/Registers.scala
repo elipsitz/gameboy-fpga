@@ -30,12 +30,3 @@ class RegisterPulseLength extends Bundle {
   val duty = UInt(2.W)
   val initialLength = UInt(6.W)
 }
-
-/**
- * FF12 — NR12: Channel 1 volume & envelope
- */
-class RegisterPulseVolume extends Bundle {
-  val initialVolume = UInt(4.W)
-  val envelopeIncrease = Bool()
-  val sweepPace = UInt(3.W)
-}
