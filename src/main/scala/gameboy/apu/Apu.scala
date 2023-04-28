@@ -35,6 +35,9 @@ class Apu extends Module {
   val regLengthEnable = RegInit(VecInit(Seq.fill(4)(false.B)))
   val channelTrigger = VecInit(Seq.fill(4)(false.B))
 
+  // Wave ram
+  val waveRam = RegInit(VecInit(Seq.fill(16)(0.U(8.W))))
+
   // Frame sequencer
   val frameSequencer = Module(new FrameSequencer)
   frameSequencer.io.divApu := io.divApu
@@ -42,7 +45,6 @@ class Apu extends Module {
   // Channel 1
   val channel1VolumeConfig = RegInit(0.U.asTypeOf(new VolumeEnvelopeConfig))
   val channel1SweepConfig = RegInit(0.U.asTypeOf(new FrequencySweepConfig))
-  val channel1Length = RegInit(0.U(6.W))
   val channel1Duty = RegInit(0.U(2.W))
   val channel1Wavelength = RegInit(0.U(11.W))
   val channel1 = Module(new PulseChannelWithSweep)
@@ -56,7 +58,6 @@ class Apu extends Module {
 
   // Channel 2
   val channel2VolumeConfig = RegInit(0.U.asTypeOf(new VolumeEnvelopeConfig))
-  val channel2Length = RegInit(0.U(6.W))
   val channel2Duty = RegInit(0.U(2.W))
   val channel2Wavelength = RegInit(0.U(11.W))
   val channel2 = Module(new PulseChannel)
@@ -120,6 +121,11 @@ class Apu extends Module {
         when (io.reg.dataWrite(7)) { channelTrigger(1) := true.B }
       }
     }
+
+    // Wave RAM -- TODO, handle conflicts?
+    when (io.reg.address >= 0x30.U && io.reg.address < 0x40.U) {
+      waveRam(io.reg.address(3, 0)) := io.reg.dataWrite
+    }
   }
   io.reg.dataRead := 0xFF.U
   when (io.reg.enabled && !io.reg.write) {
@@ -142,6 +148,10 @@ class Apu extends Module {
       is (0x16.U) { io.reg.dataRead := Cat(channel1Duty, "b111111".U(6.W)) }
       is (0x17.U) { io.reg.dataRead := channel1VolumeConfig.asUInt }
       is (0x19.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(1), "b111111".U(6.W)) }
+    }
+
+    when(io.reg.address >= 0x30.U && io.reg.address < 0x40.U) {
+      io.reg.dataRead := waveRam(io.reg.address(3, 0))
     }
   }
   io.reg.valid := io.reg.address >= 0x10.U && io.reg.address <= 0x3F.U
