@@ -54,7 +54,19 @@ class Apu extends Module {
   channel1.io.duty := channel1Duty
   channel1.io.sweepConfig := channel1SweepConfig
 
-  val channel2 = Module(new SilentChannel)
+  // Channel 2
+  val channel2VolumeConfig = RegInit(0.U.asTypeOf(new VolumeEnvelopeConfig))
+  val channel2Length = RegInit(0.U(6.W))
+  val channel2Duty = RegInit(0.U(2.W))
+  val channel2Wavelength = RegInit(0.U(11.W))
+  val channel2 = Module(new PulseChannel)
+  channel2.io.lengthConfig.length := DontCare
+  channel2.io.lengthConfig.lengthLoad := false.B
+  channel2.io.lengthConfig.enabled := regLengthEnable(1)
+  channel2.io.volumeConfig := channel2VolumeConfig
+  channel2.io.wavelength := channel2Wavelength
+  channel2.io.duty := channel2Duty
+
   val channel3 = Module(new SilentChannel)
   val channel4 = Module(new SilentChannel)
 
@@ -89,26 +101,47 @@ class Apu extends Module {
         val newWavelength = Cat(io.reg.dataWrite(2, 0), channel1Wavelength(7, 0))
         channel1Wavelength := newWavelength
         channel1.io.wavelength := newWavelength
-        when (io.reg.dataWrite(7)) {
-          // Trigger
-          channelTrigger(0) := true.B
-        }
+        when (io.reg.dataWrite(7)) { channelTrigger(0) := true.B }
+      }
+
+      // Channel 2 Registers
+      is (0x16.U) {
+        channel2Duty := io.reg.dataWrite(7, 6)
+        channel2.io.lengthConfig.length := io.reg.dataWrite(5, 0)
+        channel2.io.lengthConfig.lengthLoad := true.B
+      }
+      is (0x17.U) { channel2VolumeConfig := io.reg.dataWrite.asTypeOf(new VolumeEnvelopeConfig) }
+      is (0x18.U) { channel2Wavelength := Cat(channel2Wavelength(10, 8), io.reg.dataWrite) }
+      is (0x19.U) {
+        regLengthEnable(1) := io.reg.dataWrite(6)
+        val newWavelength = Cat(io.reg.dataWrite(2, 0), channel2Wavelength(7, 0))
+        channel2Wavelength := newWavelength
+        channel2.io.wavelength := newWavelength
+        when (io.reg.dataWrite(7)) { channelTrigger(1) := true.B }
       }
     }
   }
   io.reg.dataRead := 0xFF.U
   when (io.reg.enabled && !io.reg.write) {
     switch (io.reg.address) {
+      // Global registers
       is (0x26.U) {
         val channelsActive = VecInit(channels.reverse.map(c => c.active))
         io.reg.dataRead := Cat(regApuEnable, "b111".U(3.W), channelsActive.asUInt)
       }
       is (0x25.U) { io.reg.dataRead := regPanning.asUInt }
       is (0x24.U) { io.reg.dataRead := regVolume.asUInt }
+
+      // Channel 1 registers
       is (0x10.U) { io.reg.dataRead := channel1SweepConfig.asUInt }
       is (0x11.U) { io.reg.dataRead := Cat(channel1Duty, "b111111".U(6.W)) }
       is (0x12.U) { io.reg.dataRead := channel1VolumeConfig.asUInt }
       is (0x14.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(0), "b111111".U(6.W)) }
+
+      // Channel 2 registers
+      is (0x16.U) { io.reg.dataRead := Cat(channel1Duty, "b111111".U(6.W)) }
+      is (0x17.U) { io.reg.dataRead := channel1VolumeConfig.asUInt }
+      is (0x19.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(1), "b111111".U(6.W)) }
     }
   }
   io.reg.valid := io.reg.address >= 0x10.U && io.reg.address <= 0x3F.U
