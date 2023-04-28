@@ -34,51 +34,31 @@ class Apu extends Module {
   val regVolume = RegInit(0.U.asTypeOf(new RegisterMasterVolume))
   val regLengthEnable = RegInit(VecInit(Seq.fill(4)(false.B)))
   val channelTrigger = VecInit(Seq.fill(4)(false.B))
-  // Channel 1
-  val channel1VolumeConfig = RegInit(0.U.asTypeOf(new VolumeEnvelopeConfig))
-  val channel1Sweep = RegInit(0.U.asTypeOf(new RegisterPulseSweep))
-  val channel1Length = RegInit(0.U(6.W))
-  val channel1Duty = RegInit(0.U(2.W))
-  val channel1Wavelength = RegInit(0.U(11.W))
 
   // Frame sequencer
   val frameSequencer = Module(new FrameSequencer)
   frameSequencer.io.divApu := io.divApu
-  
-  // Channel 1 frequency sweep
-  val freqSweepShadow = RegInit(0.U(11.W))
-  val freqSweepEnabled = RegInit(false.B)
-  val freqSweepTimer = RegInit(0.U(3.W))
-  when (frameSequencer.io.ticks.frequency && freqSweepEnabled) {
-    freqSweepTimer := freqSweepTimer - 1.U
-    when (freqSweepTimer === 0.U) {
-      freqSweepTimer := channel1Sweep.pace
-      val offset = (freqSweepShadow >> channel1Sweep.slope).asUInt
-      when (channel1Sweep.decrease) {
-        freqSweepShadow := freqSweepShadow - offset
-      } .otherwise {
-        val newShadow = freqSweepShadow +& offset
-        freqSweepShadow := newShadow(10, 0)
-        when (newShadow >= 2048.U) {
-          printf(cf"sweep overflow \n")
-          // TODO disable channel
-        }
-      }
-    }
-  }
 
   // Channel 1
-  val channel1 = Module(new PulseChannel)
+  val channel1VolumeConfig = RegInit(0.U.asTypeOf(new VolumeEnvelopeConfig))
+  val channel1SweepConfig = RegInit(0.U.asTypeOf(new FrequencySweepConfig))
+  val channel1Length = RegInit(0.U(6.W))
+  val channel1Duty = RegInit(0.U(2.W))
+  val channel1Wavelength = RegInit(0.U(11.W))
+  val channel1 = Module(new PulseChannelWithSweep)
   channel1.io.lengthConfig.length := DontCare
   channel1.io.lengthConfig.lengthLoad := false.B
   channel1.io.lengthConfig.enabled := regLengthEnable(0)
   channel1.io.volumeConfig := channel1VolumeConfig
-  channel1.io.wavelength := freqSweepShadow
+  channel1.io.wavelength := channel1Wavelength
   channel1.io.duty := channel1Duty
+  channel1.io.sweepConfig := channel1SweepConfig
 
   val channel2 = Module(new SilentChannel)
   val channel3 = Module(new SilentChannel)
   val channel4 = Module(new SilentChannel)
+
+  // Shared channel stuff
   val channels: Seq[ChannelIO] = Seq(channel1.io, channel2.io, channel3.io, channel4.io)
   for (i <- 0 to 3) {
     channels(i).trigger := channelTrigger(i)
@@ -90,10 +70,13 @@ class Apu extends Module {
   io.reg.dataRead := DontCare
   when (io.reg.enabled && io.reg.write) {
     switch (io.reg.address) {
+      // Global registers
       is (0x26.U) { regApuEnable := io.reg.dataWrite(7) }
       is (0x25.U) { regPanning := io.reg.dataWrite.asTypeOf(new RegisterSoundPanning) }
       is (0x24.U) { regVolume := io.reg.dataWrite.asTypeOf(new RegisterMasterVolume) }
-      is (0x10.U) { channel1Sweep := io.reg.dataWrite.asTypeOf(new RegisterPulseSweep) }
+
+      // Channel 1 Registers
+      is (0x10.U) { channel1SweepConfig := io.reg.dataWrite.asTypeOf(new FrequencySweepConfig) }
       is (0x11.U) {
         channel1Duty := io.reg.dataWrite(7, 6)
         channel1.io.lengthConfig.length := io.reg.dataWrite(5, 0)
@@ -103,16 +86,12 @@ class Apu extends Module {
       is (0x13.U) { channel1Wavelength := Cat(channel1Wavelength(10, 8), io.reg.dataWrite) }
       is (0x14.U) {
         regLengthEnable(0) := io.reg.dataWrite(6)
-        // "When triggering a square channel, the low two bits of the frequency timer are NOT modified."
-        //  XXX:  --> use the register output value, not the newly created value.
         val newWavelength = Cat(io.reg.dataWrite(2, 0), channel1Wavelength(7, 0))
         channel1Wavelength := newWavelength
+        channel1.io.wavelength := newWavelength
         when (io.reg.dataWrite(7)) {
           // Trigger
           channelTrigger(0) := true.B
-          freqSweepShadow := newWavelength
-          freqSweepTimer := channel1Sweep.pace
-          freqSweepEnabled := (channel1Sweep.pace =/= 0.U) || (channel1Sweep.slope =/= 0.U)
         }
       }
     }
@@ -126,7 +105,7 @@ class Apu extends Module {
       }
       is (0x25.U) { io.reg.dataRead := regPanning.asUInt }
       is (0x24.U) { io.reg.dataRead := regVolume.asUInt }
-      is (0x10.U) { io.reg.dataRead := channel1Sweep.asUInt }
+      is (0x10.U) { io.reg.dataRead := channel1SweepConfig.asUInt }
       is (0x11.U) { io.reg.dataRead := Cat(channel1Duty, "b111111".U(6.W)) }
       is (0x12.U) { io.reg.dataRead := channel1VolumeConfig.asUInt }
       is (0x14.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(0), "b111111".U(6.W)) }
