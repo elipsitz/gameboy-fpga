@@ -21,7 +21,7 @@ class ApuOutput extends Bundle {
  * To convert an unsigned channel sample (0..15) to a signed one, we do (0xF - (2 * value)), making a range of
  * -15 to 15. With four channels, -60 to 60. With the volume scaler, -480 to 480. This is a 10-bit signed integer.
  */
-class Apu extends Module {
+class Apu(skipBootRom: Boolean) extends Module {
   val io = IO(new Bundle {
     val output = new ApuOutput
     val reg = new PeripheralAccess
@@ -29,7 +29,7 @@ class Apu extends Module {
   })
 
   // General registers
-  val regApuEnable = RegInit(false.B)
+  val regApuEnable = RegInit(skipBootRom.B)
   val regPanning = RegInit(0.U.asTypeOf(new RegisterSoundPanning))
   val regVolume = RegInit(0.U.asTypeOf(new RegisterMasterVolume))
   val regLengthEnable = RegInit(VecInit(Seq.fill(4)(false.B)))

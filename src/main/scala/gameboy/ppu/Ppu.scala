@@ -116,7 +116,7 @@ class TileAttributes extends Bundle {
   val paletteCgb = UInt(3.W)
 }
 
-class Ppu extends Module {
+class Ppu(skipBootRom: Boolean) extends Module {
   val io = IO(new Bundle {
     val output = new PpuOutput
     val registers = new PeripheralAccess
@@ -150,7 +150,7 @@ class Ppu extends Module {
   val regLx = RegInit((Ppu.Width + 8).U(8.W))
 
   /** $FF40 -- LCDC: LCD Control */
-  val regLcdc = RegInit(0.U.asTypeOf(new RegisterLcdControl))
+  val regLcdc = RegInit((if (skipBootRom) 0x91 else 0x0).U.asTypeOf(new RegisterLcdControl))
   /** $FF41 -- STAT: LCD status */
   val regStat = RegInit(0.U.asTypeOf(new RegisterStatus))
   /** $FF42 -- SCY: Viewport Y position */
