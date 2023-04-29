@@ -79,6 +79,8 @@ class Apu extends Module {
   channel3.io.dacEnable := channel3DacEnable
   channel3.io.volume := channel3Volume
   channel3.io.wavelength := channel3Wavelength
+  // TODO deal with wave ram conflicts?
+  channel3.io.waveRamDataRead := waveRam(channel3.io.waveRamAddress)
 
   // Channel 4
   val channel4 = Module(new SilentChannel)
@@ -139,7 +141,7 @@ class Apu extends Module {
         channel3.io.lengthConfig.length := io.reg.dataWrite
         channel3.io.lengthConfig.lengthLoad := true.B
       }
-      is (0x1C.U) { channel3.io.volume := io.reg.dataWrite(6, 5) }
+      is (0x1C.U) { channel3Volume := io.reg.dataWrite(6, 5) }
       is (0x1D.U) { channel3Wavelength := Cat(channel3Wavelength(10, 8), io.reg.dataWrite) }
       is (0x1E.U) {
         regLengthEnable(2) := io.reg.dataWrite(6)
