@@ -11,16 +11,8 @@ class ChannelIO extends Bundle {
 
   /** Output value of the channel */
   val out = Output(UInt(4.W))
-  /** Whether the channel is active: (not disabled due to length (or frequency sweep)) **/
-  val active = Output(Bool())
+  /** Pulsed when the channel gets disabled (due to length expiring or frequency sweep). **/
+  val channelDisable = Output(Bool())
   /** Whether the DAC is enabled **/
   val dacEnabled = Output(Bool())
-}
-
-/** Silent no-op channel for testing */
-class SilentChannel extends Module {
-  val io = IO(new ChannelIO())
-  io.out := 0.U
-  io.active := false.B
-  io.dacEnabled := false.B
 }

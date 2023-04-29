@@ -50,7 +50,7 @@ class PulseChannel extends Module {
   }
 
   io.dacEnabled := io.volumeConfig.initialVolume =/= 0.U || io.volumeConfig.modeIncrease
-  io.active := lengthUnit.io.channelEnable
+  io.channelDisable := lengthUnit.io.channelDisable
   io.out := Mux(
     VecInit(waveIndex < 1.U, waveIndex < 2.U, waveIndex < 4.U, waveIndex < 6.U)(io.duty),
     volumeUnit.io.out, 0.U
@@ -106,6 +106,6 @@ class PulseChannelWithSweep extends Module {
   pulseChannel.io.wavelength := freqSweepShadow
   pulseChannel.io.duty := io.duty
   io.dacEnabled := pulseChannel.io.dacEnabled
-  io.active := pulseChannel.io.active && !freqSweepOverflow
+  io.channelDisable := pulseChannel.io.channelDisable || freqSweepOverflow
   io.out := pulseChannel.io.out
 }

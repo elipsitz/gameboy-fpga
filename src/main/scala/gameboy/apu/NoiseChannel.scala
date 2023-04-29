@@ -58,5 +58,5 @@ class NoiseChannel extends Module {
 
   io.out := Mux(shiftRegister(0), volumeUnit.io.out, 0.U)
   io.dacEnabled := io.volumeConfig.initialVolume =/= 0.U || io.volumeConfig.modeIncrease
-  io.active := lengthUnit.io.channelEnable
+  io.channelDisable := lengthUnit.io.channelDisable
 }

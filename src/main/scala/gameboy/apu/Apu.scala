@@ -34,6 +34,7 @@ class Apu extends Module {
   val regVolume = RegInit(0.U.asTypeOf(new RegisterMasterVolume))
   val regLengthEnable = RegInit(VecInit(Seq.fill(4)(false.B)))
   val channelTrigger = VecInit(Seq.fill(4)(false.B))
+  val channelEnabled = RegInit(VecInit(Seq.fill(4)(false.B)))
 
   // Wave ram
   val waveRam = RegInit(VecInit(Seq.fill(16)(0.U(8.W))))
@@ -97,6 +98,8 @@ class Apu extends Module {
   for (i <- 0 to 3) {
     channels(i).trigger := channelTrigger(i)
     channels(i).ticks := frameSequencer.io.ticks
+    when (channelTrigger(i)) { channelEnabled(i) := true.B }
+    when (channels(i).channelDisable || !channels(i).dacEnabled) { channelEnabled(i) := false.B }
   }
 
   // Register memory mapping
@@ -181,8 +184,7 @@ class Apu extends Module {
     switch (io.reg.address) {
       // Global registers
       is (0x26.U) {
-        val channelsActive = VecInit(channels.map(c => c.active))
-        io.reg.dataRead := Cat(regApuEnable, "b111".U(3.W), channelsActive.asUInt)
+        io.reg.dataRead := Cat(regApuEnable, "b111".U(3.W), channelEnabled.asUInt)
       }
       is (0x25.U) { io.reg.dataRead := regPanning.asUInt }
       is (0x24.U) { io.reg.dataRead := regVolume.asUInt }
@@ -257,7 +259,7 @@ class Apu extends Module {
 
   // Mixer
   val dacOutput = VecInit((0 to 3).map(i =>
-    Mux(channels(i).active && channels(i).dacEnabled, 0xF.S(5.W) - (channels(i).out << 1).asSInt, 0.S)
+    Mux(channelEnabled(i), 0xF.S(5.W) - (channels(i).out << 1).asSInt, 0.S)
   ))
   val mixerLeft = VecInit((0 to 3).map(i => Mux(regPanning.left(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
   val mixerRight = VecInit((0 to 3).map(i => Mux(regPanning.right(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
