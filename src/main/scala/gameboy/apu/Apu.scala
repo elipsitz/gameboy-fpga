@@ -90,6 +90,7 @@ class Apu extends Module {
   channel4.io.lengthConfig.lengthLoad := false.B
   channel4.io.lengthConfig.enabled := regLengthEnable(3)
   channel4.io.volumeConfig := channel4VolumeConfig
+  channel4.io.lfsrConfig := channel4LfsrConfig
 
   // Shared channel stuff
   val channels: Seq[ChannelIO] = Seq(channel1.io, channel2.io, channel3.io, channel4.io)
