@@ -22,7 +22,7 @@ class NoiseChannel extends Module {
   })
 
   // Length control module.
-  val lengthUnit = Module(new LengthControl(8))
+  val lengthUnit = Module(new LengthControl(6))
   lengthUnit.io.trigger := io.trigger
   lengthUnit.io.config := io.lengthConfig
   lengthUnit.io.tick := io.ticks.length
