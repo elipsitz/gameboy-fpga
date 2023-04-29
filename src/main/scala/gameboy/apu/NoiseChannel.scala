@@ -47,6 +47,8 @@ class NoiseChannel extends Module {
       Mux(io.lfsrConfig.size, bit, shiftRegister(7)),
       shiftRegister(6, 1),
     )
+  } .otherwise {
+    timer := timer - 1.U
   }
 
   when (io.trigger) {

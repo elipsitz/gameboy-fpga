@@ -32,8 +32,9 @@ class VolumeEnvelope extends Module {
   val sweepPace = RegInit(0.U(3.W))
 
   when (sweepPace =/= 0.U && io.tick) {
-    timer := timer - 1.U
-    when (timer === 0.U) {
+    val newTimer = timer - 1.U
+    timer := newTimer
+    when (newTimer === 0.U) {
       timer := sweepPace
 
       when(modeIncrease && volume < 15.U) {
