@@ -131,8 +131,8 @@ void Simulator::stepAudio()
         int16_t right = (top->io_apu_right ^ mask) - mask;
 
         audioTimer = 0;
-        audioSampleBuffer.push_back(left);
-        audioSampleBuffer.push_back(right);
+        audioSampleBuffer.push_back(left * 8);
+        audioSampleBuffer.push_back(right * 8);
 
         // static int test_timer = 0;
         // test_timer++;
