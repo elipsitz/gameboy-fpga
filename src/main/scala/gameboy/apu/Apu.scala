@@ -75,7 +75,7 @@ class Apu extends Module {
   val channel3 = Module(new WaveChannel)
   channel3.io.lengthConfig.length := DontCare
   channel3.io.lengthConfig.lengthLoad := false.B
-  channel3.io.lengthConfig.enabled := regLengthEnable(3)
+  channel3.io.lengthConfig.enabled := regLengthEnable(2)
   channel3.io.dacEnable := channel3DacEnable
   channel3.io.volume := channel3Volume
   channel3.io.wavelength := channel3Wavelength
@@ -83,7 +83,13 @@ class Apu extends Module {
   channel3.io.waveRamDataRead := waveRam(channel3.io.waveRamAddress)
 
   // Channel 4
-  val channel4 = Module(new SilentChannel)
+  val channel4VolumeConfig = RegInit(0.U.asTypeOf(new VolumeEnvelopeConfig))
+  val channel4LfsrConfig = RegInit(0.U.asTypeOf(new NoiseChannelConfig))
+  val channel4 = Module(new NoiseChannel)
+  channel4.io.lengthConfig.length := DontCare
+  channel4.io.lengthConfig.lengthLoad := false.B
+  channel4.io.lengthConfig.enabled := regLengthEnable(3)
+  channel4.io.volumeConfig := channel4VolumeConfig
 
   // Shared channel stuff
   val channels: Seq[ChannelIO] = Seq(channel1.io, channel2.io, channel3.io, channel4.io)
@@ -148,9 +154,19 @@ class Apu extends Module {
         val newWavelength = Cat(io.reg.dataWrite(2, 0), channel3Wavelength(7, 0))
         channel3Wavelength := newWavelength
         channel3.io.wavelength := newWavelength
-        when (io.reg.dataWrite(7)) {
-          channelTrigger(2) := true.B
-        }
+        when (io.reg.dataWrite(7)) { channelTrigger(2) := true.B }
+      }
+
+      // Channel 4 Registers
+      is (0x20.U) {
+        channel4.io.lengthConfig.length := io.reg.dataWrite(5, 0)
+        channel4.io.lengthConfig.lengthLoad := true.B
+      }
+      is (0x21.U) { channel4VolumeConfig := io.reg.dataWrite.asTypeOf(new VolumeEnvelopeConfig) }
+      is (0x22.U) { channel4LfsrConfig := io.reg.dataWrite.asTypeOf(new NoiseChannelConfig) }
+      is (0x23.U) {
+        regLengthEnable(3) := io.reg.dataWrite(6)
+        when (io.reg.dataWrite(7)) { channelTrigger(3) := true.B }
       }
     }
 
@@ -177,14 +193,19 @@ class Apu extends Module {
       is (0x14.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(0), "b111111".U(6.W)) }
 
       // Channel 2 registers
-      is (0x16.U) { io.reg.dataRead := Cat(channel1Duty, "b111111".U(6.W)) }
-      is (0x17.U) { io.reg.dataRead := channel1VolumeConfig.asUInt }
+      is (0x16.U) { io.reg.dataRead := Cat(channel2Duty, "b111111".U(6.W)) }
+      is (0x17.U) { io.reg.dataRead := channel2VolumeConfig.asUInt }
       is (0x19.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(1), "b111111".U(6.W)) }
 
       // Channel 3 Registers
       is (0x1A.U) { io.reg.dataRead := Cat(channel3DacEnable, "b1111111".U(7.W)) }
       is (0x1C.U) { io.reg.dataRead := Cat("b1".U(1.W), channel3.io.volume, "b11111".U(5.W)) }
       is (0x1E.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(2), "b111111".U(6.W)) }
+
+      // Channel 4 Registers
+      is (0x21.U) { io.reg.dataRead := channel4VolumeConfig.asUInt }
+      is (0x22.U) { io.reg.dataRead := channel4LfsrConfig.asUInt }
+      is (0x23.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(3), "b111111".U(6.W)) }
     }
 
     when(io.reg.address >= 0x30.U && io.reg.address < 0x40.U) {
