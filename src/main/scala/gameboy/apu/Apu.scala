@@ -181,14 +181,14 @@ class Apu extends Module {
     switch (io.reg.address) {
       // Global registers
       is (0x26.U) {
-        val channelsActive = VecInit(channels.reverse.map(c => c.active))
+        val channelsActive = VecInit(channels.map(c => c.active))
         io.reg.dataRead := Cat(regApuEnable, "b111".U(3.W), channelsActive.asUInt)
       }
       is (0x25.U) { io.reg.dataRead := regPanning.asUInt }
       is (0x24.U) { io.reg.dataRead := regVolume.asUInt }
 
       // Channel 1 registers
-      is (0x10.U) { io.reg.dataRead := channel1SweepConfig.asUInt }
+      is (0x10.U) { io.reg.dataRead := Cat("b1".U(1.W), channel1SweepConfig.asUInt) }
       is (0x11.U) { io.reg.dataRead := Cat(channel1Duty, "b111111".U(6.W)) }
       is (0x12.U) { io.reg.dataRead := channel1VolumeConfig.asUInt }
       is (0x14.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(0), "b111111".U(6.W)) }
@@ -214,6 +214,46 @@ class Apu extends Module {
     }
   }
   io.reg.valid := io.reg.address >= 0x10.U && io.reg.address <= 0x3F.U
+
+  // APU off reset
+  when (!regApuEnable) {
+    regPanning := 0.U.asTypeOf(new RegisterSoundPanning)
+    regVolume := 0.U.asTypeOf(new RegisterMasterVolume)
+    regLengthEnable := 0.U.asTypeOf(regLengthEnable)
+    frameSequencer.reset := true.B
+    // Wave ram is not reset
+
+    channel1VolumeConfig := 0.U.asTypeOf(new VolumeEnvelopeConfig)
+    channel1SweepConfig := 0.U.asTypeOf(new FrequencySweepConfig)
+    channel1Duty := 0.U
+    channel1Wavelength := 0.U
+    channel1.reset := true.B
+
+    channel2VolumeConfig := 0.U.asTypeOf(new VolumeEnvelopeConfig)
+    channel2Duty := 0.U
+    channel2Wavelength := 0.U
+    channel2.reset := true.B
+
+    channel3DacEnable := false.B
+    channel3Volume := 0.U
+    channel3Wavelength := 0.U
+    channel3.reset := true.B
+
+    channel4VolumeConfig := 0.U.asTypeOf(new VolumeEnvelopeConfig)
+    channel4LfsrConfig := 0.U.asTypeOf(new NoiseChannelConfig)
+    channel4.reset := true.B
+
+    // DMG: length counters are not affected by poweroff
+  }
+
+
+//  when (io.reg.valid && io.reg.enabled) {
+//    when (io.reg.write) {
+//      printf(cf"write to ${io.reg.address}%x <- ${io.reg.dataWrite}%x\n")
+//    } .otherwise {
+//      printf(cf"read from ${io.reg.address}%x -> ${io.reg.dataRead}%x\n")
+//    }
+//  }
 
   // Mixer
   val dacOutput = VecInit((0 to 3).map(i =>
