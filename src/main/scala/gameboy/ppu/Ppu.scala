@@ -183,15 +183,10 @@ class Ppu(skipBootRom: Boolean) extends Module {
     tick := tick + 1.U
   }
 
-  /*
-   * TODO: properly handle PPU enable/disable bit.
-   *  When disabled: stat mode reads as 0 (hblank)
-   *  Something with interrupts? None fire?
-   *  Nothing is drawn
-   *  Lcd goes "white" -- or perhaps just freezes what was on it for a bit
-   *  VRAM/OAM are immediately accessible by CPU
-   *  regLy goes to 0?
-   */
+  // HACK: On the last scanline of vblank (153), LY=153 only for one cycle (at most 1 m-cycle) on DMG (2 on CGB),
+  // then it gets reset to 0. There's probably a better way to handle this, but...
+  // This affects reading via the LY register and the LY=LYC stat interrupt.
+  val lyVisible = Mux(regLy === 153.U && tick > 0.U, 0.U, regLy)
 
   // 1-hot current state wire
   val stateVblank = regLy >= Ppu.Height.U
@@ -200,7 +195,7 @@ class Ppu(skipBootRom: Boolean) extends Module {
   val stateHblank = !stateVblank && (regLx === (Ppu.Width + 8).U)
   io.output.hblank := stateHblank
   io.output.vblank := stateVblank
-  val lycEqualFlag = regLyc === regLy
+  val lycEqualFlag = regLyc === lyVisible
   io.vramEnabled := stateDrawing && regLcdc.enable
   io.output.lcdEnable := regLcdc.enable
 
@@ -230,7 +225,7 @@ class Ppu(skipBootRom: Boolean) extends Module {
       }
       is (0x42.U) { io.registers.dataRead := regScy }
       is (0x43.U) { io.registers.dataRead := regScx }
-      is (0x44.U) { io.registers.dataRead := regLy }
+      is (0x44.U) { io.registers.dataRead := lyVisible }
       is (0x45.U) { io.registers.dataRead := regLyc }
       is (0x47.U) { io.registers.dataRead := regBgp.asUInt }
       is (0x48.U) { io.registers.dataRead := regObp0.asUInt }
