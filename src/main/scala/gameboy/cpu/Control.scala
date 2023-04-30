@@ -4,7 +4,6 @@ import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util._
 import chisel3.experimental.{ChiselAnnotation, annotate}
-import firrtl.annotations.MemoryArrayInitAnnotation
 
 import scala.io.Source
 
@@ -163,18 +162,25 @@ object MemAddrSel extends ChiselEnum {
   val high = Value
 }
 
-class MemROM(w: Int, contents: Seq[BigInt]) extends Module {
-  val abits = log2Ceil(contents.length)
+/** A table stored in a memory-based ROM */
+class MemRomTable[T <: Data](gen: T, contents: Seq[T]) extends Module {
+  val addressWidth = log2Ceil(contents.length)
+  val dataWidth = gen.getWidth
   val io = IO(new Bundle {
-    val addr = Input(UInt(abits.W))
-    val data = Output(UInt(w.W))
+    val addr = Input(UInt(addressWidth.W))
+    val data = Output(gen)
   })
 
-  val mem = Mem(contents.length, chiselTypeOf(io.data))
+  val mem = Mem(contents.length, UInt(dataWidth.W))
   annotate(new ChiselAnnotation {
-    override def toFirrtl = MemoryArrayInitAnnotation(mem.toTarget, contents)
+    // XXX: This only works with firrtl. I can't find an equivalent for circt.
+    override def toFirrtl = firrtl.annotations.MemoryArrayInitAnnotation(
+      mem.toTarget, contents.map(x => x.litValue)
+    )
   })
-  io.data := mem.read(io.addr)
+  suppressEnumCastWarning {
+    io.data := mem.read(io.addr).asTypeOf(gen)
+  }
 }
 
 class ControlSignals extends Bundle {
@@ -238,8 +244,8 @@ class Control extends Module {
   val state = RegInit(0.U(microcode.stateWidth()))
   val ime = RegInit(false.B)
 
-  val controlTable = Module(new MemROM(
-    (new MicrocodeRow).getWidth,
+  val controlTable = Module(new MemRomTable(
+    new MicrocodeRow,
     microcode.entries.map(e => {
       val row = (new MicrocodeRow).Lit(
         _.microOp -> e.microOp,
@@ -264,11 +270,11 @@ class Control extends Module {
           _.memAddrSel -> e.memAddrSel.getOrElse(MemAddrSel.incrementer),
         )
       )
-      row.litValue
+      row
     })
   ))
   controlTable.io.addr := state
-  val row = controlTable.io.data.asTypeOf(new MicrocodeRow)
+  val row = controlTable.io.data
   io.signals := row.signals
 
   val halted = state === microcode.stateForLabel("HALT").U
@@ -292,14 +298,14 @@ class Control extends Module {
         state := state + 1.U
       }
       is (Microbranch.dispatch) {
-        val dispatchTable = Module(new MemROM(
-          microcode.stateWidth().get,
+        val dispatchTable = Module(new MemRomTable(
+          UInt(microcode.stateWidth()),
           (0 until 512).map(i =>
             microcode.entries.zipWithIndex
               .flatMap(e => e._1.encoding.map((_, e._2)))
               .find(e => e._1.value == (i & e._1.mask))
-              .map(e => BigInt(e._2))
-              .getOrElse(BigInt(microcode.stateForLabel("_INVALID")))
+              .map(e => e._2.U)
+              .getOrElse(microcode.stateForLabel("_INVALID").U)
           )
         ))
         val dispatchKey = Cat(row.dispatchPrefix.asUInt, io.memDataIn)
