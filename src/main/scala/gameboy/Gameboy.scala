@@ -5,6 +5,7 @@ import chisel3.util._
 import gameboy.apu.{Apu, ApuOutput}
 import gameboy.cpu.Cpu
 import gameboy.ppu.{Ppu, PpuOutput}
+import gameboy.util.SinglePortRam
 
 class CartridgeIo extends Bundle {
   /** Cartridge address selection */
