@@ -1,0 +1,18 @@
+CAPI=2:
+name : elipsitz:gameboy:gameboy:1.0.0
+
+filesets:
+  rtl:
+    files:
+      - counter.v : {file_type : verilogSource}
+      - base.xdc : {file_type : xdc}
+
+targets:
+  synth:
+    default_tool: vivado
+    description : Synthesize the design for Pynq-Z2 board
+    filesets : [rtl]
+    tools:
+      vivado:
+        part : xc7z020clg400-1
+    toplevel : counter
