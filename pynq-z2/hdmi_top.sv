@@ -22,14 +22,6 @@ module hdmi_top (
         .clk_in1(clk_125mhz)
     );
 
-    // Divider to get audio clock
-    logic [10:0] counter = 1'd0;
-    always_ff @(posedge clk_pixel)
-    begin
-        counter <= counter == 11'd525 ? 1'd0 : counter + 1'd1;
-    end
-    assign clk_audio = clk_pixel && counter == 11'd525;
-
     assign reset = buttons[0];
     assign leds[0] = 1'd1;
     assign leds[1] = !hdmi_out_hpd; // active low
@@ -38,11 +30,25 @@ module hdmi_top (
     localparam AUDIO_RATE = 48000;
     localparam WAVE_RATE = 480;
 
-    logic [AUDIO_BIT_WIDTH-1:0] audio_sample_word;
-    logic [AUDIO_BIT_WIDTH-1:0] audio_sample_word_dampened; // This is to avoid giving you a heart attack -- it'll be really loud if it uses the full dynamic range.
-    assign audio_sample_word_dampened = audio_sample_word; // audio_sample_word >> 9;
+    logic clk_audio;
+    logic [8:0] audio_divider;
 
-    sawtooth #(.BIT_WIDTH(AUDIO_BIT_WIDTH), .SAMPLE_RATE(AUDIO_RATE), .WAVE_RATE(WAVE_RATE)) sawtooth (.clk_audio(clk_audio), .level(audio_sample_word));
+    always_ff @(posedge clk_pixel) 
+    begin
+        // Dividing clk_pixel -- (25.2MHz / 262) = 96.183kHz (2x 48Khz)
+        if (audio_divider < 9'd262-1) audio_divider <= audio_divider + 1;
+        else begin
+            clk_audio <= ~clk_audio;
+            audio_divider <= 0;
+        end
+    end
+
+    logic [15:0] audio_sample_word [1:0];// = '{16'd0, 16'd0};
+    always_ff @(posedge clk_audio) begin
+        audio_sample_word[0] <= audio_sample_word[0] + 16'd600;  //sawtooth generator
+        audio_sample_word[1] <= audio_sample_word[1] - 16'd600;  
+    end 
+
 
     logic [23:0] rgb = 24'd0;
     logic [9:0] cx, cy, screen_start_x, screen_start_y, frame_width, frame_height, screen_width, screen_height;
@@ -61,7 +67,7 @@ module hdmi_top (
       .clk_audio(clk_audio),
       .reset(reset),
       .rgb(rgb),
-      .audio_sample_word('{audio_sample_word_dampened, audio_sample_word_dampened}),
+      .audio_sample_word(audio_sample_word),
       .tmds(tmds),
       .tmds_clock(tmds_clock),
       .cx(cx),
