@@ -8,7 +8,6 @@ filesets:
       - base.xdc : {file_type : xdc}
       - clk_wiz_0.v : {file_type : verilogSource}
       - clk_wiz_0_clk_wiz.v : {file_type : verilogSource}
-      - sawtooth.sv : {file_type : systemVerilogSource}
       - hdmi/src/audio_clock_regeneration_packet.sv : {file_type : systemVerilogSource}
       - hdmi/src/audio_info_frame.sv : {file_type : systemVerilogSource}
       - hdmi/src/audio_sample_packet.sv : {file_type : systemVerilogSource}

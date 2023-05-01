@@ -7,7 +7,8 @@ module hdmi_top (
     output [2:0] hdmi_out_data_p,
     input [0:0] hdmi_out_hpd,
 
-    input [1:0] buttons,
+    input [1:0] switches,
+    input [3:0] buttons,
     output [3:0] leds
 );
     logic reset;
@@ -43,10 +44,20 @@ module hdmi_top (
         end
     end
 
+    logic [15:0] audio_increment;
+    always @(*) begin
+        if (!buttons[2] && !buttons[3]) audio_increment = 16'd600;
+        else if (buttons[2] && !buttons[3]) audio_increment = 16'd1200;
+        else if (!buttons[2] && buttons[3]) audio_increment = 16'd300;
+        else audio_increment = 16'd150;
+    end
+
     logic [15:0] audio_sample_word [1:0];// = '{16'd0, 16'd0};
     always_ff @(posedge clk_audio) begin
-        audio_sample_word[0] <= audio_sample_word[0] + 16'd600;  //sawtooth generator
-        audio_sample_word[1] <= audio_sample_word[1] - 16'd600;  
+        if (switches[0]) begin
+            audio_sample_word[0] <= audio_sample_word[0] + audio_increment;
+            audio_sample_word[1] <= audio_sample_word[1] + audio_increment;
+        end
     end 
 
 
