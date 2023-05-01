@@ -1,0 +1,3 @@
+[submodule "pynq-z2/hdmi"]
+	path = pynq-z2/hdmi
+	url = https://github.com/hdl-util/hdmi/
