@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import gameboy.util.MemRomTable
 
-class BootRom(skipBootRom: Boolean) extends Module {
+class BootRom(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
     val peripheral = new PeripheralAccess
     val address = Input(UInt(16.W))
@@ -15,7 +15,7 @@ class BootRom(skipBootRom: Boolean) extends Module {
   val data = getClass.getResourceAsStream("/dmg_boot.bin").readAllBytes()
   val rom = Module(new MemRomTable(UInt(8.W), data.map(x => (x & 0xFF).U(8.W)).toIndexedSeq))
   rom.io.addr := io.address(7, 0)
-  val regBootOff = RegInit(skipBootRom.B)
+  val regBootOff = RegInit(config.skipBootrom.B)
 
   io.valid := false.B
   io.dataRead := DontCare

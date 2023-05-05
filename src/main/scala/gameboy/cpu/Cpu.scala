@@ -2,6 +2,7 @@ package gameboy.cpu
 
 import chisel3._
 import chisel3.util._
+import gameboy.Gameboy
 
 object Cpu {
   class InterruptFlags extends Bundle {
@@ -17,7 +18,7 @@ object Cpu {
 }
 
 /** Gameboy CPU - Sharp SM83 */
-class Cpu(skipBootRom: Boolean = true) extends Module {
+class Cpu(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
     /** System bus address selection */
     val memAddress = Output(UInt(16.W))
@@ -76,7 +77,7 @@ class Cpu(skipBootRom: Boolean = true) extends Module {
   // Includes incrementer/decrementer.
   // 14 Registers: BC DE HL FA SP WZ PC
   //               01 23 45 67 89 AB CD
-  val initialRegisterValues = if (skipBootRom) {
+  val initialRegisterValues = if (config.skipBootrom) {
     // State *after* DMG boot rom:
     Seq(0x00, 0x13, 0x00, 0xD8, 0x01, 0x4D, 0xB0, 0x01, 0xFF, 0xFE, 0x00, 0x00, 0x01, 0x00)
   } else {

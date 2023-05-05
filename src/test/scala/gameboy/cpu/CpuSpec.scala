@@ -2,6 +2,7 @@ package gameboy.cpu
 
 import chisel3._
 import chiseltest._
+import gameboy.Gameboy
 import org.scalatest.freespec.AnyFreeSpec
 
 import java.io.ByteArrayOutputStream
@@ -78,13 +79,17 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
     (memory, highMemory)
   }
 
+  val defaultConfig = Gameboy.Configuration (
+    skipBootrom = true,
+  )
+
   "compile" in {
     val program = compileTest("sanity_test.s")
     println(s"Program length = ${program.length}")
   }
 
   "nop" in {
-    test(new TestableCpu) { dut =>
+    test(new TestableCpu(defaultConfig)) { dut =>
       // 256 + 10 NOPs followed by a 0x10 (STOP)
       val program = (Seq.fill(256 + 10)(0x00.toByte) ++ Seq(0x10.toByte)).toArray
       runProgram(dut, program)
@@ -92,7 +97,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "sanity" in {
-    test(new TestableCpu) { dut =>
+    test(new TestableCpu(defaultConfig)) { dut =>
       runProgram(dut, compileTest("sanity_test.s"))
       dut.xRegA.expect(0x22.U)
       dut.xRegB.expect(0xBB.U)
@@ -103,7 +108,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "load between registers and memory" in {
-    test(new TestableCpu) { dut =>
+    test(new TestableCpu(defaultConfig)) { dut =>
       val (memory, _) = runProgram(dut, compileTest("basic_test.s"))
       dut.xRegC.expect(0xAB.U)
       dut.xRegD.expect(0x06.U)
@@ -122,7 +127,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "complete" in {
-    test(new TestableCpu) { dut =>
+    test(new TestableCpu(defaultConfig)) { dut =>
       val (memory, _) = runProgram(dut, compileTest("complete_test.s"), maxSteps = 2000)
       val resultCode = memory(memory.length - 1)
       assert(resultCode == 0)
@@ -130,7 +135,7 @@ class CpuSpec extends AnyFreeSpec with ChiselScalatestTester {
   }
 
   "interrupts" in {
-    test(new TestableCpu) { dut =>
+    test(new TestableCpu(defaultConfig)) { dut =>
       val (memory, _) = runProgram(dut, compileTest("interrupt_test.s"), maxSteps = 1000)
       val resultCode = memory(memory.length - 1)
       assert(resultCode == 0)

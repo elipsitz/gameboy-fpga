@@ -42,7 +42,7 @@ class JoypadState extends Bundle {
  * Video ram is on a separate bus (OAM DMA with it doesn't block wram).
  * The peripherals (0xFF**) are separate, and the OAM is also special.
  */
-class Gameboy(skipBootrom: Boolean = true) extends Module {
+class Gameboy(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
     val cartridge = new CartridgeIo()
     val ppu = new PpuOutput()
@@ -51,12 +51,12 @@ class Gameboy(skipBootrom: Boolean = true) extends Module {
   })
 
   // Module: CPU
-  val cpu = Module(new Cpu(skipBootrom))
+  val cpu = Module(new Cpu(config))
   cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
   val phiPulse = cpu.io.tCycle === 3.U
 
   // Module: PPU
-  val ppu = Module(new Ppu(skipBootrom))
+  val ppu = Module(new Ppu(config))
   io.ppu := ppu.io.output
   cpu.io.interruptRequest.vblank := ppu.io.vblankIrq
   cpu.io.interruptRequest.lcdStat := ppu.io.statIrq
@@ -69,7 +69,7 @@ class Gameboy(skipBootrom: Boolean = true) extends Module {
   val oamDmaSelectVram = !oamDmaSelectExternal
 
   // Module: APU
-  val apu = Module(new Apu(skipBootrom))
+  val apu = Module(new Apu(config))
   io.apu := apu.io.output
 
   // Memories
@@ -93,7 +93,7 @@ class Gameboy(skipBootrom: Boolean = true) extends Module {
   cpu.io.interruptRequest.joypad := joypad.io.interruptRequest
 
   // Boot rom
-  val bootRom = Module(new BootRom(skipBootrom))
+  val bootRom = Module(new BootRom(config))
   bootRom.io.address := cpu.io.memAddress
 
   // External bus read/write logic
@@ -219,5 +219,13 @@ class Gameboy(skipBootrom: Boolean = true) extends Module {
 }
 
 object Gameboy extends App {
-  emitVerilog(new Gameboy(), args)
+  val config = Configuration(
+    skipBootrom = true,
+  )
+
+  emitVerilog(new Gameboy(config), args)
+
+  case class Configuration(
+    skipBootrom: Boolean,
+  )
 }

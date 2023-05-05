@@ -2,6 +2,7 @@ package gameboy.cpu
 
 import chisel3._
 import chisel3.util.experimental.BoringUtils
+import gameboy.Gameboy
 import gameboy.cpu.TestableCpu.expose
 
 object TestableCpu {
@@ -14,7 +15,7 @@ object TestableCpu {
 }
 
 /** Wrapper of Cpu to expose some internal signals. */
-class TestableCpu extends Cpu {
+class TestableCpu(config: Gameboy.Configuration) extends Cpu(config) {
   val xInstructionRegister = expose(instructionRegister)
   val xControlState = expose(control.state)
   val xIme = expose(control.ime)
