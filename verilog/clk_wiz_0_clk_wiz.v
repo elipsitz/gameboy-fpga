@@ -56,8 +56,9 @@
 //  Output     Output      Phase    Duty Cycle   Pk-to-Pk     Phase
 //   Clock     Freq (MHz)  (degrees)    (%)     Jitter (ps)  Error (ps)
 //----------------------------------------------------------------------------
-// clk_hdmi1__25.19531______0.000______50.0______193.240____116.462
-// clk_hdmi2__125.97656______0.000______50.0______136.393____116.462
+// clk_8mhz___8.38880______0.000______50.0______360.325____163.833
+// clk_pixel_x5__126.04167______0.000______50.0______212.204____163.833
+// clk_pixel__25.20833______0.000______50.0______292.181____163.833
 //
 //----------------------------------------------------------------------------
 // Input Clock   Freq (MHz)    Input Jitter (UI)
@@ -66,15 +67,15 @@
 
 `timescale 1ps/1ps
 
-module clk_wiz_0_clk_wiz 
+module clk_wiz_0_clk_wiz
 
  (// Clock in ports
   // Clock out ports
-  output        clk_hdmi1,
-  output        clk_hdmi2,
+  output        clk_8mhz,
+  output        clk_pixel_x5,
+  output        clk_pixel,
   // Status and control signals
   input         reset,
-  output        locked,
   input         clk_in1
  );
   // Input buffering
@@ -95,9 +96,9 @@ wire clk_in2_clk_wiz_0;
   //    * Unused inputs are tied off
   //    * Unused outputs are labeled unused
 
-  wire        clk_hdmi1_clk_wiz_0;
-  wire        clk_hdmi2_clk_wiz_0;
-  wire        clk_out3_clk_wiz_0;
+  wire        clk_8mhz_clk_wiz_0;
+  wire        clk_pixel_x5_clk_wiz_0;
+  wire        clk_pixel_clk_wiz_0;
   wire        clk_out4_clk_wiz_0;
   wire        clk_out5_clk_wiz_0;
   wire        clk_out6_clk_wiz_0;
@@ -112,7 +113,6 @@ wire clk_in2_clk_wiz_0;
   wire        clkfboutb_unused;
     wire clkout0b_unused;
    wire clkout1b_unused;
-   wire clkout2_unused;
    wire clkout2b_unused;
    wire clkout3_unused;
    wire clkout3b_unused;
@@ -128,29 +128,33 @@ wire clk_in2_clk_wiz_0;
     .CLKOUT4_CASCADE      ("FALSE"),
     .COMPENSATION         ("ZHOLD"),
     .STARTUP_WAIT         ("FALSE"),
-    .DIVCLK_DIVIDE        (2),
-    .CLKFBOUT_MULT_F      (16.125),
+    .DIVCLK_DIVIDE        (3),
+    .CLKFBOUT_MULT_F      (15.125),
     .CLKFBOUT_PHASE       (0.000),
     .CLKFBOUT_USE_FINE_PS ("FALSE"),
-    .CLKOUT0_DIVIDE_F     (40.000),
+    .CLKOUT0_DIVIDE_F     (75.125),
     .CLKOUT0_PHASE        (0.000),
     .CLKOUT0_DUTY_CYCLE   (0.500),
     .CLKOUT0_USE_FINE_PS  ("FALSE"),
-    .CLKOUT1_DIVIDE       (8),
+    .CLKOUT1_DIVIDE       (5),
     .CLKOUT1_PHASE        (0.000),
     .CLKOUT1_DUTY_CYCLE   (0.500),
     .CLKOUT1_USE_FINE_PS  ("FALSE"),
+    .CLKOUT2_DIVIDE       (25),
+    .CLKOUT2_PHASE        (0.000),
+    .CLKOUT2_DUTY_CYCLE   (0.500),
+    .CLKOUT2_USE_FINE_PS  ("FALSE"),
     .CLKIN1_PERIOD        (8.000))
   mmcm_adv_inst
     // Output clocks
    (
     .CLKFBOUT            (clkfbout_clk_wiz_0),
     .CLKFBOUTB           (clkfboutb_unused),
-    .CLKOUT0             (clk_hdmi1_clk_wiz_0),
+    .CLKOUT0             (clk_8mhz_clk_wiz_0),
     .CLKOUT0B            (clkout0b_unused),
-    .CLKOUT1             (clk_hdmi2_clk_wiz_0),
+    .CLKOUT1             (clk_pixel_x5_clk_wiz_0),
     .CLKOUT1B            (clkout1b_unused),
-    .CLKOUT2             (clkout2_unused),
+    .CLKOUT2             (clk_pixel_clk_wiz_0),
     .CLKOUT2B            (clkout2b_unused),
     .CLKOUT3             (clkout3_unused),
     .CLKOUT3B            (clkout3b_unused),
@@ -182,9 +186,8 @@ wire clk_in2_clk_wiz_0;
     .CLKFBSTOPPED        (clkfbstopped_unused),
     .PWRDWN              (1'b0),
     .RST                 (reset_high));
-  assign reset_high = reset; 
+  assign reset_high = reset;
 
-  assign locked = locked_int;
 // Clock Monitor clock assigning
 //--------------------------------------
  // Output buffering
@@ -200,13 +203,17 @@ wire clk_in2_clk_wiz_0;
 
 
   BUFG clkout1_buf
-   (.O   (clk_hdmi1),
-    .I   (clk_hdmi1_clk_wiz_0));
+   (.O   (clk_8mhz),
+    .I   (clk_8mhz_clk_wiz_0));
 
 
   BUFG clkout2_buf
-   (.O   (clk_hdmi2),
-    .I   (clk_hdmi2_clk_wiz_0));
+   (.O   (clk_pixel_x5),
+    .I   (clk_pixel_x5_clk_wiz_0));
+
+  BUFG clkout3_buf
+   (.O   (clk_pixel),
+    .I   (clk_pixel_clk_wiz_0));
 
 
 

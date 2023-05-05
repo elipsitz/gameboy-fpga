@@ -56,8 +56,9 @@
 //  Output     Output      Phase    Duty Cycle   Pk-to-Pk     Phase
 //   Clock     Freq (MHz)  (degrees)    (%)     Jitter (ps)  Error (ps)
 //----------------------------------------------------------------------------
-// clk_hdmi1__25.19531______0.000______50.0______193.240____116.462
-// clk_hdmi2__125.97656______0.000______50.0______136.393____116.462
+// clk_8mhz___8.38880______0.000______50.0______360.325____163.833
+// clk_pixel_x5__126.04167______0.000______50.0______212.204____163.833
+// clk_pixel__25.20833______0.000______50.0______292.181____163.833
 //
 //----------------------------------------------------------------------------
 // Input Clock   Freq (MHz)    Input Jitter (UI)
@@ -66,28 +67,28 @@
 
 `timescale 1ps/1ps
 
-(* CORE_GENERATION_INFO = "clk_wiz_0,clk_wiz_v6_0_6_0_0,{component_name=clk_wiz_0,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,enable_axi=0,feedback_source=FDBK_AUTO,PRIMITIVE=MMCM,num_out_clk=2,clkin1_period=8.000,clkin2_period=10.000,use_power_down=false,use_reset=true,use_locked=true,use_inclk_stopped=false,feedback_type=SINGLE,CLOCK_MGR_TYPE=NA,manual_override=false}" *)
+(* CORE_GENERATION_INFO = "clk_wiz_0,clk_wiz_v6_0_6_0_0,{component_name=clk_wiz_0,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,enable_axi=0,feedback_source=FDBK_AUTO,PRIMITIVE=MMCM,num_out_clk=3,clkin1_period=8.000,clkin2_period=10.0,use_power_down=false,use_reset=true,use_locked=false,use_inclk_stopped=false,feedback_type=SINGLE,CLOCK_MGR_TYPE=NA,manual_override=false}" *)
 
-module clk_wiz_0 
+module clk_wiz_0
  (
   // Clock out ports
-  output        clk_hdmi1,
-  output        clk_hdmi2,
+  output        clk_8mhz,
+  output        clk_pixel_x5,
+  output        clk_pixel,
   // Status and control signals
   input         reset,
-  output        locked,
  // Clock in ports
   input         clk_in1
  );
 
   clk_wiz_0_clk_wiz inst
   (
-  // Clock out ports  
-  .clk_hdmi1(clk_hdmi1),
-  .clk_hdmi2(clk_hdmi2),
-  // Status and control signals               
-  .reset(reset), 
-  .locked(locked),
+  // Clock out ports
+  .clk_8mhz(clk_8mhz),
+  .clk_pixel_x5(clk_pixel_x5),
+  .clk_pixel(clk_pixel),
+  // Status and control signals
+  .reset(reset),
  // Clock in ports
   .clk_in1(clk_in1)
   );
