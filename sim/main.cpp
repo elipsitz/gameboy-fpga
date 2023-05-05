@@ -68,6 +68,9 @@ int main(int argc, char** argv) {
                 } else if (key.sym == SDLK_n && command) {
                     paused = true;
                     single_step = true;
+                } else if (key.sym == SDLK_r && command) {
+                    std::cout << "Resetting..." << std::endl;
+                    simulator.reset();
                 }
             }
         }

@@ -28,7 +28,7 @@ void Simulator::reset()
     top->io_cartridge_dataRead = 0;
     top->reset = 1;
 
-    uint64_t total = 4 - (cycles % 1);
+    uint64_t total = 4 - (cycles % 4);
     simulate_cycles(total);
 
     top->reset = 0;
