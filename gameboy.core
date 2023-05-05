@@ -1,0 +1,49 @@
+CAPI=2:
+name: elipsitz:gameboy:gameboy:1.0.0
+
+filesets:
+  base:
+    depend: [ "fusesoc:utils:generators" ]
+    files: []
+
+  hdmi:
+    files:
+      - verilog/hdmi/src/audio_clock_regeneration_packet.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/audio_info_frame.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/audio_sample_packet.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/auxiliary_video_information_info_frame.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/hdmi.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/packet_assembler.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/packet_picker.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/serializer.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/source_product_description_info_frame.sv: { file_type: systemVerilogSource }
+      - verilog/hdmi/src/tmds_channel.sv: { file_type: systemVerilogSource }
+
+  pynq_z2:
+    files:
+      - verilog/pynq_z2.xdc : {file_type : xdc}
+      - verilog/top_pynq_z2.sv : {file_type : systemVerilogSource}
+      - verilog/clk_wiz_0.v : {file_type : verilogSource}
+      - verilog/clk_wiz_0_clk_wiz.v : {file_type : verilogSource}
+
+generate:
+  gameboy:
+    generator: chisel
+    parameters:
+      buildtool: sbt
+      outputdir: build/generated
+      extraargs: ""
+      output:
+        files:
+          - build/generated/Gameboy.v: { file_type: verilogSource }
+
+targets:
+  pynq_z2:
+    default_tool: vivado
+    description: Synthesize the design for Pynq-Z2 board
+    filesets: [base, hdmi, pynq_z2]
+    generate: [gameboy]
+    tools:
+      vivado:
+        part: xc7z020clg400-1
+    toplevel: top_pynq_z2

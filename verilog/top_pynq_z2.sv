@@ -1,4 +1,4 @@
-module hdmi_top (
+module top_pynq_z2 (
     input clk_125mhz,
 
     output hdmi_out_clk_n,
