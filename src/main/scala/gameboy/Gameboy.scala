@@ -226,6 +226,9 @@ object Gameboy extends App {
   emitVerilog(new Gameboy(config), args)
 
   case class Configuration(
+    /** Whether to skip the boot rom */
     skipBootrom: Boolean,
+    /** Whether to optimize for simulation, at the cost of potentially breaking synthesis. */
+    optimizeForSimulation: Boolean = false,
   )
 }

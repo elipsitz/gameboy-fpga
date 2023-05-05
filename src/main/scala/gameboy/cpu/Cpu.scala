@@ -35,7 +35,7 @@ class Cpu(config: Gameboy.Configuration) extends Module {
     val tCycle = Output(UInt(2.W))
   })
 
-  val control = Module(new Control())
+  val control = Module(new Control(config))
   val controlSignals = control.io.signals
   val alu = Module(new Alu())
   val aluFlagNext = Wire(new Alu.Flags)

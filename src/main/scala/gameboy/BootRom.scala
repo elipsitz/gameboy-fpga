@@ -13,7 +13,7 @@ class BootRom(config: Gameboy.Configuration) extends Module {
   })
 
   val data = getClass.getResourceAsStream("/dmg_boot.bin").readAllBytes()
-  val rom = Module(new MemRomTable(UInt(8.W), data.map(x => (x & 0xFF).U(8.W)).toIndexedSeq))
+  val rom = Module(new MemRomTable(config, UInt(8.W), data.map(x => (x & 0xFF).U(8.W)).toIndexedSeq))
   rom.io.addr := io.address(7, 0)
   val regBootOff = RegInit(config.skipBootrom.B)
 

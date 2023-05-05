@@ -3,6 +3,7 @@ package gameboy.cpu
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util._
+import gameboy.Gameboy
 import gameboy.util.MemRomTable
 
 import scala.io.Source
@@ -195,7 +196,7 @@ class ControlSignals extends Bundle {
   val memAddrSel = MemAddrSel()
 }
 
-class Control extends Module {
+class Control(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
     val tCycle = Input(UInt(2.W))
 
@@ -224,6 +225,7 @@ class Control extends Module {
   val ime = RegInit(false.B)
 
   val controlTable = Module(new MemRomTable(
+    config,
     new MicrocodeRow,
     microcode.entries.map(e => {
       val row = (new MicrocodeRow).Lit(
@@ -278,6 +280,7 @@ class Control extends Module {
       }
       is (Microbranch.dispatch) {
         val dispatchTable = Module(new MemRomTable(
+          config,
           UInt(microcode.stateWidth()),
           (0 until 512).map(i =>
             microcode.entries.zipWithIndex
