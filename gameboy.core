@@ -26,6 +26,17 @@ filesets:
       - verilog/clk_wiz_0.v : {file_type : verilogSource}
       - verilog/clk_wiz_0_clk_wiz.v : {file_type : verilogSource}
 
+  zynq_ps:
+    files:
+      - verilog/zynq_ps.tcl : {file_type : tclSource}
+        # TODO: the TCL generates this during build -- can we use that instead of this?
+      - verilog/zynq_ps_wrapper.v : {file_type : verilogSource}
+
+  pynq_overlay_test:
+    files:
+      - verilog/top_pynq_overlay_test.sv : {file_type : systemVerilogSource}
+      - verilog/pynq_overlay_test.xdc : {file_type : xdc}
+
 generate:
   gameboy:
     generator: chisel
@@ -47,3 +58,11 @@ targets:
       vivado:
         part: xc7z020clg400-1
     toplevel: top_pynq_z2
+
+  pynq_overlay_test:
+    default_tool: vivado
+    filesets: [zynq_ps, pynq_overlay_test]
+    tools:
+      vivado:
+        part: xc7z020clg400-1
+    toplevel: top_pynq_overlay_test
