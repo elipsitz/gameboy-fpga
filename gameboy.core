@@ -28,8 +28,6 @@ filesets:
   zynq_ps:
     files:
       - verilog/zynq_ps.tcl : {file_type : tclSource}
-        # TODO: the TCL generates this during build -- can we use that instead of this?
-      - verilog/zynq_ps_wrapper.v : {file_type : verilogSource}
 
   pynq_overlay_test:
     files:
@@ -48,6 +46,17 @@ generate:
         files:
           - build/generated/Gameboy.v: { file_type: verilogSource }
 
+  zynq_gameboy:
+    generator: chisel
+    parameters:
+      buildtool: sbt
+      outputdir: build/generated
+      main_class: "platform.ZynqGameboy"
+      extraargs: ""
+      output:
+        files:
+          - build/generated/ZynqGameboy.v: { file_type: verilogSource }
+
 targets:
   pynq_z2:
     default_tool: vivado
@@ -61,7 +70,8 @@ targets:
 
   pynq_overlay_test:
     default_tool: vivado
-    filesets: [zynq_ps, pynq_overlay_test]
+    filesets: [base, zynq_ps, pynq_overlay_test]
+    generate: [zynq_gameboy]
     tools:
       vivado:
         part: xc7z020clg400-1
