@@ -42,6 +42,7 @@ generate:
     parameters:
       buildtool: sbt
       outputdir: build/generated
+      main_class: "gameboy.Gameboy"
       extraargs: ""
       output:
         files:
