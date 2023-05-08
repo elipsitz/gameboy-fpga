@@ -220,7 +220,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
 object Gameboy extends App {
   val config = Configuration(
-    skipBootrom = true,
+    skipBootrom = false,
   )
 
   emitVerilog(new Gameboy(config), args)

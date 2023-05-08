@@ -1,7 +1,4 @@
 module top_pynq_z2 (
-    // The input clock
-    input clk_125mhz,
-
     // HDMI pins
     output hdmi_out_clk_n,
     output hdmi_out_clk_p,
@@ -22,16 +19,27 @@ module top_pynq_z2 (
     input [3:0] buttons,
     output [3:0] leds
 );
-    logic clock_reset = 1'd0;
+    /////////////////////////////////////////////////
+    // Zynq PS
+    /////////////////////////////////////////////////
+    logic clk;
+    logic clk_8mhz;
     logic clk_pixel;
     logic clk_pixel_x5;
-    logic clk_8mhz;
-    clk_wiz_0 clk_wiz_0(
+    logic [0:0]peripheral_reset;
+    logic [63:0]GPIO_I;
+    logic [63:0]GPIO_O;
+    logic [63:0]GPIO_T;
+
+    zynq_ps zynq_ps_i(
+        .peripheral_reset(peripheral_reset),
+        .FCLK_CLK0(clk),
+        .clk_8mhz(clk_8mhz),
         .clk_pixel(clk_pixel),
         .clk_pixel_x5(clk_pixel_x5),
-        .clk_8mhz(clk_8mhz),
-        .reset(clock_reset),
-        .clk_in1(clk_125mhz)
+        .GPIO_I(GPIO_I),
+        .GPIO_O(GPIO_O),
+        .GPIO_T(GPIO_T)
     );
 
     /////////////////////////////////////////////////
@@ -46,7 +54,7 @@ module top_pynq_z2 (
     always_ff @(posedge clk_pixel) 
     begin
         // Dividing clk_pixel -- (25.2MHz / 262) = 96.183kHz (2x 48Khz)
-        if (audio_divider < 9'd262-1) audio_divider <= audio_divider + 1;
+        if (audio_divider < 9'd262 - 1) audio_divider <= audio_divider + 1;
         else begin
             clk_audio <= ~clk_audio;
             audio_divider <= 0;
@@ -72,7 +80,7 @@ module top_pynq_z2 (
     logic reset_pre2;
     // TODO: different reset for each clock?
     always_ff @(posedge clk_4mhz) begin
-        reset_pre2 <= switches[1];
+        reset_pre2 <= buttons[0] || peripheral_reset[0];
         reset_pre1 <= reset_pre2;
         reset <= reset_pre1;
     end
@@ -133,15 +141,14 @@ module top_pynq_z2 (
     logic gb_cart_writeEnable;
     logic gb_cart_chipSelect;
 
-    // Hacky temporary joypad
-    logic joypad_start = buttons[0] && switches[0];
-    logic joypad_select = buttons[1] && switches[0];
-    logic joypad_b = buttons[2] && switches[0];
-    logic joypad_a = buttons[3] && switches[0];
-    logic joypad_down = buttons[0] && !switches[0];
-    logic joypad_up = buttons[1] && !switches[0];
-    logic joypad_left = buttons[2] && !switches[0];
-    logic joypad_right = buttons[3] && !switches[0];
+    logic joypad_start = GPIO_O[8];
+    logic joypad_select = GPIO_O[9];
+    logic joypad_b = GPIO_O[10];
+    logic joypad_a = GPIO_O[11];
+    logic joypad_down = GPIO_O[12];
+    logic joypad_up = GPIO_O[13];
+    logic joypad_left = GPIO_O[14];
+    logic joypad_right = GPIO_O[15];
 
     logic [9:0] gb_audio_left;
     logic [9:0] gb_audio_right;
