@@ -1,12 +1,13 @@
 package platform
 
+import axi.{AxiLiteSignals, AxiLiteTarget}
 import chisel3._
 import chisel3.util._
 
 class ZynqGameboy extends Module {
   val io = IO(new Bundle {
     val leds = Output(UInt(4.W))
-    val axiTarget = new AxiLiteSignals(5)
+    val axiTarget = Flipped(new AxiLiteSignals(5))
   })
 
   val registers = RegInit(VecInit(Seq.fill(8)(0.U(32.W))))
