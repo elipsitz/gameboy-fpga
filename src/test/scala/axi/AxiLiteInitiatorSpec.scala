@@ -31,8 +31,10 @@ class AxiLiteInitiatorSpec extends AnyFreeSpec with ChiselScalatestTester {
       dut.io.address.poke(0x1230)
       dut.io.signals.arvalid.expect(true)
 
-      for (_ <- 0 to 2) {
+      for (i <- 0 to 2) {
         dut.clock.step()
+        dut.io.enable.poke(false)
+        dut.io.address.poke(0x1000 + i)
         dut.io.busy.expect(true)
         dut.io.signals.arvalid.expect(true)
       }

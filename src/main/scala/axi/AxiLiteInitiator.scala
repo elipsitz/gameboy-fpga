@@ -5,7 +5,7 @@ import chisel3._
 object AxiLiteInitiatorState extends ChiselEnum {
   val idle, readAddr, readData = Value
 }
-class AxiLiteInitiator(addrWidth: Int) extends Module {
+class AxiLiteInitiator(addrWidth: Int, dataWidth: Int = 32) extends Module {
   val io = IO(new Bundle {
     /** The AXI-Lite signals */
     val signals = new AxiLiteSignals(addrWidth)
@@ -21,7 +21,7 @@ class AxiLiteInitiator(addrWidth: Int) extends Module {
     /** Whether we're waiting for a memory access to complete. */
     val busy = Output(Bool())
     /** The output data, valid after a read begins and `busy` is false. */
-    val readData = Output(UInt(32.W))
+    val readData = Output(UInt(dataWidth.W))
   })
 
   val state = RegInit(AxiLiteInitiatorState.idle)
@@ -44,7 +44,7 @@ class AxiLiteInitiator(addrWidth: Int) extends Module {
   }
 
   // Read data -- ignore the read response
-  val readData = Reg(UInt(32.W))
+  val readData = Reg(UInt(dataWidth.W))
   io.readData := readData
   when (io.signals.rvalid) {
     readData := io.signals.rdata

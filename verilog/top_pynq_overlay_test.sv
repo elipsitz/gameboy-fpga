@@ -27,6 +27,26 @@ module top_pynq_overlay_test (
     wire M_AXI_0_wready;
     wire M_AXI_0_wvalid;
 
+    wire [31:0]S_AXI_0_araddr;
+    wire [2:0]S_AXI_0_arprot;
+    wire S_AXI_0_arready;
+    wire S_AXI_0_arvalid;
+    wire [31:0]S_AXI_0_awaddr;
+    wire [2:0]S_AXI_0_awprot;
+    wire S_AXI_0_awready;
+    wire S_AXI_0_awvalid;
+    wire S_AXI_0_bready;
+    wire [1:0]S_AXI_0_bresp;
+    wire S_AXI_0_bvalid;
+    wire [31:0]S_AXI_0_rdata;
+    wire S_AXI_0_rready;
+    wire [1:0]S_AXI_0_rresp;
+    wire S_AXI_0_rvalid;
+    wire [31:0]S_AXI_0_wdata;
+    wire S_AXI_0_wready;
+    wire [3:0]S_AXI_0_wstrb;
+    wire S_AXI_0_wvalid;
+
     zynq_ps zynq_ps_i(
         .peripheral_reset(peripheral_reset),
         .FCLK_CLK0(clk),
@@ -45,7 +65,26 @@ module top_pynq_overlay_test (
         .M_AXI_0_rvalid(M_AXI_0_rvalid),
         .M_AXI_0_wdata(M_AXI_0_wdata),
         .M_AXI_0_wready(M_AXI_0_wready),
-        .M_AXI_0_wvalid(M_AXI_0_wvalid)
+        .M_AXI_0_wvalid(M_AXI_0_wvalid),
+        .S_AXI_0_araddr(S_AXI_0_araddr),
+        .S_AXI_0_arprot(S_AXI_0_arprot),
+        .S_AXI_0_arready(S_AXI_0_arready),
+        .S_AXI_0_arvalid(S_AXI_0_arvalid),
+        .S_AXI_0_awaddr(S_AXI_0_awaddr),
+        .S_AXI_0_awprot(S_AXI_0_awprot),
+        .S_AXI_0_awready(S_AXI_0_awready),
+        .S_AXI_0_awvalid(S_AXI_0_awvalid),
+        .S_AXI_0_bready(S_AXI_0_bready),
+        .S_AXI_0_bresp(S_AXI_0_bresp),
+        .S_AXI_0_bvalid(S_AXI_0_bvalid),
+        .S_AXI_0_rdata(S_AXI_0_rdata),
+        .S_AXI_0_rready(S_AXI_0_rready),
+        .S_AXI_0_rresp(S_AXI_0_rresp),
+        .S_AXI_0_rvalid(S_AXI_0_rvalid),
+        .S_AXI_0_wdata(S_AXI_0_wdata),
+        .S_AXI_0_wready(S_AXI_0_wready),
+        .S_AXI_0_wstrb(S_AXI_0_wstrb),
+        .S_AXI_0_wvalid(S_AXI_0_wvalid)
     );
 
     logic reset = peripheral_reset[0];
@@ -69,6 +108,24 @@ module top_pynq_overlay_test (
         .io_axiTarget_bvalid(M_AXI_0_bvalid),
         .io_axiTarget_bready(M_AXI_0_bready),
         .io_axiTarget_bresp(M_AXI_0_bresp),
+
+        .io_axiInitiator_arvalid(S_AXI_0_arvalid),
+        .io_axiInitiator_arready(S_AXI_0_arready),
+        .io_axiInitiator_araddr(S_AXI_0_araddr),
+        .io_axiInitiator_rvalid(S_AXI_0_rvalid),
+        .io_axiInitiator_rready(S_AXI_0_rready),
+        .io_axiInitiator_rdata(S_AXI_0_rdata),
+        .io_axiInitiator_rresp(S_AXI_0_rresp),
+        .io_axiInitiator_awvalid(S_AXI_0_awvalid),
+        .io_axiInitiator_awready(S_AXI_0_awready),
+        .io_axiInitiator_awaddr(S_AXI_0_awaddr),
+        .io_axiInitiator_wvalid(S_AXI_0_wvalid),
+        .io_axiInitiator_wready(S_AXI_0_wready),
+        .io_axiInitiator_wdata(S_AXI_0_wdata),
+        .io_axiInitiator_bvalid(S_AXI_0_bvalid),
+        .io_axiInitiator_bready(S_AXI_0_bready),
+        .io_axiInitiator_bresp(S_AXI_0_bresp),
+
         .io_leds(leds)
     );
 endmodule
