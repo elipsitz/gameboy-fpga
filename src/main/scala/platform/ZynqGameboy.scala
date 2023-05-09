@@ -8,7 +8,7 @@ class ZynqGameboy extends Module {
   val io = IO(new Bundle {
     val leds = Output(UInt(4.W))
     val axiTarget = Flipped(new AxiLiteSignals(8))
-    val axiInitiator = new AxiLiteSignals(32)
+    val axiInitiator = new AxiLiteSignals(32, 64)
   })
 
   val leds = RegInit(0.U(4.W))
@@ -38,11 +38,14 @@ class ZynqGameboy extends Module {
 
   val debugIndex = RegInit(0.U(8.W))
 
-  val axiInitiator = Module(new AxiLiteInitiator(32))
+  val axiInitiator = Module(new AxiLiteInitiator(32, 64))
   axiInitiator.io.signals <> io.axiInitiator
   axiInitiator.io.read := true.B
   axiInitiator.io.enable := false.B
-  axiInitiator.io.address := currentAddr
+  axiInitiator.io.address := Cat(currentAddr(31, 3), 0.U(3.W))
+
+  val readHigh = RegInit(0.U(1.W))
+  val readData = Mux(readHigh === 1.U, axiInitiator.io.readData(63, 32), axiInitiator.io.readData(31, 0))
 
   when (axiTarget.io.writeEnable && axiTarget.io.writeAddr === 2.U && axiTarget.io.writeData(0)) {
     active := true.B
@@ -59,6 +62,7 @@ class ZynqGameboy extends Module {
       // Start the next read?
       when (currentAddr < regAddrEnd) {
         axiInitiator.io.enable := true.B
+        readHigh := currentAddr(2)
         currentAddr := currentAddr + 4.U
       } .otherwise {
         active := false.B
@@ -67,10 +71,10 @@ class ZynqGameboy extends Module {
 
       // We've completed a read.
       when (regCycles =/= 0.U) {
-        regSum := regSum + axiInitiator.io.readData
+        regSum := regSum + readData
 
         when (debugIndex < 50.U) {
-          registers(8.U + debugIndex) := Cat(regCycles(15, 0), axiInitiator.io.readData(15, 0))
+          registers(8.U + debugIndex) := Cat(regCycles(15, 0), readData(15, 0))
           debugIndex := debugIndex + 1.U
         }
       }

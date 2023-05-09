@@ -8,7 +8,7 @@ object AxiLiteInitiatorState extends ChiselEnum {
 class AxiLiteInitiator(addrWidth: Int, dataWidth: Int = 32) extends Module {
   val io = IO(new Bundle {
     /** The AXI-Lite signals */
-    val signals = new AxiLiteSignals(addrWidth)
+    val signals = new AxiLiteSignals(addrWidth, dataWidth)
 
     /** Pulsed true to start a memory access. */
     val enable = Input(Bool())
