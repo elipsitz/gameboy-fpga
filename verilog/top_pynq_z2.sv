@@ -134,11 +134,12 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     // Gameboy
     /////////////////////////////////////////////////
+    logic [1:0] gb_tCycle;
     logic [7:0] gb_dataRead;
     logic [7:0] gb_dataWrite;
     logic [15:0] gb_cart_address;
-    logic gb_cart_readEnable;
-    logic gb_cart_writeEnable;
+    logic gb_cart_enable;
+    logic gb_cart_write;
     logic gb_cart_chipSelect;
 
     logic joypad_start = GPIO_O[8];
@@ -165,8 +166,8 @@ module top_pynq_z2 (
         .io_cartridge_dataRead(gb_dataRead),
         .io_cartridge_dataWrite(gb_dataWrite),
         .io_cartridge_address(gb_cart_address),
-        .io_cartridge_readEnable(gb_cart_readEnable),
-        .io_cartridge_writeEnable(gb_cart_writeEnable),
+        .io_cartridge_enable(gb_cart_enable),
+        .io_cartridge_write(gb_cart_write),
         .io_cartridge_chipSelect(gb_cart_chipSelect),
         .io_joypad_start(joypad_start),
         .io_joypad_select(joypad_select),
@@ -182,17 +183,18 @@ module top_pynq_z2 (
         .io_ppu_vblank(gb_ppu_vblank),
         .io_ppu_hblank(gb_ppu_hblank),
         .io_ppu_lcdEnable(gb_ppu_lcdEnable),
-        .io_ppu_valid(gb_ppu_valid)
+        .io_ppu_valid(gb_ppu_valid),
+        .io_tCycle(gb_tCycle)
     );
 
     /////////////////////////////////////////////////
     // Physical Cartridge I/O
     /////////////////////////////////////////////////
     assign gb_dataRead = cartridge_D;
-    assign cartridge_D = gb_cart_writeEnable ? gb_dataWrite : 8'hzz;
+    assign cartridge_D = (gb_cart_enable && gb_cart_write) ? gb_dataWrite : 8'hzz;
     assign cartridge_A = gb_cart_address;
-    assign cartridge_nWR = ~gb_cart_writeEnable;
-    assign cartridge_nRD = ~gb_cart_readEnable;
+    assign cartridge_nWR = ~(gb_cart_enable && gb_cart_write && (gb_tCycle == 2'd1 || gb_tCycle == 2'd2));
+    assign cartridge_nRD = ~cartridge_nWR;
     assign cartridge_nCS = gb_cart_chipSelect; // high for ROM low for RAM 
     assign cartridge_nRST = ~reset;
 
@@ -241,7 +243,7 @@ module top_pynq_z2 (
     assign leds[0] = gb_audio_left[9];
     assign leds[1] = gb_ppu_vblank;
     assign leds[2] = !gb_ppu_lcdEnable;
-    assign leds[3] = gb_cart_readEnable || gb_cart_writeEnable;
+    assign leds[3] = gb_cart_enable;
 
     /////////////////////////////////////////////////
     // HDMI picture generation

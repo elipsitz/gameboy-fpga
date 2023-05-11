@@ -8,7 +8,7 @@ rtl: $(BUILD_DIR)/Gameboy.v
 
 # Compile Chisel to Verilog
 $(BUILD_DIR)/Gameboy.v: .FORCE
-	sbt "run --target-dir $(BUILD_DIR)"
+	sbt "runMain gameboy.Gameboy --target-dir $(BUILD_DIR)"
 
 test:
 	sbt test

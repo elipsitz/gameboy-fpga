@@ -50,15 +50,15 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
 {
     for (uint64_t i = 0; i < num_cycles; i++) {
         // Handle memory.
-        if (this->cycles % 4 == 3) {
+        if (this->cycles % 4 == 3 && top->io_cartridge_enable) {
             uint16_t address = top->io_cartridge_address;
             bool rom_select = top->io_cartridge_chipSelect;
 //             printf("mem access at [%.04X] => [%.02X]\n", address, top->io_cartridge_dataWrite);
-            if (top->io_cartridge_readEnable) {
+            if (!top->io_cartridge_write) {
                 uint8_t data = cart->read(address, rom_select);
 //                 printf("cart read at [%.04X] => [%.02X]\n", address, data);
                 top->io_cartridge_dataRead = data;
-            } else if (top->io_cartridge_writeEnable) {
+            } else {
                 uint8_t data = top->io_cartridge_dataWrite;
 //                 printf("cart write at [%.04X] <= [%.02X]\n", address, data);
                 cart->write(address, rom_select, data);

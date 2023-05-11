@@ -10,10 +10,10 @@ import gameboy.util.SinglePortRam
 class CartridgeIo extends Bundle {
   /** Cartridge address selection */
   val address = Output(UInt(16.W))
-  /** Read flag (active high -- real cartridge is low) */
-  val readEnable = Output(Bool())
-  /** Write flag (active high -- real cartridge is low) */
-  val writeEnable = Output(Bool())
+  /** Whether a memory access is being performed */
+  val enable = Output(Bool())
+  /** Whether the memory access is a write */
+  val write = Output(Bool())
   /** Chip select (high for ROM, low for RAM) */
   val chipSelect = Output(Bool())
   /** Data in (reading) */
@@ -48,12 +48,16 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     val ppu = new PpuOutput()
     val joypad = Input(new JoypadState)
     val apu = new ApuOutput
+
+    // Internal state signals
+    val tCycle = Output(UInt(2.W))
   })
 
   // Module: CPU
   val cpu = Module(new Cpu(config))
   cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
   val phiPulse = cpu.io.tCycle === 3.U
+  io.tCycle := cpu.io.tCycle
 
   // Module: PPU
   val ppu = Module(new Ppu(config))
@@ -120,8 +124,8 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     (cpu.io.memAddress >= 0xA000.U && cpu.io.memAddress < 0xFE00.U)
 
   // Cartridge access signals
-  io.cartridge.writeEnable := (cartRomSelect || cartRamSelect) && busMemEnable && busMemWrite
-  io.cartridge.readEnable := !io.cartridge.writeEnable
+  io.cartridge.enable := busMemEnable && (cartRomSelect || cartRamSelect)
+  io.cartridge.write := busMemWrite
   io.cartridge.chipSelect := cartRomSelect
   io.cartridge.dataWrite := busDataWrite
   io.cartridge.address := busAddress
