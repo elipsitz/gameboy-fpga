@@ -13,6 +13,8 @@ OVERLAY_PATH: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), OVE
 
 JOYPAD_BUTTONS = ["start", "select", "b", "a", "down", "up", "left", "right"]
 
+REGISTER_CONTROL = 0x0
+
 """
 Zynq PS side of the Gameboy, using the Pynq API to provide input and ROM loading.
 """
@@ -28,6 +30,7 @@ print(f"Finished loading overlay in {duration} sec")
 gpio_joypad = {JOYPAD_BUTTONS[i]: GPIO(GPIO.get_gpio_pin(8 + i), "out") for i in range(len(JOYPAD_BUTTONS))}
 for x in gpio_joypad.values():
     x.write(0)
+registers = MMIO(0x43C0_0000, 64 * 1024)
 
 # Set up controller listener
 def on_hat_moved(axis):
@@ -52,6 +55,9 @@ print("Done initializing controller")
 
 # Initialization complete.
 print("Initialization complete.")
+
+# Start the game.
+registers.write(REGISTER_CONTROL, 0x1)
 
 try:
     signal.pause()

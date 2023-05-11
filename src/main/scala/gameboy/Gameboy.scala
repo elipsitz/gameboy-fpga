@@ -51,6 +51,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
     // Internal state signals
     val tCycle = Output(UInt(2.W))
+    val cpuDebug = Output(new Cpu.DebugState)
   })
 
   // Module: CPU
@@ -58,6 +59,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
   val phiPulse = cpu.io.tCycle === 3.U
   io.tCycle := cpu.io.tCycle
+  io.cpuDebug := cpu.io.debugState
 
   // Module: PPU
   val ppu = Module(new Ppu(config))

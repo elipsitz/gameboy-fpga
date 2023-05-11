@@ -26,10 +26,28 @@ module top_pynq_z2 (
     logic clk_8mhz;
     logic clk_pixel;
     logic clk_pixel_x5;
+    logic clk_gameboy;
     logic [0:0]peripheral_reset;
     logic [63:0]GPIO_I;
     logic [63:0]GPIO_O;
     logic [63:0]GPIO_T;
+
+    wire [31:0]M_AXI_0_araddr;
+    wire M_AXI_0_arready;
+    wire M_AXI_0_arvalid;
+    wire [31:0]M_AXI_0_awaddr;
+    wire M_AXI_0_awready;
+    wire M_AXI_0_awvalid;
+    wire M_AXI_0_bready;
+    wire [1:0]M_AXI_0_bresp;
+    wire M_AXI_0_bvalid;
+    wire [31:0]M_AXI_0_rdata;
+    wire M_AXI_0_rready;
+    wire [1:0]M_AXI_0_rresp;
+    wire M_AXI_0_rvalid;
+    wire [31:0]M_AXI_0_wdata;
+    wire M_AXI_0_wready;
+    wire M_AXI_0_wvalid;
 
     zynq_ps zynq_ps_i(
         .peripheral_reset(peripheral_reset),
@@ -39,7 +57,24 @@ module top_pynq_z2 (
         .clk_pixel_x5(clk_pixel_x5),
         .GPIO_I(GPIO_I),
         .GPIO_O(GPIO_O),
-        .GPIO_T(GPIO_T)
+        .GPIO_T(GPIO_T),
+
+        .M_AXI_0_araddr(M_AXI_0_araddr),
+        .M_AXI_0_arready(M_AXI_0_arready),
+        .M_AXI_0_arvalid(M_AXI_0_arvalid),
+        .M_AXI_0_awaddr(M_AXI_0_awaddr),
+        .M_AXI_0_awready(M_AXI_0_awready),
+        .M_AXI_0_awvalid(M_AXI_0_awvalid),
+        .M_AXI_0_bready(M_AXI_0_bready),
+        .M_AXI_0_bresp(M_AXI_0_bresp),
+        .M_AXI_0_bvalid(M_AXI_0_bvalid),
+        .M_AXI_0_rdata(M_AXI_0_rdata),
+        .M_AXI_0_rready(M_AXI_0_rready),
+        .M_AXI_0_rresp(M_AXI_0_rresp),
+        .M_AXI_0_rvalid(M_AXI_0_rvalid),
+        .M_AXI_0_wdata(M_AXI_0_wdata),
+        .M_AXI_0_wready(M_AXI_0_wready),
+        .M_AXI_0_wvalid(M_AXI_0_wvalid)
     );
 
     /////////////////////////////////////////////////
@@ -47,7 +82,6 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     localparam AUDIO_BIT_WIDTH = 16;
     localparam AUDIO_RATE = 48000;
-    localparam WAVE_RATE = 480;
 
     logic clk_audio;
     logic [8:0] audio_divider;
@@ -62,24 +96,13 @@ module top_pynq_z2 (
     end
 
     /////////////////////////////////////////////////
-    // 4.194 MHz clock for Gameboy
-    /////////////////////////////////////////////////
-    logic clk_4mhz;
-    logic [0:0] counter_4mhz;
-    always_ff @(posedge clk_8mhz) begin 
-        counter_4mhz <= counter_4mhz + 1;
-    end
-    assign clk_4mhz = counter_4mhz[0];
-    /////////
-
-    /////////////////////////////////////////////////
     // Reset
     /////////////////////////////////////////////////
     logic reset;
     logic reset_pre1;
     logic reset_pre2;
     // TODO: different reset for each clock?
-    always_ff @(posedge clk_4mhz) begin
+    always_ff @(posedge clk) begin
         reset_pre2 <= buttons[0] || peripheral_reset[0];
         reset_pre1 <= reset_pre2;
         reset <= reset_pre1;
@@ -104,7 +127,7 @@ module top_pynq_z2 (
     reg [RAM_WIDTH-1:0] framebuffer_output = {RAM_WIDTH{1'b0}};
 
     // Write
-    always @(posedge clk_4mhz)
+    always @(posedge clk_gameboy)
       if (framebuffer_write_en)
         framebuffer[framebuffer_write_addr] <= framebuffer_write_data;
 
@@ -160,9 +183,11 @@ module top_pynq_z2 (
     logic gb_ppu_lcdEnable;
     logic gb_ppu_valid;
 
-    Gameboy Gameboy(
-        .clock(clk_4mhz),
+    ZynqGameboy zynq_gameboy(
+        .clock(clk),
         .reset(reset),
+        .io_clock_8mhz(clk_8mhz),
+        .io_clock_gameboy(clk_gameboy),
         .io_cartridge_dataRead(gb_dataRead),
         .io_cartridge_dataWrite(gb_dataWrite),
         .io_cartridge_address(gb_cart_address),
@@ -184,7 +209,24 @@ module top_pynq_z2 (
         .io_ppu_hblank(gb_ppu_hblank),
         .io_ppu_lcdEnable(gb_ppu_lcdEnable),
         .io_ppu_valid(gb_ppu_valid),
-        .io_tCycle(gb_tCycle)
+        .io_tCycle(gb_tCycle),
+
+        .io_axiTarget_arvalid(M_AXI_0_arvalid),
+        .io_axiTarget_arready(M_AXI_0_arready),
+        .io_axiTarget_araddr(M_AXI_0_araddr),
+        .io_axiTarget_rvalid(M_AXI_0_rvalid),
+        .io_axiTarget_rready(M_AXI_0_rready),
+        .io_axiTarget_rdata(M_AXI_0_rdata),
+        .io_axiTarget_rresp(M_AXI_0_rresp),
+        .io_axiTarget_awvalid(M_AXI_0_awvalid),
+        .io_axiTarget_awready(M_AXI_0_awready),
+        .io_axiTarget_awaddr(M_AXI_0_awaddr),
+        .io_axiTarget_wvalid(M_AXI_0_wvalid),
+        .io_axiTarget_wready(M_AXI_0_wready),
+        .io_axiTarget_wdata(M_AXI_0_wdata),
+        .io_axiTarget_bvalid(M_AXI_0_bvalid),
+        .io_axiTarget_bready(M_AXI_0_bready),
+        .io_axiTarget_bresp(M_AXI_0_bresp)
     );
 
     /////////////////////////////////////////////////
@@ -205,7 +247,7 @@ module top_pynq_z2 (
     logic [7:0] fb_y = 0;
     logic prev_hblank;
 
-    always @(posedge clk_4mhz) begin
+    always @(posedge clk_gameboy) begin
         prev_hblank <= gb_ppu_hblank;
 
         if (gb_ppu_vblank) begin

@@ -14,19 +14,19 @@ class AxiLiteTarget(numRegisters: Int) extends Module {
     val readData = Input(Vec(numRegisters, UInt(dataWidth.W)))
     val writeData = Output(UInt(dataWidth.W))
     val writeEnable = Output(Bool())
-    val writeAddr = Output(UInt(addrWidth.W))
+    val writeIndex = Output(UInt(addrWidth.W))
   })
 
   val writeReady = RegInit(false.B)
   io.writeEnable := writeReady
-  io.writeAddr := io.signals.awaddr(addrWidth - 1, 2)
+  io.writeIndex := io.signals.awaddr(addrWidth - 1, 2)
   io.writeData := io.signals.wdata
 
   val readReady = Wire(Bool())
-  val readAddr = io.signals.araddr(addrWidth - 1, 2)
+  val readIndex = io.signals.araddr(addrWidth - 1, 2)
   val readData = Reg(UInt(dataWidth.W))
   when (!io.signals.rvalid || io.signals.rready) {
-    readData := io.readData(readAddr)
+    readData := io.readData(readIndex)
   }
   io.signals.rdata := readData
 

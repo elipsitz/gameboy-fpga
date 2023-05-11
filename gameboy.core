@@ -62,7 +62,7 @@ targets:
     default_tool: vivado
     description: Synthesize the design for Pynq-Z2 board
     filesets: [base, hdmi, pynq_z2, zynq_ps]
-    generate: [gameboy]
+    generate: [zynq_gameboy]
     tools:
       vivado:
         part: xc7z020clg400-1

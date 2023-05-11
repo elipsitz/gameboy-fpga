@@ -1,87 +1,86 @@
 package platform
 
-import axi.{AxiLiteInitiator, AxiLiteSignals, AxiLiteTarget}
+import axi.{AxiLiteSignals, AxiLiteTarget}
 import chisel3._
 import chisel3.util._
-
-class ZynqGameboy extends Module {
-  val io = IO(new Bundle {
-    val leds = Output(UInt(4.W))
-    val axiTarget = Flipped(new AxiLiteSignals(8))
-    val axiInitiator = new AxiLiteSignals(32, 64)
-  })
-
-  val leds = RegInit(0.U(4.W))
-  io.leds := leds
-
-  // Reg 0: write -> start address
-  // Reg 1: write -> end address (exclusive)
-  // Reg 2: write -> set bit 0 to 1 to start
-  // Reg 3: read <- sum
-  // Reg 4: read -> cycles elapsed
-  val registers = RegInit(VecInit(Seq.fill(64)(0.U(32.W))))
-  val axiTarget = Module(new AxiLiteTarget(64))
-  axiTarget.io.signals <> io.axiTarget
-  axiTarget.io.readData := registers
-  for (i <- 0 until 8) {
-    when (axiTarget.io.writeEnable && axiTarget.io.writeAddr === i.U) {
-      registers(i) := axiTarget.io.writeData
-    }
-  }
-
-  val active = RegInit(false.B)
-  val currentAddr = RegInit(0.U(32.W))
-  val regAddrStart = registers(0)
-  val regAddrEnd = registers(1)
-  val regSum = registers(3)
-  val regCycles = registers(4)
-
-  val debugIndex = RegInit(0.U(8.W))
-
-  val axiInitiator = Module(new AxiLiteInitiator(32, 64))
-  axiInitiator.io.signals <> io.axiInitiator
-  axiInitiator.io.read := true.B
-  axiInitiator.io.enable := false.B
-  axiInitiator.io.address := Cat(currentAddr(31, 3), 0.U(3.W))
-
-  val readHigh = RegInit(0.U(1.W))
-  val readData = Mux(readHigh === 1.U, axiInitiator.io.readData(63, 32), axiInitiator.io.readData(31, 0))
-
-  when (axiTarget.io.writeEnable && axiTarget.io.writeAddr === 2.U && axiTarget.io.writeData(0)) {
-    active := true.B
-    currentAddr := regAddrStart
-    regSum := 0.U
-    regCycles := 0.U
-    debugIndex := 0.U
-  }
-
-  when (active) {
-    regCycles := regCycles + 1.U
-
-    when (!axiInitiator.io.busy) {
-      // Start the next read?
-      when (currentAddr < regAddrEnd) {
-        axiInitiator.io.enable := true.B
-        readHigh := currentAddr(2)
-        currentAddr := currentAddr + 4.U
-      } .otherwise {
-        active := false.B
-        leds := leds + 1.U
-      }
-
-      // We've completed a read.
-      when (regCycles =/= 0.U) {
-        regSum := regSum + readData
-
-        when (debugIndex < 50.U) {
-          registers(8.U + debugIndex) := Cat(regCycles(15, 0), readData(15, 0))
-          debugIndex := debugIndex + 1.U
-        }
-      }
-    }
-  }
-}
+import gameboy.apu.ApuOutput
+import gameboy.{CartridgeIo, Gameboy, JoypadState}
+import gameboy.ppu.PpuOutput
+import gameboy.util.BundleInit.AddInitConstruct
 
 object ZynqGameboy extends App {
   emitVerilog(new ZynqGameboy, args)
+}
+
+class ZynqGameboy extends Module {
+  val io = IO(new Bundle {
+    /** 8 MHz clock for Gameboy */
+    val clock_8mhz = Input(Clock())
+    /** 4 MHz (from Gameboy), for PPU, cartridge output */
+    val clock_gameboy = Output(Clock())
+
+    // Gameboy output
+    val cartridge = new CartridgeIo()
+    val ppu = new PpuOutput
+    val joypad = Input(new JoypadState)
+    val apu = new ApuOutput
+    val tCycle = Output(UInt(2.W))
+
+    // Zynq communication
+    val axiTarget = Flipped(new AxiLiteSignals(log2Ceil(Registers.maxId * 4)))
+  })
+
+  // Gameboy
+  val gameboyConfig = Gameboy.Configuration(
+    skipBootrom = false,
+    optimizeForSimulation = false,
+  )
+  val gameboyClock = Wire(Clock())
+  val gameboy = withClock(gameboyClock) {
+    Module(new Gameboy(gameboyConfig))
+  }
+  io.cartridge <> gameboy.io.cartridge
+  io.ppu <> gameboy.io.ppu
+  io.joypad <> gameboy.io.joypad
+  io.apu <> gameboy.io.apu
+  io.tCycle <> gameboy.io.tCycle
+
+  // Configuration registers
+  val configRegControl = RegInit(0.U.asTypeOf(new RegControl))
+  val axiTarget = Module(new AxiLiteTarget(Registers.maxId))
+  io.axiTarget <> axiTarget.io.signals
+  axiTarget.io.readData := VecInit(
+    configRegControl.asUInt,
+    (new RegCpuDebug1).Init(
+      _.regB -> gameboy.io.cpuDebug.regB,
+      _.regC -> gameboy.io.cpuDebug.regC,
+      _.regD -> gameboy.io.cpuDebug.regD,
+      _.regE -> gameboy.io.cpuDebug.regE,
+    ).asUInt,
+    (new RegCpuDebug2).Init(
+      _.regH -> gameboy.io.cpuDebug.regH,
+      _.regL -> gameboy.io.cpuDebug.regL,
+      _.regF -> gameboy.io.cpuDebug.regF,
+      _.regA -> gameboy.io.cpuDebug.regA,
+    ).asUInt,
+    (new RegCpuDebug3).Init(
+      _.regSp -> gameboy.io.cpuDebug.regSp,
+      _.regPc -> gameboy.io.cpuDebug.regPc,
+    ).asUInt,
+  )
+  when (axiTarget.io.writeEnable) {
+    switch (axiTarget.io.writeIndex) {
+      is (Registers.Control.id.U) { configRegControl := axiTarget.io.writeData.asTypeOf(new RegControl) }
+    }
+  }
+
+  // Gameboy clock (4 MHz)
+  gameboyClock := withClock(io.clock_8mhz) {
+    val clock = RegInit(false.B)
+    when (configRegControl.running) {
+      clock := !clock
+    }
+    clock.asClock
+  }
+  io.clock_gameboy := gameboyClock
 }

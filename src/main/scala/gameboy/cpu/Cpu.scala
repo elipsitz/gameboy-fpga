@@ -3,6 +3,7 @@ package gameboy.cpu
 import chisel3._
 import chisel3.util._
 import gameboy.Gameboy
+import gameboy.cpu.Cpu.DebugState
 
 object Cpu {
   class InterruptFlags extends Bundle {
@@ -15,6 +16,19 @@ object Cpu {
 
   val REG_IE = 0xFFFF;
   val REG_IF = 0xFF0F;
+
+  class DebugState extends Bundle {
+    val regB = UInt(8.W)
+    val regC = UInt(8.W)
+    val regD = UInt(8.W)
+    val regE = UInt(8.W)
+    val regH = UInt(8.W)
+    val regL = UInt(8.W)
+    val regF = UInt(8.W)
+    val regA = UInt(8.W)
+    val regSp = UInt(16.W)
+    val regPc = UInt(16.W)
+  }
 }
 
 /** Gameboy CPU - Sharp SM83 */
@@ -33,6 +47,9 @@ class Cpu(config: Gameboy.Configuration) extends Module {
     /** Interrupt requests from peripherals */
     val interruptRequest = Input(new Cpu.InterruptFlags)
     val tCycle = Output(UInt(2.W))
+
+    /** Debug */
+    val debugState = Output(new DebugState)
   })
 
   val control = Module(new Control(config))
@@ -250,8 +267,18 @@ class Cpu(config: Gameboy.Configuration) extends Module {
   io.memEnable := controlSignals.memEnable
   io.memWrite := controlSignals.memWrite
 
-  // debug output
-  when (tCycle === 3.U) {
+  // Debug output
+  io.debugState.regB := registers(0)
+  io.debugState.regC := registers(1)
+  io.debugState.regD := registers(2)
+  io.debugState.regE := registers(3)
+  io.debugState.regH := registers(4)
+  io.debugState.regL := registers(5)
+  io.debugState.regF := registers(6)
+  io.debugState.regA := registers(7)
+  io.debugState.regSp := Cat(registers(8), registers(9))
+  io.debugState.regPc := Cat(registers(12), registers(13))
+//  when (tCycle === 3.U) {
 //    printf(cf"* PC=$pc%x inst=${instructionRegister}%x B=${registers(0)}%x C=${registers(1)}%x D=${registers(2)}%x E=${registers(3)}%x HL=${Cat(registers(4), registers(5))}%x F=${registers(6)}%x A=${registers(7)}%x SP=${Cat(registers(8),registers(9))}%x\n")
-  }
+//  }
 }
