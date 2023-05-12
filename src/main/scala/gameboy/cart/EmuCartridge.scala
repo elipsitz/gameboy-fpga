@@ -68,6 +68,7 @@ class EmuCartridge extends Module {
   mbc.io.mbc.memWrite := io.cartridgeIo.write && io.tCycle === 3.U
   mbc.io.mbc.memAddress := io.cartridgeIo.address
   mbc.io.mbc.memDataWrite := io.cartridgeIo.dataWrite
+  mbc.io.mbc.selectRom := selectRom
 
   // We cannot write to ROM
   io.dataAccess.write := io.cartridgeIo.write && !selectRom

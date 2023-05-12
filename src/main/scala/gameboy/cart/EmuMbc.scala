@@ -2,8 +2,6 @@ package gameboy.cart
 
 import chisel3._
 
-
-
 class MbcIo extends Bundle {
   /** Memory accesses */
   val memEnable = Input(Bool())
@@ -11,6 +9,7 @@ class MbcIo extends Bundle {
   val memAddress = Input(UInt(16.W))
   val memDataWrite = Input(UInt(8.W))
   val memDataRead = Output(UInt(8.W))
+  val selectRom = Input(Bool())
 
   /** Bank index for ROM region 0x0000-0x3FFF */
   val bankRom1 = Output(UInt(9.W))
@@ -40,9 +39,12 @@ class EmuMbc extends Module {
     val mbc = new MbcIo()
   })
 
+  val mbcNone = Module(new MbcNone())
+  val mbc1 = Module(new Mbc1())
+
   val mbcs = Seq(
-    MbcType.None -> Module(new MbcNone()),
-    MbcType.Mbc1 -> Module(new MbcNone()), // TEST: TODO FIX
+    MbcType.None -> mbcNone.io,
+    MbcType.Mbc1 -> mbc1.io,
   )
 
   io.mbc.memDataRead := DontCare
@@ -51,17 +53,18 @@ class EmuMbc extends Module {
   io.mbc.bankRam := DontCare
   io.mbc.ramReadMbc := DontCare
   for ((id, mbc) <- mbcs) {
-    mbc.io.memEnable := io.mbc.memEnable
-    mbc.io.memWrite := io.mbc.memWrite
-    mbc.io.memAddress := io.mbc.memAddress
-    mbc.io.memDataWrite := io.mbc.memDataWrite
+    mbc.memEnable := io.mbc.memEnable
+    mbc.memWrite := io.mbc.memWrite
+    mbc.memAddress := io.mbc.memAddress
+    mbc.memDataWrite := io.mbc.memDataWrite
+    mbc.selectRom := io.mbc.selectRom
 
     when (id === io.config.mbcType) {
-      io.mbc.memDataRead := mbc.io.memDataRead
-      io.mbc.bankRom1 := mbc.io.bankRom1
-      io.mbc.bankRom2 := mbc.io.bankRom2
-      io.mbc.bankRam := mbc.io.bankRam
-      io.mbc.ramReadMbc := mbc.io.ramReadMbc
+      io.mbc.memDataRead := mbc.memDataRead
+      io.mbc.bankRom1 := mbc.bankRom1
+      io.mbc.bankRom2 := mbc.bankRom2
+      io.mbc.bankRam := mbc.bankRam
+      io.mbc.ramReadMbc := mbc.ramReadMbc
     }
   }
 }

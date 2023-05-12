@@ -52,16 +52,12 @@ void Simulator::set_joypad_state(JoypadState state)
 
 void Simulator::simulate_cycles(uint64_t num_cycles)
 {
-    top->io_cartConfig_mbcType = 0; // TODO: None
     bool prevAccessEnable = false;
 
     for (uint64_t i = 0; i < num_cycles; i++) {
         // Handle memory.
         if (top->io_dataAccess_enable && !prevAccessEnable) {
-            std::vector<uint8_t>& mem = cart->rom;
-            if (!top->io_dataAccess_selectRom) {
-                mem = cart->ram;
-            }
+            std::vector<uint8_t>& mem = top->io_dataAccess_selectRom ? cart->rom : cart->ram;
 
             if (top->io_dataAccess_write) {
                 mem[top->io_dataAccess_address % mem.size()] = top->io_dataAccess_dataWrite;
