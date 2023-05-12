@@ -10,7 +10,7 @@ static const uint32_t palette[4] = {0xffffff, 0xaaaaaa, 0x555555, 0x000000};
 Simulator::Simulator(std::vector<uint8_t> rom)
 {
     this->top = new VSimGameboy;
-    this->cart = Cartridge::create(rom);
+    this->cart = std::make_unique<Cartridge>(rom);
     this->framebuffer0.resize(WIDTH * HEIGHT * 4, 0xFF);
     this->framebuffer1.resize(WIDTH * HEIGHT * 4, 0xFF);
 
@@ -26,6 +26,10 @@ Simulator::~Simulator()
 void Simulator::reset()
 {
     top->io_dataAccess_dataRead = 0;
+    top->io_cartConfig_mbcType = cart->mbc_type;
+    top->io_cartConfig_hasRam = cart->has_ram;
+    top->io_cartConfig_hasTimer = cart->has_timer;
+    top->io_cartConfig_hasRumble = cart->has_rumble;
     top->reset = 1;
 
     uint64_t total = 4 - (cycles % 4);
