@@ -225,12 +225,6 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 }
 
 object Gameboy extends App {
-  val config = Configuration(
-    skipBootrom = false,
-  )
-
-  emitVerilog(new Gameboy(config), args)
-
   case class Configuration(
     /** Whether to skip the boot rom */
     skipBootrom: Boolean,

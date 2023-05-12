@@ -4,11 +4,11 @@ export BUILD_DIR
 sim: rtl
 	make -C sim
 
-rtl: $(BUILD_DIR)/Gameboy.v
+rtl: $(BUILD_DIR)/SimGameboy.v
 
 # Compile Chisel to Verilog
-$(BUILD_DIR)/Gameboy.v: .FORCE
-	sbt "runMain gameboy.Gameboy --target-dir $(BUILD_DIR)"
+$(BUILD_DIR)/SimGameboy.v: .FORCE
+	sbt "runMain platform.SimGameboy --target-dir $(BUILD_DIR)"
 
 test:
 	sbt test

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cartridge.hpp"
-#include "VGameboy.h"
+#include "VSimGameboy.h"
 
 struct JoypadState {
     bool start;
@@ -35,7 +35,7 @@ private:
     std::vector<uint8_t> framebuffer1;
     bool activeFramebuffer = false;
     uint64_t cycles = 0;
-    VGameboy* top = nullptr;
+    VSimGameboy* top = nullptr;
     size_t framebufferIndex = 0;
     bool prev_vblank = false;
     bool prev_hblank = false;

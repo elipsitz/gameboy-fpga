@@ -28,7 +28,7 @@ $(OBJDIR)/%.o: $(VINCD)/%.cpp
 	$(CXX) $(CFLAGS) $(INCS) `pkg-config sdl2 --cflags` -c $< -o $@
 
 $(BUILD_DIR)/simulator: $(OBJDIR)/main.o $(OBJS)
-$(BUILD_DIR)/simulator: $(BUILD_DIR)/VGameboy__ALL.a $(VOBJS)
+$(BUILD_DIR)/simulator: $(BUILD_DIR)/VSimGameboy__ALL.a $(VOBJS)
 	$(CXX) $(CFLAGS) $(INCS) `pkg-config sdl2 --cflags --libs` $^ -o $@
 
 define	mk-objdir
