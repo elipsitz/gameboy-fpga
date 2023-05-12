@@ -25,7 +25,7 @@ Simulator::~Simulator()
 
 void Simulator::reset()
 {
-    top->io_cartridge_dataRead = 0;
+    top->io_cartDataRead = 0;
     top->reset = 1;
 
     uint64_t total = 4 - (cycles % 4);
@@ -48,20 +48,20 @@ void Simulator::set_joypad_state(JoypadState state)
 
 void Simulator::simulate_cycles(uint64_t num_cycles)
 {
+    // TODO
+    top->io_cartConfig_mbcType = 0; // None
+
     for (uint64_t i = 0; i < num_cycles; i++) {
         // Handle memory.
-        if (this->cycles % 4 == 3 && top->io_cartridge_enable) {
-            uint16_t address = top->io_cartridge_address;
-            bool rom_select = top->io_cartridge_chipSelect;
-//             printf("mem access at [%.04X] => [%.02X]\n", address, top->io_cartridge_dataWrite);
-            if (!top->io_cartridge_write) {
-                uint8_t data = cart->read(address, rom_select);
-//                 printf("cart read at [%.04X] => [%.02X]\n", address, data);
-                top->io_cartridge_dataRead = data;
+        if (this->cycles % 4 == 3 && top->io_cartEnable) {
+            std::vector<uint8_t>& mem = cart->rom;
+            if (!top->io_cartRomSelect) {
+                mem = cart->ram;
+            }
+            if (top->io_cartWrite) {
+                mem[top->io_cartAddress % mem.size()] = top->io_cartDataWrite;
             } else {
-                uint8_t data = top->io_cartridge_dataWrite;
-//                 printf("cart write at [%.04X] <= [%.02X]\n", address, data);
-                cart->write(address, rom_select, data);
+                top->io_cartDataRead = mem[top->io_cartAddress % mem.size()] ;
             }
         }
 
