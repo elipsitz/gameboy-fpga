@@ -21,6 +21,8 @@ class EmuCartConfig extends Bundle {
   val hasRam = Bool()
   /** The MBC chip type */
   val mbcType = MbcType()
+  /** Whether we're using an emulated cartridge */
+  val enabled = Bool()
 }
 
 /**

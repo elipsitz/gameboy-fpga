@@ -63,6 +63,7 @@ Cartridge::Cartridge(std::vector<uint8_t> rom) : rom(rom) {
         case 0x13:
             mbc_type = 3;
             has_ram = true;
+            break;
         case 0x19: // MBC5
             mbc_type = 4;
             break;
