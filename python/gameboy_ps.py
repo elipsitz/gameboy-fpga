@@ -1,11 +1,13 @@
 import os
 import signal
 import time
+import sys
 
 from xbox360controller import Xbox360Controller
 
 print("Loading Pynq libraries...")
 from pynq import allocate, GPIO, MMIO, Overlay
+import numpy as np
 print("Finished loading Pynq libraries")
 
 OVERLAY_FILENAME: str = "gameboy.bit"
@@ -14,6 +16,7 @@ OVERLAY_PATH: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), OVE
 JOYPAD_BUTTONS = ["start", "select", "b", "a", "down", "up", "left", "right"]
 
 REGISTER_CONTROL = 0x0
+REGISTER_ROM_ADDRESS = 0x4
 
 """
 Zynq PS side of the Gameboy, using the Pynq API to provide input and ROM loading.
@@ -25,6 +28,14 @@ start_time = time.time()
 design = Overlay(OVERLAY_PATH)
 duration = time.time() - start_time
 print(f"Finished loading overlay in {duration} sec")
+
+# Load the game ROM
+print("Loading ROM...")
+rom_path = sys.argv[1]
+rom_data = np.fromfile(open(rom_path, "rb"), dtype=np.uint8)
+rom_buffer = allocate(shape=rom_data.shape, dtype="uint8")
+rom_buffer[:] = rom_data
+print("Done loading ROM.")
 
 # Initialize PL/PS communication
 gpio_joypad = {JOYPAD_BUTTONS[i]: GPIO(GPIO.get_gpio_pin(8 + i), "out") for i in range(len(JOYPAD_BUTTONS))}
@@ -57,6 +68,7 @@ print("Done initializing controller")
 print("Initialization complete.")
 
 # Start the game.
+registers.write(REGISTER_ROM_ADDRESS, rom_buffer.device_address)
 registers.write(REGISTER_CONTROL, 0x1)
 
 try:

@@ -4,9 +4,11 @@ import chisel3._
 
 object Registers extends Enumeration {
   val Control = Value
+  val RomAddress = Value
   val CpuDebug1 = Value
   val CpuDebug2 = Value
   val CpuDebug3 = Value
+  val StatCartStalls = Value
 }
 
 /** Register 0x0: Gameboy Control */
