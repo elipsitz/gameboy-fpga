@@ -2,24 +2,7 @@ package gameboy.cart
 
 import chisel3._
 
-object MbcType extends ChiselEnum {
-  val None = Value
-  val Mbc1 = Value
-  val Mbc2 = Value
-  val Mbc3 = Value
-  val Mbc5 = Value
-}
 
-class CartConfig extends Bundle {
-  /** Whether the cartridge has a rumble feature (MBC5 and MBC7 only) */
-  val hasRumble = Bool()
-  /** Whether there is an RTC (MBC3 only) */
-  val hasTimer = Bool()
-  /** Whether there is any RAM (external, or for MBC2, internal)  */
-  val hasRam = Bool()
-  /** The MBC chip type */
-  val mbcType = MbcType()
-}
 
 class MbcIo extends Bundle {
   /** Memory accesses */
@@ -53,7 +36,7 @@ class MbcIo extends Bundle {
  */
 class EmuMbc extends Module {
   val io = IO(new Bundle {
-    val config = Input(new CartConfig())
+    val config = Input(new EmuCartConfig())
     val mbc = new MbcIo()
   })
 

@@ -25,7 +25,7 @@ Simulator::~Simulator()
 
 void Simulator::reset()
 {
-    top->io_cartDataRead = 0;
+    top->io_dataAccess_dataRead = 0;
     top->reset = 1;
 
     uint64_t total = 4 - (cycles % 4);
@@ -48,22 +48,25 @@ void Simulator::set_joypad_state(JoypadState state)
 
 void Simulator::simulate_cycles(uint64_t num_cycles)
 {
-    // TODO
-    top->io_cartConfig_mbcType = 0; // None
+    top->io_cartConfig_mbcType = 0; // TODO: None
+    bool prevAccessEnable = false;
 
     for (uint64_t i = 0; i < num_cycles; i++) {
         // Handle memory.
-        if (this->cycles % 4 == 3 && top->io_cartEnable) {
+        if (top->io_dataAccess_enable && !prevAccessEnable) {
             std::vector<uint8_t>& mem = cart->rom;
-            if (!top->io_cartRomSelect) {
+            if (!top->io_dataAccess_selectRom) {
                 mem = cart->ram;
             }
-            if (top->io_cartWrite) {
-                mem[top->io_cartAddress % mem.size()] = top->io_cartDataWrite;
+
+            if (top->io_dataAccess_write) {
+                mem[top->io_dataAccess_address % mem.size()] = top->io_dataAccess_dataWrite;
             } else {
-                top->io_cartDataRead = mem[top->io_cartAddress % mem.size()] ;
+                top->io_dataAccess_dataRead = mem[top->io_dataAccess_address % mem.size()];
             }
+            top->io_dataAccess_valid = true;
         }
+        prevAccessEnable = top->io_dataAccess_enable;
 
         this->stepFramebuffer();
         this->stepAudio();
