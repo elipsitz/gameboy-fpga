@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 import gameboy.apu.ApuOutput
 import gameboy.cart.{EmuCartConfig, EmuCartridge}
-import gameboy.{CartridgeIo, Gameboy, JoypadState}
+import gameboy.{CartridgeIo, Gameboy, JoypadState, SerialIo}
 import gameboy.ppu.PpuOutput
 import gameboy.util.BundleInit.AddInitConstruct
 
@@ -25,6 +25,7 @@ class ZynqGameboy extends Module {
     val ppu = new PpuOutput
     val joypad = Input(new JoypadState)
     val apu = new ApuOutput
+    val serial = new SerialIo()
     val tCycle = Output(UInt(2.W))
 
     // Zynq communication
@@ -52,11 +53,8 @@ class ZynqGameboy extends Module {
   io.ppu <> gameboy.io.ppu
   io.joypad <> gameboy.io.joypad
   io.apu <> gameboy.io.apu
+  io.serial <> gameboy.io.serial
   io.tCycle <> gameboy.io.tCycle
-
-  // Disconnected serial (TODO: fix)
-  gameboy.io.serial.clockIn := true.B
-  gameboy.io.serial.in := true.B
 
   // Configuration registers
   val statRegStalls = RegInit(0.U(32.W))

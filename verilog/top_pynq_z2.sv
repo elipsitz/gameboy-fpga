@@ -14,6 +14,11 @@ module top_pynq_z2 (
     output cartridge_nCS,
     output cartridge_nRST,
 
+    // Connections to serial
+    inout serial_clock,
+    input serial_in,
+    output serial_out,
+
     // Switches, buttons, and LEDs on the board
     input [1:0] switches,
     input [3:0] buttons,
@@ -264,6 +269,12 @@ module top_pynq_z2 (
     logic gb_ppu_lcdEnable;
     logic gb_ppu_valid;
 
+    logic gb_serial_out;
+    logic gb_serial_in;
+    logic gb_serial_clockEnable;
+    logic gb_serial_clockOut;
+    logic gb_serial_clockIn;
+
     ZynqGameboy zynq_gameboy(
         .clock(clk),
         .reset(reset),
@@ -290,6 +301,11 @@ module top_pynq_z2 (
         .io_ppu_hblank(gb_ppu_hblank),
         .io_ppu_lcdEnable(gb_ppu_lcdEnable),
         .io_ppu_valid(gb_ppu_valid),
+        .io_serial_out(gb_serial_out),
+        .io_serial_in(gb_serial_in),
+        .io_serial_clockEnable(gb_serial_clockEnable),
+        .io_serial_clockOut(gb_serial_clockOut),
+        .io_serial_clockIn(gb_serial_clockIn),
         .io_tCycle(gb_tCycle),
 
         .io_axiTarget_arvalid(M_AXI_0_arvalid),
@@ -338,6 +354,21 @@ module top_pynq_z2 (
     assign cartridge_nRD = ~cartridge_nWR;
     assign cartridge_nCS = gb_cart_chipSelect; // high for ROM low for RAM 
     assign cartridge_nRST = ~reset;
+
+    /////////////////////////////////////////////////
+    // Physical Serial I/O
+    /////////////////////////////////////////////////
+    logic serial_clock_pre;
+    logic serial_in_pre;
+    always_ff @(posedge clk_8mhz) begin
+        serial_clock_pre <= serial_clock;
+        gb_serial_clockIn <= serial_clock_pre;
+
+        serial_in_pre <= serial_in;
+        gb_serial_in <= serial_in_pre;
+    end
+    assign serial_clock = gb_serial_clockEnable ? (gb_serial_clockOut ? 1'bz : 1'b0) : 1'bz;
+    assign serial_out = gb_serial_out ? 1'bz : 1'b0;
 
     /////////////////////////////////////////////////
     // Gameboy PPU output
