@@ -31,7 +31,7 @@ class AxiLiteSignals(addrWidth: Int, dataWidth: Int = 32) extends Bundle {
   val wvalid = Output(Bool())
   val wready = Input(Bool())
   val wdata = Output(UInt(dataWidth.W))
-  // WSTRB is ignored
+  val wstrb = Output(UInt((dataWidth / 8).W))
 
   /** Write response channel */
   val bvalid = Input(Bool())
