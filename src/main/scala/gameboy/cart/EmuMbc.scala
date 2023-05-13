@@ -41,10 +41,12 @@ class EmuMbc extends Module {
 
   val mbcNone = Module(new MbcNone())
   val mbc1 = Module(new Mbc1())
+  val mbc3 = Module(new Mbc3())
 
   val mbcs = Seq(
     MbcType.None -> mbcNone.io,
     MbcType.Mbc1 -> mbc1.io,
+    MbcType.Mbc3 -> mbc3.io,
   )
 
   io.mbc.memDataRead := DontCare
