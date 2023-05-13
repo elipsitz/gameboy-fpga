@@ -63,6 +63,7 @@ module top_pynq_z2 (
     wire [1:0]S_AXI_0_rresp;
     wire S_AXI_0_rvalid;
     wire [63:0]S_AXI_0_wdata;
+    wire [7:0]S_AXI_0_wstrb;
     wire S_AXI_0_wready;
     wire S_AXI_0_wvalid;
 
@@ -88,7 +89,6 @@ module top_pynq_z2 (
     wire S_AXI_0_rlast;  // Output, unused.
     wire [5:0]S_AXI_0_wid = 6'd0;
     wire S_AXI_0_wlast = 1'b1;
-    wire [7:0]S_AXI_0_wstrb = 8'b11111111; // TODO: will need to use this for writes.
 
     zynq_ps zynq_ps_i(
         .peripheral_reset(peripheral_reset),
@@ -322,6 +322,7 @@ module top_pynq_z2 (
         .io_axiInitiator_wvalid(S_AXI_0_wvalid),
         .io_axiInitiator_wready(S_AXI_0_wready),
         .io_axiInitiator_wdata(S_AXI_0_wdata),
+        .io_axiInitiator_wstrb(S_AXI_0_wstrb),
         .io_axiInitiator_bvalid(S_AXI_0_bvalid),
         .io_axiInitiator_bready(S_AXI_0_bready),
         .io_axiInitiator_bresp(S_AXI_0_bresp)

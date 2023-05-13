@@ -129,6 +129,8 @@ class ZynqGameboy extends Module {
   val bufferedDataEnableLast = RegNext(bufferedDataEnable)
   val bufferedDataAddr = RegNext(emuCart.io.dataAccess.address)
   val bufferedDataSelectRom = RegNext(emuCart.io.dataAccess.selectRom)
+  val bufferedDataWriteData = RegNext(emuCart.io.dataAccess.dataWrite)
+  val bufferedDataWrite = RegNext(emuCart.io.dataAccess.write)
 
   val accessAddress = Mux(
     bufferedDataSelectRom,
@@ -138,7 +140,9 @@ class ZynqGameboy extends Module {
   val accessSubword = RegInit(0.U(3.W))
   axiInitiator.io.address := Cat(accessAddress(31, 3), 0.U(3.W))
   axiInitiator.io.enable := false.B
-  axiInitiator.io.read := true.B // TODO handle write
+  axiInitiator.io.read := !bufferedDataWrite
+  axiInitiator.io.writeData := Fill(8, bufferedDataWriteData)
+  axiInitiator.io.writeStrobe := 1.U << accessAddress(2, 0)
   when (bufferedDataEnable && !bufferedDataEnableLast) {
     axiInitiator.io.enable := true.B
     waitingForCart := true.B

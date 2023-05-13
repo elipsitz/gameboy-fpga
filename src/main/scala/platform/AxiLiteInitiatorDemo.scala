@@ -4,7 +4,7 @@ import axi.{AxiLiteInitiator, AxiLiteSignals, AxiLiteTarget}
 import chisel3._
 import chisel3.util._
 
-class ZynqGameboy extends Module {
+class AxiLiteInitiatorDemo extends Module {
   val io = IO(new Bundle {
     val leds = Output(UInt(4.W))
     val axiTarget = Flipped(new AxiLiteSignals(8))
@@ -82,6 +82,6 @@ class ZynqGameboy extends Module {
   }
 }
 
-object ZynqGameboy extends App {
-  emitVerilog(new ZynqGameboy, args)
+object AxiLiteInitiatorDemo extends App {
+  emitVerilog(new AxiLiteInitiatorDemo, args)
 }
