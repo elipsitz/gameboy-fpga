@@ -6,6 +6,7 @@ import os
 import signal
 import time
 import sys
+from pathlib import Path
 
 from xbox360controller import Xbox360Controller
 
@@ -39,11 +40,12 @@ print(f"Finished loading overlay in {duration} sec")
 
 # Load the game ROM
 print("Loading ROM...")
-rom_path = sys.argv[1]
+rom_path = Path(sys.argv[1])
 rom_data = np.fromfile(open(rom_path, "rb"), dtype=np.uint8)
 rom_size = rom_data.shape[0]
 rom_buffer = allocate(shape=rom_data.shape, dtype="uint8")
 rom_buffer[:] = rom_data
+rom_buffer.sync_to_device()
 print("Done loading ROM.")
 
 # Parse ROM header
@@ -79,6 +81,12 @@ ram_buffer = None
 if header_ram_size > 0:
     ram_buffer = allocate(shape=(header_ram_size, ), dtype="uint8")
     ram_buffer.fill(0xFF)
+
+# Load save file, if one exists.
+save_path = rom_path.with_suffix(".sav")
+if ram_buffer is not None and save_path.is_file():
+    ram_buffer[:] = np.fromfile(save_path, dtype="uint8")
+    print(f"Loaded save file at {save_path}")
 
 # Initialize PL/PS communication
 gpio_joypad = {JOYPAD_BUTTONS[i]: GPIO(GPIO.get_gpio_pin(8 + i), "out") for i in range(len(JOYPAD_BUTTONS))}
@@ -122,7 +130,17 @@ else:
     registers.write(REGISTER_RAM_MASK, 0)
 registers.write(REGISTER_CONTROL, 0x1)
 
+# Wait.
 try:
     signal.pause()
 except KeyboardInterrupt:
     pass
+
+# Persist RAM to file
+# TODO: only do this if it's battery-backed?
+registers.write(REGISTER_CONTROL, 0x0)  # Pause game.
+rom_buffer.sync_from_device()
+if ram_buffer is not None:
+    with open(save_path, "wb") as f:
+        f.write(ram_buffer.tobytes())
+    print(f"Wrote save file to {save_path}")
