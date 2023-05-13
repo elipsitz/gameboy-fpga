@@ -54,6 +54,10 @@ class ZynqGameboy extends Module {
   io.apu <> gameboy.io.apu
   io.tCycle <> gameboy.io.tCycle
 
+  // Disconnected serial (TODO: fix)
+  gameboy.io.serial.clockIn := true.B
+  gameboy.io.serial.in := true.B
+
   // Configuration registers
   val statRegStalls = RegInit(0.U(32.W))
   val configRegControl = RegInit(0.U.asTypeOf(new RegControl))

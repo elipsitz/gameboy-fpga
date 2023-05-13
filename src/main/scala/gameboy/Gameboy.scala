@@ -48,6 +48,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     val ppu = new PpuOutput()
     val joypad = Input(new JoypadState)
     val apu = new ApuOutput
+    val serial = new SerialIo
 
     // Internal state signals
     val tCycle = Output(UInt(2.W))
@@ -82,9 +83,6 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   val workRam = Module(new SinglePortRam(8 * 1024)) // DMG: 0xC000 to 0xDFFF
   val videoRam = Module(new SinglePortRam(8 * 1024)) // 0x8000 to 0x9FFF
   val oam = Module(new SinglePortRam(160)) // 0xFE00 to 0xFE9F
-
-  // Basic peripherals
-  val debugSerial = Module(new DebugSerial)
   val highRam = Module(new HighRam)
 
   // Peripheral: Timer
@@ -97,6 +95,12 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   val joypad = Module(new Joypad)
   joypad.io.state := io.joypad
   cpu.io.interruptRequest.joypad := joypad.io.interruptRequest
+
+  // Peripheral: Serial
+  val serial = Module(new Serial(config))
+  serial.io.divSerial := timer.io.divSerial
+  cpu.io.interruptRequest.serial := serial.io.interruptRequest
+  io.serial <> serial.io.serial
 
   // Boot rom
   val bootRom = Module(new BootRom(config))
@@ -193,7 +197,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
   // Peripheral bus
   val peripherals = Seq(
-    debugSerial.io,
+    serial.io,
     highRam.io,
     timer.io,
     ppu.io.registers,

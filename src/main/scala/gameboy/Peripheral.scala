@@ -35,15 +35,3 @@ class HighRam extends Module {
     }
   }
 }
-
-/** Debug serial output for the simulator */
-class DebugSerial extends Module {
-  val io = IO(new PeripheralAccess)
-
-  when (io.enabled && io.write && io.address === 0x01.U) {
-    printf(cf"${io.dataWrite}%c")
-  }
-
-  io.dataRead := DontCare
-  io.valid := false.B
-}

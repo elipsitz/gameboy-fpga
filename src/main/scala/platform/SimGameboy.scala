@@ -31,6 +31,10 @@ class SimGameboy extends Module {
   io.joypad <> gameboy.io.joypad
   io.apu <> gameboy.io.apu
 
+  // Disconnected serial
+  gameboy.io.serial.clockIn := true.B
+  gameboy.io.serial.in := true.B
+
   // Emulated cartridge
   val emuCart = Module(new EmuCartridge())
   gameboy.io.cartridge <> emuCart.io.cartridgeIo

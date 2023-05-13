@@ -21,6 +21,8 @@ class Timer extends Module {
     val phiPulse = Input(Bool())
     /** Bit 4 (5 in double-speed) of DIV, at 512 Hz */
     val divApu = Output(Bool())
+    /** From DIV, edges at 16384 Hz (x2 in double speed) */
+    val divSerial = Output(Bool())
   })
 
   // Register definitions
@@ -30,6 +32,7 @@ class Timer extends Module {
   val regModulo = RegInit(0.U(8.W))
   val regControl = RegInit(0.U.asTypeOf(new RegisterControl))
   io.divApu := regDivider(6 + 4)
+  io.divSerial := regDivider(5)
 
   // Timer logic
   val dividerOut = VecInit(Seq(7, 1, 3, 5).map(regDivider(_)))(regControl.frequency)
