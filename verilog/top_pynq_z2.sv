@@ -32,10 +32,13 @@ module top_pynq_z2 (
     logic clk_pixel;
     logic clk_pixel_x5;
     logic clk_gameboy;
-    logic [0:0]peripheral_reset;
     logic [63:0]GPIO_I;
     logic [63:0]GPIO_O;
     logic [63:0]GPIO_T;
+
+    logic reset_source = buttons[0];
+    logic reset_pixel = 1'd0;
+    logic reset_8mhz = 1'd0;
 
     wire [31:0]M_AXI_0_araddr;
     wire M_AXI_0_arready;
@@ -96,7 +99,6 @@ module top_pynq_z2 (
     wire S_AXI_0_wlast = 1'b1;
 
     zynq_ps zynq_ps_i(
-        .peripheral_reset(peripheral_reset),
         .FCLK_CLK0(clk),
         .clk_8mhz(clk_8mhz),
         .clk_pixel(clk_pixel),
@@ -184,15 +186,19 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     // Reset
     /////////////////////////////////////////////////
-    logic reset;
-    logic reset_pre1;
-    logic reset_pre2;
-    // TODO: different reset for each clock?
-    always_ff @(posedge clk) begin
-        reset_pre2 <= buttons[0] || peripheral_reset[0];
-        reset_pre1 <= reset_pre2;
-        reset <= reset_pre1;
-    end
+    // logic reset_8mhz_pre1;
+    // logic reset_8mhz_pre2;
+    // logic reset_pixel_pre1;
+    // logic reset_pixel_pre2;
+    // always_ff @(posedge clk) begin
+    //     reset_8mhz_pre2 <= reset_source;
+    //     reset_8mhz_pre1 <= reset_8mhz_pre2;
+    //     reset_8mhz <= reset_8mhz_pre1;
+    //     reset_pixel_pre2 <= reset_source;
+    //     reset_pixel_pre1 <= reset_pixel_pre2;
+    //     reset_pixel <= reset_pixel_pre1;
+    // end
+    // TODO: figure out how to do cross-clock resets without triggering timing violation
 
     /////////////////////////////////////////////////
     // Framebuffer
@@ -225,7 +231,7 @@ module top_pynq_z2 (
         reg [RAM_WIDTH-1:0] doutb_reg = {RAM_WIDTH{1'b0}};
 
         always @(posedge clk_pixel)
-          if (reset)
+          if (reset_pixel)
             doutb_reg <= {RAM_WIDTH{1'b0}};
           else if (framebuffer_output_en)
             doutb_reg <= framebuffer_output;
@@ -277,7 +283,7 @@ module top_pynq_z2 (
 
     ZynqGameboy zynq_gameboy(
         .clock(clk),
-        .reset(reset),
+        .reset(reset_8mhz),
         .io_clock_8mhz(clk_8mhz),
         .io_clock_gameboy(clk_gameboy),
         .io_cartridge_dataRead(gb_dataRead),
@@ -353,7 +359,7 @@ module top_pynq_z2 (
     assign cartridge_nWR = ~(gb_cart_enable && gb_cart_write && (gb_tCycle == 2'd1 || gb_tCycle == 2'd2));
     assign cartridge_nRD = ~cartridge_nWR;
     assign cartridge_nCS = gb_cart_chipSelect; // high for ROM low for RAM 
-    assign cartridge_nRST = ~reset;
+    assign cartridge_nRST = ~reset_8mhz;
 
     /////////////////////////////////////////////////
     // Physical Serial I/O
@@ -439,7 +445,7 @@ module top_pynq_z2 (
       .clk_pixel_x5(clk_pixel_x5),
       .clk_pixel(clk_pixel),
       .clk_audio(clk_audio),
-      .reset(reset),
+      .reset(reset_pixel),
       .rgb(rgb),
       .audio_sample_word(audio_sample_word),
       .tmds(tmds),

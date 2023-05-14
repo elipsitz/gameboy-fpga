@@ -57,7 +57,6 @@ class ZynqGameboy extends Module {
   io.tCycle <> gameboy.io.tCycle
 
   // Configuration registers
-  val statRegStalls = RegInit(0.U(32.W))
   val configRegControl = RegInit(0.U.asTypeOf(new RegControl))
   val configRegEmuCart = RegInit(0.U.asTypeOf(new EmuCartConfig))
   val configRegRomAddress = RegInit(0.U(32.W))
@@ -89,7 +88,7 @@ class ZynqGameboy extends Module {
       _.regSp -> gameboy.io.cpuDebug.regSp,
       _.regPc -> gameboy.io.cpuDebug.regPc,
     ).asUInt,
-    statRegStalls,
+    0.U,
   )
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
@@ -106,11 +105,15 @@ class ZynqGameboy extends Module {
   val waitingForCart = RegInit(false.B)
   gameboyClock := withClock(io.clock_8mhz) {
     val clock = RegInit(false.B)
+    val running = RegNext(RegNext(configRegControl.running))
+    val waitingForCartBuf = RegNext(waitingForCart)
     // Stall if we're on the second half of t=3 and we're still waiting for the emulated cartridge.
-    val cartStall = waitingForCart && gameboy.io.tCycle === 3.U && !clock
-    when (configRegControl.running) {
+    val cartStall = waitingForCartBuf && gameboy.io.tCycle === 3.U && !clock
+    // TODO: deal with clock domain crossing with configRegControl.running (and timing violations)
+    when (running) {
       when (cartStall) {
-        statRegStalls := statRegStalls + 1.U
+        // TODO: keep track of number of stalls, make it available via AXI registers
+        // (in some way that doesn't cause timing violations)
       } .otherwise {
         clock := !clock
       }
