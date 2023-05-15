@@ -259,6 +259,7 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {126041666} \
  ] $clk_pixel_x5
+  set pll_locked [ create_bd_port -dir O pll_locked ]
 
   # Create instance: axi_protocol_convert_0, and set properties
   set axi_protocol_convert_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 axi_protocol_convert_0 ]
@@ -509,7 +510,7 @@ proc create_root_design { parentCell } {
    CONFIG.PCW_I2C1_HIGHADDR {0xE0005FFF} \
    CONFIG.PCW_I2C1_RESET_ENABLE {0} \
    CONFIG.PCW_I2C_PERIPHERAL_FREQMHZ {25} \
-   CONFIG.PCW_I2C_RESET_ENABLE {1} \
+   CONFIG.PCW_I2C_RESET_ENABLE {0} \
    CONFIG.PCW_I2C_RESET_POLARITY {Active Low} \
    CONFIG.PCW_IMPORT_BOARD_PRESET {None} \
    CONFIG.PCW_INCLUDE_ACP_TRANS_CHECK {0} \
@@ -1112,6 +1113,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clk_wiz_0_clk_8mhz [get_bd_ports clk_8mhz] [get_bd_pins clk_wiz_0/clk_8mhz]
   connect_bd_net -net clk_wiz_0_clk_pixel [get_bd_ports clk_pixel] [get_bd_pins clk_wiz_0/clk_pixel]
   connect_bd_net -net clk_wiz_0_clk_pixel_x5 [get_bd_ports clk_pixel_x5] [get_bd_pins clk_wiz_0/clk_pixel_x5]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_ports pll_locked] [get_bd_pins clk_wiz_0/locked]
   connect_bd_net -net proc_sys_reset_0_interconnect_aresetn [get_bd_pins axi_protocol_convert_0/aresetn] [get_bd_pins proc_sys_reset_0/interconnect_aresetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_pins clk_wiz_0/reset] [get_bd_pins proc_sys_reset_0/peripheral_reset]
   connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_ports FCLK_CLK0] [get_bd_pins axi_protocol_convert_0/aclk] [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK]

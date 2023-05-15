@@ -1,7 +1,7 @@
 //Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2020.2 (lin64) Build 3064766 Wed Nov 18 09:12:47 MST 2020
-//Date        : Mon May  8 23:09:20 2023
+//Date        : Mon May 15 13:40:22 2023
 //Host        : eli-linux-vm running 64-bit Ubuntu 20.04.6 LTS
 //Command     : generate_target zynq_ps_wrapper.bd
 //Design      : zynq_ps_wrapper
@@ -95,7 +95,7 @@ module zynq_ps_wrapper
     clk_8mhz,
     clk_pixel,
     clk_pixel_x5,
-    peripheral_reset);
+    pll_locked);
   inout [14:0]DDR_addr;
   inout [2:0]DDR_ba;
   inout DDR_cas_n;
@@ -121,11 +121,11 @@ module zynq_ps_wrapper
   input [63:0]GPIO_I;
   output [63:0]GPIO_O;
   output [63:0]GPIO_T;
-  output [15:0]M_AXI_0_araddr;
+  output [31:0]M_AXI_0_araddr;
   output [2:0]M_AXI_0_arprot;
   input M_AXI_0_arready;
   output M_AXI_0_arvalid;
-  output [15:0]M_AXI_0_awaddr;
+  output [31:0]M_AXI_0_awaddr;
   output [2:0]M_AXI_0_awprot;
   input M_AXI_0_awready;
   output M_AXI_0_awvalid;
@@ -181,7 +181,7 @@ module zynq_ps_wrapper
   output clk_8mhz;
   output clk_pixel;
   output clk_pixel_x5;
-  output [0:0]peripheral_reset;
+  output pll_locked;
 
   wire [14:0]DDR_addr;
   wire [2:0]DDR_ba;
@@ -208,11 +208,11 @@ module zynq_ps_wrapper
   wire [63:0]GPIO_I;
   wire [63:0]GPIO_O;
   wire [63:0]GPIO_T;
-  wire [15:0]M_AXI_0_araddr;
+  wire [31:0]M_AXI_0_araddr;
   wire [2:0]M_AXI_0_arprot;
   wire M_AXI_0_arready;
   wire M_AXI_0_arvalid;
-  wire [15:0]M_AXI_0_awaddr;
+  wire [31:0]M_AXI_0_awaddr;
   wire [2:0]M_AXI_0_awprot;
   wire M_AXI_0_awready;
   wire M_AXI_0_awvalid;
@@ -268,7 +268,7 @@ module zynq_ps_wrapper
   wire clk_8mhz;
   wire clk_pixel;
   wire clk_pixel_x5;
-  wire [0:0]peripheral_reset;
+  wire pll_locked;
 
   zynq_ps zynq_ps_i
        (.DDR_addr(DDR_addr),
@@ -356,5 +356,5 @@ module zynq_ps_wrapper
         .clk_8mhz(clk_8mhz),
         .clk_pixel(clk_pixel),
         .clk_pixel_x5(clk_pixel_x5),
-        .peripheral_reset(peripheral_reset));
+        .pll_locked(pll_locked));
 endmodule
