@@ -429,7 +429,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   // Window activation logic
   // XXX: windowHitWy should only activate at the beginning of oam search?
   when(stateOamSearch && (regLy === regWy)) { windowHitWy := true.B }
-  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx >= regWx) {
+  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx >= regWx && !objFetchWaiting) {
     windowActive := true.B
     fetcherState := FetcherState.id0
     fetcherBgX := 0.U
