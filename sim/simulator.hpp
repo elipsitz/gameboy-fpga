@@ -16,7 +16,7 @@ struct JoypadState {
 
 class Simulator {
 public:
-    Simulator(std::vector<uint8_t> rom);
+    Simulator(std::unique_ptr<Cartridge> cart);
     ~Simulator();
 
     void set_joypad_state(JoypadState state);

@@ -2,10 +2,12 @@
 
 #include <memory>
 #include <vector>
+#include <filesystem>
 
 class Cartridge {
 public:
-    Cartridge(std::vector<uint8_t> rom);
+    Cartridge(std::filesystem::path rom_path);
+    ~Cartridge();
 
     std::vector<uint8_t> rom;
     std::vector<uint8_t> ram;
@@ -13,4 +15,7 @@ public:
     bool has_ram;
     bool has_rumble;
     bool has_timer;
+
+private:
+    std::filesystem::path rom_path;
 };

@@ -1,8 +1,29 @@
 #include "cartridge.hpp"
 
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
 
-Cartridge::Cartridge(std::vector<uint8_t> rom) : rom(rom) {
+static std::vector<uint8_t> read_file(std::filesystem::path path) {
+    std::vector<uint8_t> buffer;
+    std::ifstream in(path, std::ios::binary);
+    in.seekg(0, std::ios::end);
+    size_t size = in.tellg();
+    in.seekg(0, std::ios::beg);
+    buffer.resize(size);
+    in.read(reinterpret_cast<char*>(buffer.data()), size);
+    return buffer;
+}
+
+static void write_file(std::filesystem::path path, std::vector<uint8_t>& buffer) {
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    out.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+}
+
+Cartridge::Cartridge(std::filesystem::path rom_path) : rom_path(rom_path) {
+    // Load the ROM.
+    this->rom = read_file(rom_path);
+
     uint8_t metadataType = rom[0x147];
     uint8_t metadataRomSize = rom[0x148];
     uint8_t metadataRamSize = rom[0x149];
@@ -86,5 +107,19 @@ Cartridge::Cartridge(std::vector<uint8_t> rom) : rom(rom) {
             throw std::runtime_error("Unknown cartridge type");
     }
 
+    // Load the RAM.
+    std::filesystem::path ram_path = rom_path;
+    ram_path.replace_extension(".sav");
+    if (std::filesystem::exists(ram_path)) {
+        printf("Loading RAM from %s\n", ram_path.c_str());
+        ram = read_file(ram_path);
+    }
     ram.resize(ram_size, 0xFF);
+}
+
+Cartridge::~Cartridge() {
+    std::filesystem::path ram_path = rom_path;
+    ram_path.replace_extension(".sav");
+    write_file(ram_path, this->ram);
+    printf("Wrote RAM to %s\n", ram_path.c_str());
 }

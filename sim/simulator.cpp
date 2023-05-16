@@ -7,10 +7,9 @@
 // gray palette
 static const uint32_t palette[4] = {0xffffff, 0xaaaaaa, 0x555555, 0x000000};
 
-Simulator::Simulator(std::vector<uint8_t> rom)
+Simulator::Simulator(std::unique_ptr<Cartridge> cart) : cart(std::move(cart))
 {
     this->top = new VSimGameboy;
-    this->cart = std::make_unique<Cartridge>(rom);
     this->framebuffer0.resize(WIDTH * HEIGHT * 4, 0xFF);
     this->framebuffer1.resize(WIDTH * HEIGHT * 4, 0xFF);
 

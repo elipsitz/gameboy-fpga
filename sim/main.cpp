@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include <format>
 #include <vector>
 #include <cstdio>
@@ -8,19 +7,9 @@
 #include <SDL2/SDL.h>
 
 #include "audio.hpp"
+#include "cartridge.hpp"
 #include "simulator.hpp"
 #include "window.hpp"
-
-std::vector<uint8_t> read_file(const char* path) {
-    std::vector<uint8_t> buffer;
-    std::ifstream in(path, std::ios::binary);
-    in.seekg(0, std::ios::end);
-    size_t size = in.tellg();
-    in.seekg(0, std::ios::beg);
-    buffer.resize(size);
-    in.read(reinterpret_cast<char*>(buffer.data()), size);
-    return buffer;
-}
 
 JoypadState read_joypad_state() {
     const uint8_t* keyboard = SDL_GetKeyboardState(nullptr);
@@ -41,14 +30,14 @@ int main(int argc, char** argv) {
         std::cout << "Usage: sim [rom.gb]" << std::endl;
         return 1;
     }
-    auto rom = read_file(argv[1]);
+    auto cartridge = std::make_unique<Cartridge>(std::filesystem::path(argv[1]));
 
     // Initialize SDL.
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO);
     Window window;
     Audio audio;
 
-    Simulator simulator(rom);
+    Simulator simulator(std::move(cartridge));
 
     bool single_step = false;
     bool paused = false;
