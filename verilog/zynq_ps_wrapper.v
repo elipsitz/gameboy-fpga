@@ -1,7 +1,7 @@
 //Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2020.2 (lin64) Build 3064766 Wed Nov 18 09:12:47 MST 2020
-//Date        : Mon May 15 13:40:22 2023
+//Date        : Wed May 17 01:44:02 2023
 //Host        : eli-linux-vm running 64-bit Ubuntu 20.04.6 LTS
 //Command     : generate_target zynq_ps_wrapper.bd
 //Design      : zynq_ps_wrapper
@@ -25,7 +25,6 @@ module zynq_ps_wrapper
     DDR_ras_n,
     DDR_reset_n,
     DDR_we_n,
-    FCLK_CLK0,
     FIXED_IO_ddr_vrn,
     FIXED_IO_ddr_vrp,
     FIXED_IO_mio,
@@ -93,9 +92,12 @@ module zynq_ps_wrapper
     S_AXI_0_wstrb,
     S_AXI_0_wvalid,
     clk_8mhz,
+    clk_axi_dram,
     clk_pixel,
     clk_pixel_x5,
-    pll_locked);
+    pll_0_locked,
+    pll_1_locked,
+    reset_8mhz);
   inout [14:0]DDR_addr;
   inout [2:0]DDR_ba;
   inout DDR_cas_n;
@@ -111,7 +113,6 @@ module zynq_ps_wrapper
   inout DDR_ras_n;
   inout DDR_reset_n;
   inout DDR_we_n;
-  output FCLK_CLK0;
   inout FIXED_IO_ddr_vrn;
   inout FIXED_IO_ddr_vrp;
   inout [53:0]FIXED_IO_mio;
@@ -179,9 +180,12 @@ module zynq_ps_wrapper
   input [7:0]S_AXI_0_wstrb;
   input S_AXI_0_wvalid;
   output clk_8mhz;
+  output clk_axi_dram;
   output clk_pixel;
   output clk_pixel_x5;
-  output pll_locked;
+  output pll_0_locked;
+  output pll_1_locked;
+  output [0:0]reset_8mhz;
 
   wire [14:0]DDR_addr;
   wire [2:0]DDR_ba;
@@ -198,7 +202,6 @@ module zynq_ps_wrapper
   wire DDR_ras_n;
   wire DDR_reset_n;
   wire DDR_we_n;
-  wire FCLK_CLK0;
   wire FIXED_IO_ddr_vrn;
   wire FIXED_IO_ddr_vrp;
   wire [53:0]FIXED_IO_mio;
@@ -266,9 +269,12 @@ module zynq_ps_wrapper
   wire [7:0]S_AXI_0_wstrb;
   wire S_AXI_0_wvalid;
   wire clk_8mhz;
+  wire clk_axi_dram;
   wire clk_pixel;
   wire clk_pixel_x5;
-  wire pll_locked;
+  wire pll_0_locked;
+  wire pll_1_locked;
+  wire [0:0]reset_8mhz;
 
   zynq_ps zynq_ps_i
        (.DDR_addr(DDR_addr),
@@ -286,7 +292,6 @@ module zynq_ps_wrapper
         .DDR_ras_n(DDR_ras_n),
         .DDR_reset_n(DDR_reset_n),
         .DDR_we_n(DDR_we_n),
-        .FCLK_CLK0(FCLK_CLK0),
         .FIXED_IO_ddr_vrn(FIXED_IO_ddr_vrn),
         .FIXED_IO_ddr_vrp(FIXED_IO_ddr_vrp),
         .FIXED_IO_mio(FIXED_IO_mio),
@@ -354,7 +359,10 @@ module zynq_ps_wrapper
         .S_AXI_0_wstrb(S_AXI_0_wstrb),
         .S_AXI_0_wvalid(S_AXI_0_wvalid),
         .clk_8mhz(clk_8mhz),
+        .clk_axi_dram(clk_axi_dram),
         .clk_pixel(clk_pixel),
         .clk_pixel_x5(clk_pixel_x5),
-        .pll_locked(pll_locked));
+        .pll_0_locked(pll_0_locked),
+        .pll_1_locked(pll_1_locked),
+        .reset_8mhz(reset_8mhz));
 endmodule

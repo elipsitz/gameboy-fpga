@@ -27,7 +27,7 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     // Zynq PS
     /////////////////////////////////////////////////
-    logic clk;
+    logic clk_axi_dram;
     logic clk_8mhz;
     logic clk_pixel;
     logic clk_pixel_x5;
@@ -35,6 +35,9 @@ module top_pynq_z2 (
     logic [63:0]GPIO_I;
     logic [63:0]GPIO_O;
     logic [63:0]GPIO_T;
+
+    logic pll_0_locked;
+    logic pll_1_locked;
 
     logic reset_source = buttons[0];
     logic reset_pixel = 1'd0;
@@ -99,13 +102,15 @@ module top_pynq_z2 (
     wire S_AXI_0_wlast = 1'b1;
 
     zynq_ps zynq_ps_i(
-        .FCLK_CLK0(clk),
+        .clk_axi_dram(clk_axi_dram),
         .clk_8mhz(clk_8mhz),
         .clk_pixel(clk_pixel),
         .clk_pixel_x5(clk_pixel_x5),
         .GPIO_I(GPIO_I),
         .GPIO_O(GPIO_O),
         .GPIO_T(GPIO_T),
+        .pll_0_locked(pll_0_locked),
+        .pll_1_locked(pll_1_locked),
 
         .M_AXI_0_araddr(M_AXI_0_araddr),
         .M_AXI_0_arready(M_AXI_0_arready),
@@ -282,9 +287,9 @@ module top_pynq_z2 (
     logic gb_serial_clockIn;
 
     ZynqGameboy zynq_gameboy(
-        .clock(clk),
+        .clock(clk_8mhz),
         .reset(reset_8mhz),
-        .io_clock_8mhz(clk_8mhz),
+        .io_clock_axi_dram(clk_axi_dram),
         .io_clock_gameboy(clk_gameboy),
         .io_cartridge_dataRead(gb_dataRead),
         .io_cartridge_dataWrite(gb_dataWrite),

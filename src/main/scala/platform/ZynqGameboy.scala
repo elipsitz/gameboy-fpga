@@ -13,10 +13,13 @@ object ZynqGameboy extends App {
   emitVerilog(new ZynqGameboy, args)
 }
 
+/**
+ * Clocked by the 8.3886 MHz "Gameboy" clock.
+ */
 class ZynqGameboy extends Module {
   val io = IO(new Bundle {
-    /** 8 MHz clock for Gameboy */
-    val clock_8mhz = Input(Clock())
+    /** ~100MHz clock, integer multiple of the Module clock, used for emulated cart AXI initiator */
+    val clock_axi_dram = Input(Clock())
     /** 4 MHz (from Gameboy), for PPU, cartridge output */
     val clock_gameboy = Output(Clock())
 
@@ -28,8 +31,9 @@ class ZynqGameboy extends Module {
     val serial = new SerialIo()
     val tCycle = Output(UInt(2.W))
 
-    // Zynq communication
+    // AXI Target (runs at the clock used to generate Gameboy clock)
     val axiTarget = Flipped(new AxiLiteSignals(log2Ceil(Registers.maxId * 4)))
+    // AXI initiator for emulated cart, runs at "clock_emu_cart"
     val axiInitiator = new AxiLiteSignals(32, 64)
   })
 
@@ -38,8 +42,9 @@ class ZynqGameboy extends Module {
     skipBootrom = false,
     optimizeForSimulation = false,
   )
-  val gameboyClock = Wire(Clock())
-  val gameboy = withClock(gameboyClock) {
+  val gameboyClock = RegInit(false.B)
+  io.clock_gameboy := gameboyClock.asClock
+  val gameboy = withClock(gameboyClock.asClock) {
     Module(new Gameboy(gameboyConfig))
   }
   // TODO: support both physical cartridge and emulated
@@ -55,6 +60,9 @@ class ZynqGameboy extends Module {
   io.apu <> gameboy.io.apu
   io.serial <> gameboy.io.serial
   io.tCycle <> gameboy.io.tCycle
+
+  val statNumStalls = RegInit(0.U(32.W))
+  val statNumClocks = RegInit(0.U(32.W))
 
   // Configuration registers
   val configRegControl = RegInit(0.U.asTypeOf(new RegControl))
@@ -88,7 +96,8 @@ class ZynqGameboy extends Module {
       _.regSp -> gameboy.io.cpuDebug.regSp,
       _.regPc -> gameboy.io.cpuDebug.regPc,
     ).asUInt,
-    0.U,
+    statNumStalls,
+    statNumClocks,
   )
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
@@ -102,61 +111,61 @@ class ZynqGameboy extends Module {
   }
 
   // Gameboy clock (4 MHz)
-  val waitingForCart = RegInit(false.B)
-  gameboyClock := withClock(io.clock_8mhz) {
-    val clock = RegInit(false.B)
-    val running = RegNext(RegNext(configRegControl.running))
-    val waitingForCartBuf = RegNext(waitingForCart)
-    // Stall if we're on the second half of t=3 and we're still waiting for the emulated cartridge.
-    val cartStall = waitingForCartBuf && gameboy.io.tCycle === 3.U && !clock
-    // TODO: deal with clock domain crossing with configRegControl.running (and timing violations)
-    when (running) {
-      when (cartStall) {
-        // TODO: keep track of number of stalls, make it available via AXI registers
-        // (in some way that doesn't cause timing violations)
-      } .otherwise {
-        clock := !clock
-      }
+  val waitingForCart = Wire(Bool())
+  // Stall if we're on the second half of t=3 and we're still waiting for the emulated cartridge.
+  val cartStall = waitingForCart && gameboy.io.tCycle === 3.U && !gameboyClock
+  when (configRegControl.running) {
+    when (cartStall) {
+      statNumStalls := statNumStalls + 1.U
+    } .otherwise {
+      gameboyClock := !gameboyClock
+      statNumClocks := statNumClocks + 1.U
     }
-    clock.asClock
   }
-  io.clock_gameboy := gameboyClock
 
   // Emulated cartridge
   val emuCart = Module(new EmuCartridge())
   emuCart.io.cartridgeIo <> gameboy.io.cartridge
   emuCart.io.config := configRegEmuCart
   emuCart.io.tCycle := gameboy.io.tCycle
-  val axiInitiator = Module(new AxiLiteInitiator(32, 64))
-  axiInitiator.io.signals <> io.axiInitiator
+  waitingForCart := emuCart.io.waitingForAccess
 
-  val bufferedDataEnable = RegNext(emuCart.io.dataAccess.enable)
-  val bufferedDataEnableLast = RegNext(bufferedDataEnable)
-  val bufferedDataAddr = RegNext(emuCart.io.dataAccess.address)
-  val bufferedDataSelectRom = RegNext(emuCart.io.dataAccess.selectRom)
-  val bufferedDataWriteData = RegNext(emuCart.io.dataAccess.dataWrite)
-  val bufferedDataWrite = RegNext(emuCart.io.dataAccess.write)
+  // AXI Initiator for DRAM access -- runs ~100 MHz (integer multiple of module clock).
+  val axiInitiatorReadData = Wire(UInt(8.W))
+  val axiInitiatorReadValid = Wire(UInt(8.W))
+  val axiInitiator = withClock (io.clock_axi_dram) {
+    val axiInitiator = Module(new AxiLiteInitiator(32, 64))
+    axiInitiator.io.signals <> io.axiInitiator
 
-  val accessAddress = Mux(
-    bufferedDataSelectRom,
-    configRegRomAddress + (bufferedDataAddr & configRegRomMask),
-    configRegRamAddress + (bufferedDataAddr & configRegRamMask),
-  )
-  val accessSubword = RegInit(0.U(3.W))
-  axiInitiator.io.address := Cat(accessAddress(31, 3), 0.U(3.W))
-  axiInitiator.io.enable := false.B
-  axiInitiator.io.read := !bufferedDataWrite
-  axiInitiator.io.writeData := Fill(8, bufferedDataWriteData)
-  axiInitiator.io.writeStrobe := 1.U << accessAddress(2, 0)
-  when (bufferedDataEnable && !bufferedDataEnableLast) {
-    axiInitiator.io.enable := true.B
-    waitingForCart := true.B
-    accessSubword := accessAddress(2, 0)
+    val bufferedDataEnable = RegNext(emuCart.io.dataAccess.enable)
+    val bufferedDataEnableLast = RegNext(bufferedDataEnable)
+    val bufferedDataAddr = RegNext(emuCart.io.dataAccess.address)
+    val bufferedDataSelectRom = RegNext(emuCart.io.dataAccess.selectRom)
+    val bufferedDataWriteData = RegNext(emuCart.io.dataAccess.dataWrite)
+    val bufferedDataWrite = RegNext(emuCart.io.dataAccess.write)
+
+    val accessAddress = Mux(
+      bufferedDataSelectRom,
+      configRegRomAddress + (bufferedDataAddr & configRegRomMask),
+      configRegRamAddress + (bufferedDataAddr & configRegRamMask),
+    )
+    val accessSubword = RegInit(0.U(3.W))
+    axiInitiator.io.address := Cat(accessAddress(31, 3), 0.U(3.W))
+    axiInitiator.io.enable := false.B
+    axiInitiator.io.read := !bufferedDataWrite
+    axiInitiator.io.writeData := Fill(8, bufferedDataWriteData)
+    axiInitiator.io.writeStrobe := 1.U << accessAddress(2, 0)
+    when(bufferedDataEnable && !bufferedDataEnableLast) {
+      axiInitiator.io.enable := true.B
+      accessSubword := accessAddress(2, 0)
+    }
+
+    axiInitiatorReadData := axiInitiator.io.readData.asTypeOf(Vec(8, UInt(8.W)))(accessSubword)
+    axiInitiatorReadValid := !axiInitiator.io.busy
+
+    axiInitiator
   }
-  when (waitingForCart && !axiInitiator.io.busy) {
-    waitingForCart := false.B
-  }
 
-  emuCart.io.dataAccess.dataRead := axiInitiator.io.readData.asTypeOf(Vec(8, UInt(8.W)))(accessSubword)
-  emuCart.io.dataAccess.valid := !axiInitiator.io.busy
+  emuCart.io.dataAccess.dataRead := RegNext(axiInitiatorReadData)
+  emuCart.io.dataAccess.valid := RegNext(axiInitiatorReadValid)
 }

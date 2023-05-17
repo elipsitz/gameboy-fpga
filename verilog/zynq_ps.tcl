@@ -240,26 +240,28 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
-  set FCLK_CLK0 [ create_bd_port -dir O -type clk FCLK_CLK0 ]
-  set_property -dict [ list \
-   CONFIG.ASSOCIATED_BUSIF {M_AXI_0:S_AXI_0} \
- ] $FCLK_CLK0
   set GPIO_I [ create_bd_port -dir I -from 63 -to 0 GPIO_I ]
   set GPIO_O [ create_bd_port -dir O -from 63 -to 0 GPIO_O ]
   set GPIO_T [ create_bd_port -dir O -from 63 -to 0 GPIO_T ]
   set clk_8mhz [ create_bd_port -dir O -type clk clk_8mhz ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {8391123} \
+   CONFIG.ASSOCIATED_BUSIF {M_AXI_0} \
  ] $clk_8mhz
+  set clk_axi_dram [ create_bd_port -dir O -type clk clk_axi_dram ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {S_AXI_0} \
+ ] $clk_axi_dram
   set clk_pixel [ create_bd_port -dir O -type clk clk_pixel ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {25208333} \
+   CONFIG.FREQ_HZ {25200000} \
  ] $clk_pixel
   set clk_pixel_x5 [ create_bd_port -dir O -type clk clk_pixel_x5 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {126041666} \
+   CONFIG.FREQ_HZ {126000000} \
  ] $clk_pixel_x5
-  set pll_locked [ create_bd_port -dir O pll_locked ]
+  set pll_0_locked [ create_bd_port -dir O pll_0_locked ]
+  set pll_1_locked [ create_bd_port -dir O pll_1_locked ]
+  set reset_8mhz [ create_bd_port -dir O -from 0 -to 0 -type rst reset_8mhz ]
 
   # Create instance: axi_protocol_convert_0, and set properties
   set axi_protocol_convert_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 axi_protocol_convert_0 ]
@@ -271,31 +273,73 @@ proc create_root_design { parentCell } {
   # Create instance: clk_wiz_0, and set properties
   set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_0 ]
   set_property -dict [ list \
-   CONFIG.CLKOUT1_JITTER {308.606} \
-   CONFIG.CLKOUT1_PHASE_ERROR {137.956} \
-   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {8.388608} \
-   CONFIG.CLKOUT2_JITTER {249.871} \
-   CONFIG.CLKOUT2_PHASE_ERROR {137.956} \
-   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {25.2} \
+   CONFIG.CLKOUT1_JITTER {470.476} \
+   CONFIG.CLKOUT1_PHASE_ERROR {347.350} \
+   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {25.2} \
+   CONFIG.CLKOUT1_USED {true} \
+   CONFIG.CLKOUT2_JITTER {341.985} \
+   CONFIG.CLKOUT2_PHASE_ERROR {347.350} \
+   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {126} \
    CONFIG.CLKOUT2_USED {true} \
-   CONFIG.CLKOUT3_JITTER {178.804} \
-   CONFIG.CLKOUT3_PHASE_ERROR {137.956} \
-   CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {126} \
-   CONFIG.CLKOUT3_USED {true} \
+   CONFIG.CLKOUT3_JITTER {240.572} \
+   CONFIG.CLKOUT3_PHASE_ERROR {298.923} \
+   CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {100.000} \
+   CONFIG.CLKOUT3_USED {false} \
    CONFIG.CLKOUT4_JITTER {130.958} \
    CONFIG.CLKOUT4_PHASE_ERROR {98.575} \
    CONFIG.CLKOUT4_USED {false} \
-   CONFIG.CLK_OUT1_PORT {clk_8mhz} \
-   CONFIG.CLK_OUT2_PORT {clk_pixel} \
-   CONFIG.CLK_OUT3_PORT {clk_pixel_x5} \
-   CONFIG.MMCM_CLKFBOUT_MULT_F {15.125} \
-   CONFIG.MMCM_CLKOUT0_DIVIDE_F {90.125} \
-   CONFIG.MMCM_CLKOUT1_DIVIDE {30} \
-   CONFIG.MMCM_CLKOUT2_DIVIDE {6} \
+   CONFIG.CLK_OUT1_PORT {clk_pixel} \
+   CONFIG.CLK_OUT2_PORT {clk_pixel_x5} \
+   CONFIG.CLK_OUT3_PORT {clk_out3} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {31.500} \
+   CONFIG.MMCM_CLKOUT0_DIVIDE_F {25.000} \
+   CONFIG.MMCM_CLKOUT1_DIVIDE {5} \
+   CONFIG.MMCM_CLKOUT2_DIVIDE {1} \
    CONFIG.MMCM_CLKOUT3_DIVIDE {1} \
-   CONFIG.MMCM_DIVCLK_DIVIDE {2} \
-   CONFIG.NUM_OUT_CLKS {3} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {5} \
+   CONFIG.NUM_OUT_CLKS {2} \
+   CONFIG.RESET_TYPE {ACTIVE_LOW} \
  ] $clk_wiz_0
+
+  # Create instance: clk_wiz_1, and set properties
+  set clk_wiz_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_1 ]
+  set_property -dict [ list \
+   CONFIG.CLKOUT1_DRIVES {BUFG} \
+   CONFIG.CLKOUT1_JITTER {531.992} \
+   CONFIG.CLKOUT1_PHASE_ERROR {490.831} \
+   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {8.3886} \
+   CONFIG.CLKOUT2_DRIVES {BUFG} \
+   CONFIG.CLKOUT2_JITTER {368.271} \
+   CONFIG.CLKOUT2_PHASE_ERROR {490.831} \
+   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100.6632} \
+   CONFIG.CLKOUT2_USED {true} \
+   CONFIG.CLKOUT3_DRIVES {BUFG} \
+   CONFIG.CLKOUT3_JITTER {368.271} \
+   CONFIG.CLKOUT3_PHASE_ERROR {490.831} \
+   CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {100.000} \
+   CONFIG.CLKOUT3_USED {false} \
+   CONFIG.CLKOUT4_DRIVES {BUFG} \
+   CONFIG.CLKOUT4_JITTER {130.958} \
+   CONFIG.CLKOUT4_PHASE_ERROR {98.575} \
+   CONFIG.CLKOUT4_USED {false} \
+   CONFIG.CLKOUT5_DRIVES {BUFG} \
+   CONFIG.CLKOUT6_DRIVES {BUFG} \
+   CONFIG.CLKOUT7_DRIVES {BUFG} \
+   CONFIG.CLK_OUT1_PORT {clk_8mhz} \
+   CONFIG.CLK_OUT2_PORT {clk_axi_dram} \
+   CONFIG.CLK_OUT3_PORT {clk_out3} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {56.375} \
+   CONFIG.MMCM_CLKOUT0_DIVIDE_F {96.000} \
+   CONFIG.MMCM_CLKOUT1_DIVIDE {8} \
+   CONFIG.MMCM_CLKOUT2_DIVIDE {1} \
+   CONFIG.MMCM_CLKOUT3_DIVIDE {1} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {7} \
+   CONFIG.NUM_OUT_CLKS {2} \
+   CONFIG.OVERRIDE_MMCM {false} \
+   CONFIG.RESET_TYPE {ACTIVE_LOW} \
+   CONFIG.SECONDARY_SOURCE {Single_ended_clock_capable_pin} \
+   CONFIG.USE_PHASE_ALIGNMENT {true} \
+ ] $clk_wiz_1
 
   # Create instance: proc_sys_reset_0, and set properties
   set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
@@ -1110,14 +1154,16 @@ proc create_root_design { parentCell } {
 
   # Create port connections
   connect_bd_net -net GPIO_I_0_1 [get_bd_ports GPIO_I] [get_bd_pins processing_system7_0/GPIO_I]
-  connect_bd_net -net clk_wiz_0_clk_8mhz [get_bd_ports clk_8mhz] [get_bd_pins clk_wiz_0/clk_8mhz]
   connect_bd_net -net clk_wiz_0_clk_pixel [get_bd_ports clk_pixel] [get_bd_pins clk_wiz_0/clk_pixel]
   connect_bd_net -net clk_wiz_0_clk_pixel_x5 [get_bd_ports clk_pixel_x5] [get_bd_pins clk_wiz_0/clk_pixel_x5]
-  connect_bd_net -net clk_wiz_0_locked [get_bd_ports pll_locked] [get_bd_pins clk_wiz_0/locked]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_ports pll_0_locked] [get_bd_pins clk_wiz_0/locked]
+  connect_bd_net -net clk_wiz_1_clk_8mhz [get_bd_ports clk_8mhz] [get_bd_pins axi_protocol_convert_0/aclk] [get_bd_pins clk_wiz_1/clk_8mhz] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK]
+  connect_bd_net -net clk_wiz_1_clk_emu_cart [get_bd_ports clk_axi_dram] [get_bd_pins clk_wiz_1/clk_axi_dram] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK]
+  connect_bd_net -net clk_wiz_1_locked [get_bd_ports pll_1_locked] [get_bd_pins clk_wiz_1/locked] [get_bd_pins proc_sys_reset_0/dcm_locked]
   connect_bd_net -net proc_sys_reset_0_interconnect_aresetn [get_bd_pins axi_protocol_convert_0/aresetn] [get_bd_pins proc_sys_reset_0/interconnect_aresetn]
-  connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_pins clk_wiz_0/reset] [get_bd_pins proc_sys_reset_0/peripheral_reset]
-  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_ports FCLK_CLK0] [get_bd_pins axi_protocol_convert_0/aclk] [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK]
-  connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins proc_sys_reset_0/ext_reset_in] [get_bd_pins processing_system7_0/FCLK_RESET0_N]
+  connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_ports reset_8mhz] [get_bd_pins proc_sys_reset_0/peripheral_reset]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins clk_wiz_1/clk_in1] [get_bd_pins processing_system7_0/FCLK_CLK0]
+  connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins clk_wiz_0/resetn] [get_bd_pins clk_wiz_1/resetn] [get_bd_pins proc_sys_reset_0/ext_reset_in] [get_bd_pins processing_system7_0/FCLK_RESET0_N]
   connect_bd_net -net processing_system7_0_GPIO_O [get_bd_ports GPIO_O] [get_bd_pins processing_system7_0/GPIO_O]
   connect_bd_net -net processing_system7_0_GPIO_T [get_bd_ports GPIO_T] [get_bd_pins processing_system7_0/GPIO_T]
 

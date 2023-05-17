@@ -13,6 +13,7 @@ object Registers extends Enumeration {
   val CpuDebug2 = Value
   val CpuDebug3 = Value
   val StatCartStalls = Value
+  val StatNumClocks = Value
 }
 
 /** Register 0x0: Gameboy Control */
