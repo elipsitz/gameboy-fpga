@@ -256,6 +256,12 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   bgFifo.io.reloadEnable := false.B
   bgFifo.io.reloadData := DontCare
   val bgScrollCounter = RegInit(0.U(3.W))
+  when(tick === 80.U) {
+    // Latch the lower 3 bits of SCX for the bg pixel skip register.
+    // Ensure we do this right after OAM search in each scanline
+    //   (because SCX can be set up to the last dot of OAM search)
+    bgScrollCounter := regScx(2, 0)
+  }
 
   // Sprites
   val objFifo = Module(new PixelFifo(new ObjPixel, false))
@@ -470,10 +476,6 @@ class Ppu(config: Gameboy.Configuration) extends Module {
         }
       }
     }
-
-    // Latch the lower 3 bits of SCX for the bg pixel skip register.
-    // Ensure we do this at the beginning of each scanline, including the first (thus, in oam search, not hblank).
-    bgScrollCounter := regScx(2, 0)
   }
 
   // On hblank, reset scanline registers
