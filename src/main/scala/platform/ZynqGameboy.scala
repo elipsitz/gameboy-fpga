@@ -104,6 +104,7 @@ class ZynqGameboy extends Module {
     ).asUInt,
     statNumStalls,
     statNumClocks,
+    0.U,
   )
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
@@ -113,6 +114,11 @@ class ZynqGameboy extends Module {
       is (Registers.RomMask.id.U) { configRegRomMask := axiTarget.io.writeData }
       is (Registers.RamAddress.id.U) { configRegRamAddress := axiTarget.io.writeData }
       is (Registers.RamMask.id.U) { configRegRamMask := axiTarget.io.writeData }
+      is (Registers.Framebuffer.id.U) {
+        io.framebufferWriteAddr := axiTarget.io.writeData(31, 16)
+        io.framebufferWriteData := axiTarget.io.writeData(1, 0)
+        io.framebufferWriteEnable := true.B
+      }
     }
   }
 
