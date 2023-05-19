@@ -31,7 +31,6 @@ module top_pynq_z2 (
     logic clk_8mhz;
     logic clk_pixel;
     logic clk_pixel_x5;
-    logic clk_gameboy;
     logic [63:0]GPIO_I;
     logic [63:0]GPIO_O;
     logic [63:0]GPIO_T;
@@ -224,7 +223,7 @@ module top_pynq_z2 (
     reg [RAM_WIDTH-1:0] framebuffer_output = {RAM_WIDTH{1'b0}};
 
     // Write
-    always @(posedge clk_gameboy)
+    always @(posedge clk_8mhz)
       if (framebuffer_write_en)
         framebuffer[framebuffer_write_addr] <= framebuffer_write_data;
 
@@ -290,7 +289,6 @@ module top_pynq_z2 (
         .clock(clk_8mhz),
         .reset(reset_8mhz),
         .io_clock_axi_dram(clk_axi_dram),
-        .io_clock_gameboy(clk_gameboy),
         .io_cartridge_dataRead(gb_dataRead),
         .io_cartridge_dataWrite(gb_dataWrite),
         .io_cartridge_address(gb_cart_address),
@@ -318,6 +316,10 @@ module top_pynq_z2 (
         .io_serial_clockOut(gb_serial_clockOut),
         .io_serial_clockIn(gb_serial_clockIn),
         .io_tCycle(gb_tCycle),
+
+        .io_framebufferWriteAddr(framebuffer_write_addr),
+        .io_framebufferWriteEnable(framebuffer_write_en),
+        .io_framebufferWriteData(framebuffer_write_data),
 
         .io_axiTarget_arvalid(M_AXI_0_arvalid),
         .io_axiTarget_arready(M_AXI_0_arready),
@@ -380,34 +382,6 @@ module top_pynq_z2 (
     end
     assign serial_clock = gb_serial_clockEnable ? (gb_serial_clockOut ? 1'bz : 1'b0) : 1'bz;
     assign serial_out = gb_serial_out ? 1'bz : 1'b0;
-
-    /////////////////////////////////////////////////
-    // Gameboy PPU output
-    /////////////////////////////////////////////////
-    logic [7:0] fb_x = 0;
-    logic [7:0] fb_y = 0;
-    logic prev_hblank;
-
-    always @(posedge clk_gameboy) begin
-        prev_hblank <= gb_ppu_hblank;
-
-        if (gb_ppu_vblank) begin
-            fb_y <= 0;
-            fb_x <= 0;
-        end else if (gb_ppu_hblank && !prev_hblank) begin
-            fb_x <= 0;
-            fb_y <= fb_y + 1;
-        end
-
-        if (gb_ppu_valid) begin
-            framebuffer_write_en <= 1;
-            framebuffer_write_addr <= (fb_y * 16'd160) + fb_x;
-            framebuffer_write_data <= gb_pixel;
-            fb_x <= fb_x + 1;
-        end else begin
-            framebuffer_write_en <= 0;
-        end
-    end
 
     /////////////////////////////////////////////////
     // Gameboy Audio output

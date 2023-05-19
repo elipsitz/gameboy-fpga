@@ -20,8 +20,6 @@ class ZynqGameboy extends Module {
   val io = IO(new Bundle {
     /** ~100MHz clock, integer multiple of the Module clock, used for emulated cart AXI initiator */
     val clock_axi_dram = Input(Clock())
-    /** 4 MHz (from Gameboy), for PPU, cartridge output */
-    val clock_gameboy = Output(Clock())
 
     // Gameboy output
     val cartridge = new CartridgeIo()
@@ -30,6 +28,11 @@ class ZynqGameboy extends Module {
     val apu = new ApuOutput
     val serial = new SerialIo()
     val tCycle = Output(UInt(2.W))
+
+    // Framebuffer output
+    val framebufferWriteAddr = Output(UInt(15.W))
+    val framebufferWriteEnable = Output(Bool())
+    val framebufferWriteData = Output(UInt(2.W))
 
     // AXI Target (runs at the clock used to generate Gameboy clock)
     val axiTarget = Flipped(new AxiLiteSignals(log2Ceil(Registers.maxId * 4)))
@@ -43,7 +46,6 @@ class ZynqGameboy extends Module {
     optimizeForSimulation = false,
   )
   val gameboyClock = RegInit(false.B)
-  io.clock_gameboy := gameboyClock.asClock
   val gameboy = withClock(gameboyClock.asClock) {
     Module(new Gameboy(gameboyConfig))
   }
@@ -60,6 +62,10 @@ class ZynqGameboy extends Module {
   io.apu <> gameboy.io.apu
   io.serial <> gameboy.io.serial
   io.tCycle <> gameboy.io.tCycle
+
+  io.framebufferWriteAddr := DontCare
+  io.framebufferWriteData := DontCare
+  io.framebufferWriteEnable := false.B
 
   val statNumStalls = RegInit(0.U(32.W))
   val statNumClocks = RegInit(0.U(32.W))
@@ -120,6 +126,25 @@ class ZynqGameboy extends Module {
     } .otherwise {
       gameboyClock := !gameboyClock
       statNumClocks := statNumClocks + 1.U
+    }
+  }
+
+  // Framebuffer output
+  val framebufferX = RegInit(0.U(8.W))
+  val framebufferY = RegInit(0.U(8.W))
+
+  when (gameboyClock && !RegNext(gameboyClock)) {
+    when (gameboy.io.ppu.vblank) {
+      framebufferX := 0.U
+      framebufferY := 0.U
+    } .elsewhen (gameboy.io.ppu.hblank && !RegNext(gameboy.io.ppu.hblank)) {
+      framebufferX := 0.U
+      framebufferY := framebufferY + 1.U
+    } .elsewhen (gameboy.io.ppu.valid) {
+      io.framebufferWriteEnable := true.B
+      io.framebufferWriteAddr := (framebufferY * 160.U(8.W)) + framebufferX
+      io.framebufferWriteData := gameboy.io.ppu.pixel
+      framebufferX := framebufferX + 1.U
     }
   }
 
