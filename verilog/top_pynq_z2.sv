@@ -19,6 +19,10 @@ module top_pynq_z2 (
     input serial_in,
     output serial_out,
 
+    // PS EMIO I2C connections
+    inout ps_i2c_scl,
+    inout ps_i2c_sda,
+
     // Switches, buttons, and LEDs on the board
     input [1:0] switches,
     input [3:0] buttons,
@@ -100,6 +104,24 @@ module top_pynq_z2 (
     wire [5:0]S_AXI_0_wid = 6'd0;
     wire S_AXI_0_wlast = 1'b1;
 
+    // Connect PS EMIO I2C
+    wire IIC_0_0_scl_i;
+    wire IIC_0_0_scl_o;
+    wire IIC_0_0_scl_t;
+    wire IIC_0_0_sda_i;
+    wire IIC_0_0_sda_o;
+    wire IIC_0_0_sda_t;
+    IOBUF IIC_0_0_scl_iobuf
+      (.I(IIC_0_0_scl_o),
+       .IO(ps_i2c_scl),
+       .O(IIC_0_0_scl_i),
+       .T(IIC_0_0_scl_t));
+    IOBUF IIC_0_0_sda_iobuf
+      (.I(IIC_0_0_sda_o),
+       .IO(ps_i2c_sda),
+       .O(IIC_0_0_sda_i),
+       .T(IIC_0_0_sda_t));
+
     zynq_ps zynq_ps_i(
         .clk_axi_dram(clk_axi_dram),
         .clk_8mhz(clk_8mhz),
@@ -108,6 +130,12 @@ module top_pynq_z2 (
         .GPIO_I(GPIO_I),
         .GPIO_O(GPIO_O),
         .GPIO_T(GPIO_T),
+        .IIC_0_0_scl_i(IIC_0_0_scl_i),
+        .IIC_0_0_scl_o(IIC_0_0_scl_o),
+        .IIC_0_0_scl_t(IIC_0_0_scl_t),
+        .IIC_0_0_sda_i(IIC_0_0_sda_i),
+        .IIC_0_0_sda_o(IIC_0_0_sda_o),
+        .IIC_0_0_sda_t(IIC_0_0_sda_t),
         .pll_0_locked(pll_0_locked),
         .pll_1_locked(pll_1_locked),
 

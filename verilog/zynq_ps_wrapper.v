@@ -1,7 +1,7 @@
 //Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2020.2 (lin64) Build 3064766 Wed Nov 18 09:12:47 MST 2020
-//Date        : Wed May 17 01:44:02 2023
+//Date        : Sat Jun 10 15:09:03 2023
 //Host        : eli-linux-vm running 64-bit Ubuntu 20.04.6 LTS
 //Command     : generate_target zynq_ps_wrapper.bd
 //Design      : zynq_ps_wrapper
@@ -34,6 +34,8 @@ module zynq_ps_wrapper
     GPIO_I,
     GPIO_O,
     GPIO_T,
+    IIC_0_0_scl_io,
+    IIC_0_0_sda_io,
     M_AXI_0_araddr,
     M_AXI_0_arprot,
     M_AXI_0_arready,
@@ -122,6 +124,8 @@ module zynq_ps_wrapper
   input [63:0]GPIO_I;
   output [63:0]GPIO_O;
   output [63:0]GPIO_T;
+  inout IIC_0_0_scl_io;
+  inout IIC_0_0_sda_io;
   output [31:0]M_AXI_0_araddr;
   output [2:0]M_AXI_0_arprot;
   input M_AXI_0_arready;
@@ -211,6 +215,14 @@ module zynq_ps_wrapper
   wire [63:0]GPIO_I;
   wire [63:0]GPIO_O;
   wire [63:0]GPIO_T;
+  wire IIC_0_0_scl_i;
+  wire IIC_0_0_scl_io;
+  wire IIC_0_0_scl_o;
+  wire IIC_0_0_scl_t;
+  wire IIC_0_0_sda_i;
+  wire IIC_0_0_sda_io;
+  wire IIC_0_0_sda_o;
+  wire IIC_0_0_sda_t;
   wire [31:0]M_AXI_0_araddr;
   wire [2:0]M_AXI_0_arprot;
   wire M_AXI_0_arready;
@@ -276,6 +288,16 @@ module zynq_ps_wrapper
   wire pll_1_locked;
   wire [0:0]reset_8mhz;
 
+  IOBUF IIC_0_0_scl_iobuf
+       (.I(IIC_0_0_scl_o),
+        .IO(IIC_0_0_scl_io),
+        .O(IIC_0_0_scl_i),
+        .T(IIC_0_0_scl_t));
+  IOBUF IIC_0_0_sda_iobuf
+       (.I(IIC_0_0_sda_o),
+        .IO(IIC_0_0_sda_io),
+        .O(IIC_0_0_sda_i),
+        .T(IIC_0_0_sda_t));
   zynq_ps zynq_ps_i
        (.DDR_addr(DDR_addr),
         .DDR_ba(DDR_ba),
@@ -301,6 +323,12 @@ module zynq_ps_wrapper
         .GPIO_I(GPIO_I),
         .GPIO_O(GPIO_O),
         .GPIO_T(GPIO_T),
+        .IIC_0_0_scl_i(IIC_0_0_scl_i),
+        .IIC_0_0_scl_o(IIC_0_0_scl_o),
+        .IIC_0_0_scl_t(IIC_0_0_scl_t),
+        .IIC_0_0_sda_i(IIC_0_0_sda_i),
+        .IIC_0_0_sda_o(IIC_0_0_sda_o),
+        .IIC_0_0_sda_t(IIC_0_0_sda_t),
         .M_AXI_0_araddr(M_AXI_0_araddr),
         .M_AXI_0_arprot(M_AXI_0_arprot),
         .M_AXI_0_arready(M_AXI_0_arready),
