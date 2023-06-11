@@ -13,7 +13,8 @@ import sys
 import logging
 from pathlib import Path
 
-from xbox360controller import Xbox360Controller
+# Local imports
+import controller
 
 logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.DEBUG)
 
@@ -25,7 +26,10 @@ logging.info("Finished loading Pynq libraries")
 OVERLAY_FILENAME: str = "gameboy.bit"
 OVERLAY_PATH: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), OVERLAY_FILENAME)
 
-JOYPAD_BUTTONS = ["start", "select", "b", "a", "down", "up", "left", "right"]
+JOYPAD_BUTTONS = [
+    controller.Button.START, controller.Button.SELECT, controller.Button.B, controller.Button.A,
+    controller.Button.DOWN, controller.Button.UP, controller.Button.LEFT, controller.Button.RIGHT,
+]
 
 REGISTER_MMIO_ADDR = 0x43C0_0000
 REGISTER_CONTROL = 0x0
@@ -101,26 +105,12 @@ for x in gpio_joypad.values():
     x.write(0)
 registers = MMIO(REGISTER_MMIO_ADDR, 64 * 1024)
 
-# Set up controller listener
-def on_hat_moved(axis):
-    gpio_joypad["left"].write(int(axis.x < 0))
-    gpio_joypad["right"].write(int(axis.x > 0))
-    gpio_joypad["down"].write(int(axis.y < 0))
-    gpio_joypad["up"].write(int(axis.y > 0))
-
-logging.info("Initializing controller")
-controller = Xbox360Controller(0, axis_threshold=-1)
-# A and B are swapped due to the different locations on the Xbox controller vs the Gameboy joypad
-controller.button_a.when_pressed = lambda _: gpio_joypad["b"].write(1)
-controller.button_a.when_released = lambda _: gpio_joypad["b"].write(0)
-controller.button_b.when_pressed = lambda _: gpio_joypad["a"].write(1)
-controller.button_b.when_released = lambda _: gpio_joypad["a"].write(0)
-controller.button_select.when_pressed = lambda _: gpio_joypad["select"].write(1)
-controller.button_select.when_released = lambda _: gpio_joypad["select"].write(0)
-controller.button_start.when_pressed = lambda _: gpio_joypad["start"].write(1)
-controller.button_start.when_released = lambda _: gpio_joypad["start"].write(0)
-controller.hat.when_moved = on_hat_moved
-logging.info("Done initializing controller")
+# Set up controller listeners
+def controller_callback(button, pressed):
+    if button in JOYPAD_BUTTONS:
+        JOYPAD_BUTTONS[button].write(int(pressed))
+        
+controllers = [c(controller_callback) for c in controller.CONTROLLER_LISTENERS]
 
 # Initialization complete.
 logging.info("Initialization complete.")
