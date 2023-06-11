@@ -49,13 +49,6 @@ class ZynqGameboy extends Module {
   val gameboy = withClock(gameboyClock.asClock) {
     Module(new Gameboy(gameboyConfig))
   }
-  // TODO: support both physical cartridge and emulated
-//  io.cartridge <> gameboy.io.cartridge
-  io.cartridge.write := false.B
-  io.cartridge.enable := false.B
-  io.cartridge.dataWrite := 0.U
-  io.cartridge.chipSelect := false.B
-  io.cartridge.address := 0.U
 
   io.ppu <> gameboy.io.ppu
   io.joypad <> gameboy.io.joypad
@@ -158,12 +151,33 @@ class ZynqGameboy extends Module {
     }
   }
 
-  // Emulated cartridge
+  // Emulated cartridge and physical connections
   val emuCart = Module(new EmuCartridge())
-  emuCart.io.cartridgeIo <> gameboy.io.cartridge
   emuCart.io.config := configRegEmuCart
   emuCart.io.tCycle := gameboy.io.tCycle
-  waitingForCart := emuCart.io.waitingForAccess
+  when (configRegEmuCart.enabled) {
+    waitingForCart := emuCart.io.waitingForAccess
+
+    // Connect emulated cartridge
+    emuCart.io.cartridgeIo <> gameboy.io.cartridge
+    // Disconnect physical cartridge
+    io.cartridge.write := false.B
+    io.cartridge.enable := false.B
+    io.cartridge.dataWrite := 0.U
+    io.cartridge.chipSelect := false.B
+    io.cartridge.address := 0.U
+  }.otherwise {
+    waitingForCart := false.B
+
+    // Connect physical cartridge
+    io.cartridge <> gameboy.io.cartridge
+    // Disconnect emulated cartridge
+    emuCart.io.cartridgeIo.write := false.B
+    emuCart.io.cartridgeIo.enable := false.B
+    emuCart.io.cartridgeIo.dataWrite := 0.U
+    emuCart.io.cartridgeIo.chipSelect := false.B
+    emuCart.io.cartridgeIo.address := 0.U
+  }
 
   // AXI Initiator for DRAM access -- runs ~100 MHz (integer multiple of module clock).
   val axiInitiatorReadData = Wire(UInt(8.W))
