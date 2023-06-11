@@ -107,8 +107,8 @@ registers = MMIO(REGISTER_MMIO_ADDR, 64 * 1024)
 
 # Set up controller listeners
 def controller_callback(button, pressed):
-    if button in JOYPAD_BUTTONS:
-        JOYPAD_BUTTONS[button].write(int(pressed))
+    if button in gpio_joypad:
+        gpio_joypad[button].write(int(pressed))
         
 controllers = [c(controller_callback) for c in controller.CONTROLLER_LISTENERS]
 
