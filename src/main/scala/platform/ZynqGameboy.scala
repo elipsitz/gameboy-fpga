@@ -131,6 +131,10 @@ class ZynqGameboy extends Module {
       statNumClocks := statNumClocks + 1.U
     }
   }
+  gameboy.reset := configRegControl.reset
+  when (configRegControl.reset) {
+    gameboyClock := !gameboyClock
+  }
 
   // Framebuffer output
   val framebufferX = RegInit(0.U(8.W))

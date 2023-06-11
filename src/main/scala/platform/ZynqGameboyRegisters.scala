@@ -19,6 +19,8 @@ object Registers extends Enumeration {
 
 /** Register 0x0: Gameboy Control */
 class RegControl extends Bundle {
+  // Bit 1 [R/W]: is gameboy in reset?
+  val reset = Bool()
   // Bit 0 [R/W]: is gameboy running?
   val running = Bool()
 }
