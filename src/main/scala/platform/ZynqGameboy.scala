@@ -109,7 +109,11 @@ class ZynqGameboy extends Module {
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
       is (Registers.Control.id.U) { configRegControl := axiTarget.io.writeData.asTypeOf(new RegControl) }
-      is (Registers.EmuCartConfig.id.U) { configRegEmuCart := axiTarget.io.writeData.asTypeOf(new EmuCartConfig) }
+      is (Registers.EmuCartConfig.id.U) {
+        suppressEnumCastWarning {
+          configRegEmuCart := axiTarget.io.writeData.asTypeOf(new EmuCartConfig)
+        }
+      }
       is (Registers.RomAddress.id.U) { configRegRomAddress := axiTarget.io.writeData }
       is (Registers.RomMask.id.U) { configRegRomMask := axiTarget.io.writeData }
       is (Registers.RamAddress.id.U) { configRegRamAddress := axiTarget.io.writeData }
