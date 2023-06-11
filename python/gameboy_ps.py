@@ -1,19 +1,26 @@
+#!/usr/bin/env python3
+
 """
 Zynq PS side of the Gameboy, using the Pynq API to provide input and ROM loading.
+
+Must be run as root.
 """
 
 import os
 import signal
 import time
 import sys
+import logging
 from pathlib import Path
 
 from xbox360controller import Xbox360Controller
 
-print("Loading Pynq libraries...")
+logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.DEBUG)
+
+logging.info("Loading Pynq libraries...")
 from pynq import allocate, GPIO, MMIO, Overlay
 import numpy as np
-print("Finished loading Pynq libraries")
+logging.info("Finished loading Pynq libraries")
 
 OVERLAY_FILENAME: str = "gameboy.bit"
 OVERLAY_PATH: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), OVERLAY_FILENAME)
@@ -32,24 +39,24 @@ def emu_cart_config(mbc, has_ram = False, has_timer = False, has_rumble = False)
     return 1 | (mbc << 1) | (int(has_ram) << 4) | (int(has_timer) << 5) | (int(has_rumble) << 6)
 
 # Load the overlay
-print("Loading overlay...")
+logging.info("Loading overlay...")
 start_time = time.time()
 design = Overlay(OVERLAY_PATH)
 duration = time.time() - start_time
-print(f"Finished loading overlay in {duration} sec")
+logging.info("Finished loading overlay in %f sec", duration)
 
 # Load the game ROM
-print("Loading ROM...")
+logging.info("Loading ROM...")
 rom_path = Path(sys.argv[1])
 rom_data = np.fromfile(open(rom_path, "rb"), dtype=np.uint8)
 rom_size = rom_data.shape[0]
 rom_buffer = allocate(shape=rom_data.shape, dtype="uint8")
 rom_buffer[:] = rom_data
 rom_buffer.sync_to_device()
-print("Done loading ROM.")
+logging.info("Done loading ROM.")
 
 # Parse ROM header
-print("Parsing ROM information...")
+logging.info("Parsing ROM information...")
 EMU_CONFIGS = {
     0x00: emu_cart_config(0),
     0x01: emu_cart_config(1),
@@ -71,10 +78,10 @@ EMU_CONFIGS = {
 emu_config = EMU_CONFIGS[rom_data[0x147]]
 header_rom_size = 32 * 1024 * (1 << rom_data[0x148])
 header_ram_size = {0: 0, 2: (8 * 1024), 3: (32 * 1024), 4: (128 * 1024), 5: (64 * 1024)}[rom_data[0x149]]
-print(f"Cart type: {rom_data[0x147]}, config={bin(emu_config)}")
-print(f"ROM size: {header_rom_size}")
-print(f"RAM size: {header_ram_size}")
-print("Done parsing ROM information")
+logging.info(f"Cart type: {rom_data[0x147]}, config={bin(emu_config)}")
+logging.info(f"ROM size: {header_rom_size}")
+logging.info(f"RAM size: {header_ram_size}")
+logging.info("Done parsing ROM information")
 
 # Allocate RAM
 ram_buffer = None
@@ -86,7 +93,7 @@ if header_ram_size > 0:
 save_path = rom_path.with_suffix(".sav")
 if ram_buffer is not None and save_path.is_file():
     ram_buffer[:] = np.fromfile(save_path, dtype="uint8")
-    print(f"Loaded save file at {save_path}")
+    logging.info(f"Loaded save file at {save_path}")
 
 # Initialize PL/PS communication
 gpio_joypad = {JOYPAD_BUTTONS[i]: GPIO(GPIO.get_gpio_pin(8 + i), "out") for i in range(len(JOYPAD_BUTTONS))}
@@ -101,7 +108,7 @@ def on_hat_moved(axis):
     gpio_joypad["down"].write(int(axis.y < 0))
     gpio_joypad["up"].write(int(axis.y > 0))
 
-print("Initializing controller")
+logging.info("Initializing controller")
 controller = Xbox360Controller(0, axis_threshold=-1)
 # A and B are swapped due to the different locations on the Xbox controller vs the Gameboy joypad
 controller.button_a.when_pressed = lambda _: gpio_joypad["b"].write(1)
@@ -113,10 +120,10 @@ controller.button_select.when_released = lambda _: gpio_joypad["select"].write(0
 controller.button_start.when_pressed = lambda _: gpio_joypad["start"].write(1)
 controller.button_start.when_released = lambda _: gpio_joypad["start"].write(0)
 controller.hat.when_moved = on_hat_moved
-print("Done initializing controller")
+logging.info("Done initializing controller")
 
 # Initialization complete.
-print("Initialization complete.")
+logging.info("Initialization complete.")
 
 # Start the game.
 registers.write(REGISTER_EMU_CART_CONFIG, emu_config)
