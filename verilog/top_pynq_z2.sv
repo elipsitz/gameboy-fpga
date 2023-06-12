@@ -235,7 +235,7 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     // Framebuffer
     /////////////////////////////////////////////////
-    parameter RAM_WIDTH = 2;                  // Specify RAM data width
+    parameter RAM_WIDTH = 15;                  // Specify RAM data width
     parameter RAM_DEPTH = 160 * 144;                  // Specify RAM depth (number of entries)
     parameter RAM_PERFORMANCE = "HIGH_PERFORMANCE"; // Select "HIGH_PERFORMANCE" or "LOW_LATENCY" 
 
@@ -435,13 +435,21 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     logic [23:0] rgb = 24'd0;
     logic [9:0] cx, cy, screen_start_x, screen_start_y, frame_width, frame_height, screen_width, screen_height;
+    logic [4:0] framebuffer_read_r, framebuffer_read_g, framebuffer_read_b;
+    assign framebuffer_read_r = framebuffer_read_data[4:0];
+    assign framebuffer_read_g = framebuffer_read_data[9:5];
+    assign framebuffer_read_b = framebuffer_read_data[14:10];
     always @(posedge clk_pixel) begin
         // Frambuffer read is delayed by 2 cycles,  plus an additional cycle for HDMI, so read 3 pixels ahead.
         framebuffer_read_addr <= ((cy - 10'd168) * 16'd160) + (cx - 10'd240 + 10'd3);
         framebuffer_read_en <= 1;
         framebuffer_output_en <= 1;
         if (cx >= 10'd240 && cx < 10'd400 && cy >= 10'd168 && cy < 10'd312) begin
-            rgb <= {12{~framebuffer_read_data}};
+            rgb <= {
+                framebuffer_read_r, framebuffer_read_r[4:2],
+                framebuffer_read_g, framebuffer_read_g[4:2],
+                framebuffer_read_b, framebuffer_read_b[4:2]
+            };
         end else begin
             // or maybe 0x1B1B1B?
             rgb <= 24'h383840;

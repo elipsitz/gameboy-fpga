@@ -32,7 +32,7 @@ class ZynqGameboy extends Module {
     // Framebuffer output
     val framebufferWriteAddr = Output(UInt(15.W))
     val framebufferWriteEnable = Output(Bool())
-    val framebufferWriteData = Output(UInt(2.W))
+    val framebufferWriteData = Output(UInt(15.W))
 
     // AXI Target (runs at the clock used to generate Gameboy clock)
     val axiTarget = Flipped(new AxiLiteSignals(log2Ceil(Registers.maxId * 4)))
@@ -120,7 +120,7 @@ class ZynqGameboy extends Module {
       is (Registers.RamMask.id.U) { configRegRamMask := axiTarget.io.writeData }
       is (Registers.Framebuffer.id.U) {
         io.framebufferWriteAddr := axiTarget.io.writeData(31, 16)
-        io.framebufferWriteData := axiTarget.io.writeData(1, 0)
+        io.framebufferWriteData := axiTarget.io.writeData(14, 0)
         io.framebufferWriteEnable := true.B
       }
     }
@@ -157,7 +157,9 @@ class ZynqGameboy extends Module {
     } .elsewhen (gameboy.io.ppu.valid) {
       io.framebufferWriteEnable := true.B
       io.framebufferWriteAddr := (framebufferY * 160.U(8.W)) + framebufferX
-      io.framebufferWriteData := gameboy.io.ppu.pixel
+      // TODO deal with 15-bit output from gameboy
+      // DMG output is inverted -- 00 is white, not black.
+      io.framebufferWriteData := Fill(3, Fill(3, (~gameboy.io.ppu.pixel).asUInt)(5, 1))
       framebufferX := framebufferX + 1.U
     }
   }
