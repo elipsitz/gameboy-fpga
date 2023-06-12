@@ -72,33 +72,40 @@ class ZynqGameboy extends Module {
   val configRegRamMask = RegInit(0.U(17.W))
   val axiTarget = Module(new AxiLiteTarget(Registers.maxId))
   io.axiTarget <> axiTarget.io.signals
-  axiTarget.io.readData := VecInit(
-    configRegControl.asUInt,
-    configRegEmuCart.asUInt,
-    configRegRomAddress,
-    configRegRomMask,
-    configRegRamAddress,
-    configRegRamMask,
-    (new RegCpuDebug1).Init(
-      _.regB -> gameboy.io.cpuDebug.regB,
-      _.regC -> gameboy.io.cpuDebug.regC,
-      _.regD -> gameboy.io.cpuDebug.regD,
-      _.regE -> gameboy.io.cpuDebug.regE,
-    ).asUInt,
-    (new RegCpuDebug2).Init(
-      _.regH -> gameboy.io.cpuDebug.regH,
-      _.regL -> gameboy.io.cpuDebug.regL,
-      _.regF -> gameboy.io.cpuDebug.regF,
-      _.regA -> gameboy.io.cpuDebug.regA,
-    ).asUInt,
-    (new RegCpuDebug3).Init(
-      _.regSp -> gameboy.io.cpuDebug.regSp,
-      _.regPc -> gameboy.io.cpuDebug.regPc,
-    ).asUInt,
-    statNumStalls,
-    statNumClocks,
-    0.U,
-  )
+  axiTarget.io.readData := 0.U
+  switch (axiTarget.io.readIndex) {
+    is (Registers.Control.id.U) { axiTarget.io.readData := configRegControl.asUInt }
+    is (Registers.EmuCartConfig.id.U) { axiTarget.io.readData := configRegEmuCart.asUInt }
+    is (Registers.RomAddress.id.U) { axiTarget.io.readData := configRegRomAddress }
+    is (Registers.RomMask.id.U) { axiTarget.io.readData := configRegRomMask }
+    is (Registers.RamAddress.id.U) { axiTarget.io.readData := configRegRamAddress }
+    is (Registers.RamMask.id.U) { axiTarget.io.readData := configRegRamMask }
+    is (Registers.CpuDebug1.id.U) {
+      axiTarget.io.readData := (new RegCpuDebug1).Init(
+        _.regB -> gameboy.io.cpuDebug.regB,
+        _.regC -> gameboy.io.cpuDebug.regC,
+        _.regD -> gameboy.io.cpuDebug.regD,
+        _.regE -> gameboy.io.cpuDebug.regE,
+      ).asUInt
+    }
+    is (Registers.CpuDebug2.id.U) {
+      axiTarget.io.readData := (new RegCpuDebug2).Init(
+        _.regH -> gameboy.io.cpuDebug.regH,
+        _.regL -> gameboy.io.cpuDebug.regL,
+        _.regF -> gameboy.io.cpuDebug.regF,
+        _.regA -> gameboy.io.cpuDebug.regA,
+      ).asUInt
+    }
+    is (Registers.CpuDebug3.id.U) {
+      axiTarget.io.readData := (new RegCpuDebug3).Init(
+        _.regSp -> gameboy.io.cpuDebug.regSp,
+        _.regPc -> gameboy.io.cpuDebug.regPc,
+      ).asUInt
+    }
+    is (Registers.StatCartStalls.id.U) { axiTarget.io.readData := statNumStalls }
+    is (Registers.StatNumClocks.id.U) { axiTarget.io.readData := statNumClocks }
+    is (Registers.Framebuffer.id.U) { axiTarget.io.readData := 0.U }
+  }
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
       is (Registers.Control.id.U) { configRegControl := axiTarget.io.writeData.asTypeOf(new RegControl) }

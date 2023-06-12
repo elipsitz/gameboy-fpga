@@ -7,14 +7,16 @@ import chisel3.util._
  * Acts as an AXI-Lite target, providing access to some registers.
  */
 class AxiLiteTarget(numRegisters: Int) extends Module {
-  val addrWidth = log2Ceil(numRegisters * 4)
+  val indexWidth = log2Ceil(numRegisters)
+  val addrWidth = indexWidth + 2
   val dataWidth = 32
   val io = IO(new Bundle {
     val signals = Flipped(new AxiLiteSignals(addrWidth))
-    val readData = Input(Vec(numRegisters, UInt(dataWidth.W)))
+    val readIndex = Output(UInt(indexWidth.W))
+    val readData = Input(UInt(dataWidth.W))
     val writeData = Output(UInt(dataWidth.W))
     val writeEnable = Output(Bool())
-    val writeIndex = Output(UInt(addrWidth.W))
+    val writeIndex = Output(UInt(indexWidth.W))
   })
 
   val writeReady = RegInit(false.B)
@@ -23,10 +25,10 @@ class AxiLiteTarget(numRegisters: Int) extends Module {
   io.writeData := io.signals.wdata
 
   val readReady = Wire(Bool())
-  val readIndex = io.signals.araddr(addrWidth - 1, 2)
+  io.readIndex := io.signals.araddr(addrWidth - 1, 2)
   val readData = Reg(UInt(dataWidth.W))
   when (!io.signals.rvalid || io.signals.rready) {
-    readData := io.readData(readIndex)
+    readData := io.readData
   }
   io.signals.rdata := readData
 
