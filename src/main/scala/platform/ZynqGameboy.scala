@@ -70,6 +70,8 @@ class ZynqGameboy extends Module {
   val configRegRomMask = RegInit(0.U(23.W))
   val configRegRamAddress = RegInit(0.U(32.W))
   val configRegRamMask = RegInit(0.U(17.W))
+  val configRegBlitAddress = RegInit(0.U(32.W))
+  val configRegBlitControl = RegInit(0.U.asTypeOf(new RegBlitControl))
   val axiTarget = Module(new AxiLiteTarget(Registers.maxId))
   io.axiTarget <> axiTarget.io.signals
   axiTarget.io.readData := 0.U
@@ -104,7 +106,8 @@ class ZynqGameboy extends Module {
     }
     is (Registers.StatCartStalls.id.U) { axiTarget.io.readData := statNumStalls }
     is (Registers.StatNumClocks.id.U) { axiTarget.io.readData := statNumClocks }
-    is (Registers.Framebuffer.id.U) { axiTarget.io.readData := 0.U }
+    is (Registers.BlitAddress.id.U) { axiTarget.io.readData := configRegBlitAddress }
+    is (Registers.BlitControl.id.U) { axiTarget.io.readData := configRegBlitControl.asUInt }
   }
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
@@ -118,10 +121,9 @@ class ZynqGameboy extends Module {
       is (Registers.RomMask.id.U) { configRegRomMask := axiTarget.io.writeData }
       is (Registers.RamAddress.id.U) { configRegRamAddress := axiTarget.io.writeData }
       is (Registers.RamMask.id.U) { configRegRamMask := axiTarget.io.writeData }
-      is (Registers.Framebuffer.id.U) {
-        io.framebufferWriteAddr := axiTarget.io.writeData(31, 16)
-        io.framebufferWriteData := axiTarget.io.writeData(14, 0)
-        io.framebufferWriteEnable := true.B
+      is (Registers.BlitAddress.id.U) { configRegBlitAddress := axiTarget.io.writeData }
+      is (Registers.BlitControl.id.U) {
+        configRegBlitControl := axiTarget.io.writeData.asTypeOf(new RegBlitControl)
       }
     }
   }
@@ -192,9 +194,38 @@ class ZynqGameboy extends Module {
     emuCart.io.cartridgeIo.address := 0.U
   }
 
+  // Framebuffer blit
+  val blitIndex = RegInit(0.U(15.W))
+  val blitValidCount = RegInit(0.U(3.W))
+  val blitMem = RegInit(0.U(64.W))
+  val blitReadEnable = RegInit(false.B)
+  val blitActive = configRegBlitControl.start
+  val blitCurrent = blitMem.asTypeOf(Vec(4, UInt(16.W)))(blitIndex(1, 0))
+  when (blitActive) {
+    io.framebufferWriteAddr := blitIndex
+    io.framebufferWriteData := blitCurrent(14, 0)
+    when (blitValidCount === 0.U) {
+      blitReadEnable := true.B
+    } .otherwise {
+      blitIndex := blitIndex + 1.U
+      blitValidCount := blitValidCount - 1.U
+      // Bit 15 is transparency -- 1 for visible, 0 for transparent
+      io.framebufferWriteEnable := blitCurrent(15)
+
+      when (blitIndex === ((160 * 144) - 1).U) {
+        blitIndex := 0.U
+        blitActive := false.B
+        blitReadEnable := false.B
+        blitValidCount := 0.U
+      }
+    }
+  }
+
   // AXI Initiator for DRAM access -- runs ~100 MHz (integer multiple of module clock).
-  val axiInitiatorReadData = Wire(UInt(8.W))
-  val axiInitiatorReadValid = Wire(UInt(8.W))
+  val axiInitiatorReadData = Wire(UInt(64.W))
+  val axiInitiatorReadValid = Wire(Bool())
+  val axiInitiatorReadDataBuffer = RegNext(axiInitiatorReadData)
+  val axiInitiatorReadValidBuffer = RegNext(axiInitiatorReadValid)
   val axiInitiator = withClock (io.clock_axi_dram) {
     val axiInitiator = Module(new AxiLiteInitiator(32, 64))
     axiInitiator.io.signals <> io.axiInitiator
@@ -206,28 +237,46 @@ class ZynqGameboy extends Module {
     val bufferedDataWriteData = RegNext(emuCart.io.dataAccess.dataWrite)
     val bufferedDataWrite = RegNext(emuCart.io.dataAccess.write)
 
-    val accessAddress = Mux(
-      bufferedDataSelectRom,
-      configRegRomAddress + (bufferedDataAddr & configRegRomMask),
-      configRegRamAddress + (bufferedDataAddr & configRegRamMask),
-    )
-    val accessSubword = RegInit(0.U(3.W))
-    axiInitiator.io.address := Cat(accessAddress(31, 3), 0.U(3.W))
-    axiInitiator.io.enable := false.B
-    axiInitiator.io.read := !bufferedDataWrite
-    axiInitiator.io.writeData := Fill(8, bufferedDataWriteData)
-    axiInitiator.io.writeStrobe := 1.U << accessAddress(2, 0)
-    when(bufferedDataEnable && !bufferedDataEnableLast) {
-      axiInitiator.io.enable := true.B
-      accessSubword := accessAddress(2, 0)
+    val bufferedBlitActive = RegNext(blitActive)
+    val bufferedBlitReadEnable = RegNext(blitReadEnable)
+    val bufferedBlitReadEnableLast = RegNext(bufferedBlitReadEnable)
+    val bufferedBlitIndex = RegNext(blitIndex)
+
+    when (bufferedBlitActive) {
+      // Handle accessing blit data
+      axiInitiator.io.address := configRegBlitAddress + (bufferedBlitIndex << 1.U)
+      axiInitiator.io.enable := bufferedBlitReadEnable && !bufferedBlitReadEnableLast
+      axiInitiator.io.read := true.B
+      axiInitiator.io.writeData := DontCare
+      axiInitiator.io.writeStrobe := DontCare
+    } .otherwise {
+      val accessAddress = Mux(
+        bufferedDataSelectRom,
+        configRegRomAddress + (bufferedDataAddr & configRegRomMask),
+        configRegRamAddress + (bufferedDataAddr & configRegRamMask),
+      )
+      axiInitiator.io.address := Cat(accessAddress(31, 3), 0.U(3.W))
+      axiInitiator.io.enable := bufferedDataEnable && !bufferedDataEnableLast
+      axiInitiator.io.read := !bufferedDataWrite
+      axiInitiator.io.writeData := Fill(8, bufferedDataWriteData)
+      axiInitiator.io.writeStrobe := 1.U << accessAddress(2, 0)
     }
 
-    axiInitiatorReadData := axiInitiator.io.readData.asTypeOf(Vec(8, UInt(8.W)))(accessSubword)
+    axiInitiatorReadData := axiInitiator.io.readData
     axiInitiatorReadValid := !axiInitiator.io.busy
 
     axiInitiator
   }
 
-  emuCart.io.dataAccess.dataRead := RegNext(axiInitiatorReadData)
-  emuCart.io.dataAccess.valid := RegNext(axiInitiatorReadValid)
+  emuCart.io.dataAccess.dataRead := axiInitiatorReadDataBuffer
+    .asTypeOf(Vec(8, UInt(8.W)))(
+      emuCart.io.dataAccess.address(2, 0)
+    )
+  emuCart.io.dataAccess.valid := !blitActive && axiInitiatorReadValidBuffer
+
+  when (blitActive && RegNext(blitReadEnable) && RegNext(blitReadEnable) && blitReadEnable && axiInitiatorReadValidBuffer) {
+    blitReadEnable := false.B
+    blitValidCount := 4.U
+    blitMem := axiInitiatorReadDataBuffer
+  }
 }

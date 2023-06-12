@@ -14,7 +14,8 @@ object Registers extends Enumeration {
   val CpuDebug3 = Value
   val StatCartStalls = Value
   val StatNumClocks = Value
-  val Framebuffer = Value
+  val BlitControl = Value
+  val BlitAddress = Value
 }
 
 /** Register 0x0: Gameboy Control */
@@ -45,4 +46,9 @@ class RegCpuDebug2 extends Bundle {
 class RegCpuDebug3 extends Bundle {
   val regSp = UInt(16.W)
   val regPc = UInt(16.W)
+}
+
+class RegBlitControl extends Bundle {
+  // Bit 0 [R/W]: whether the blit operation should run
+  val start = Bool()
 }
