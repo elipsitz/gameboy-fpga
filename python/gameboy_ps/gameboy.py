@@ -190,9 +190,17 @@ class Gameboy:
         self._blit_active = False
 
     def copy_framebuffer(self, image: Image) -> None:
+        """
+        Copy an image to the PL framebuffer.
+        
+        Image should be 160x144, mode 'I', where the lower 16-bits are interpreted as:
+        a bbbbb ggggg rrrrr
+
+        a is transparency -- 1 for opaque, 0 for transparent
+        """
         self._wait_for_blit_complete()
         self.set_paused(True)
-        np.copyto(self._framebuffer, np.array(image).flatten())
+        np.copyto(self._framebuffer, np.array(image).view(np.uint16).flatten()[0::2])
         self._registers.write(REGISTER_BLIT_ADDRESS, self._framebuffer.device_address)
         self._registers.write(REGISTER_BLIT_CONTROL, 1)
         self._blit_active = True
