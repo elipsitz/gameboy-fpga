@@ -10,8 +10,13 @@ from pynq import allocate, GPIO, MMIO, Overlay
 import numpy as np
 logging.info("Finished loading Pynq libraries")
 
+from PIL import Image
+
 from . import controller
 from . import resources
+
+WIDTH = 160
+HEIGHT = 144
 
 REGISTER_MMIO_ADDR = 0x43C0_0000
 REGISTER_CONTROL = 0x0
@@ -20,6 +25,13 @@ REGISTER_ROM_ADDRESS = 0x8
 REGISTER_ROM_MASK = 0xC
 REGISTER_RAM_ADDRESS = 0x10
 REGISTER_RAM_MASK = 0x14
+REGISTER_DEBUG_CPU1 = 0x18
+REGISTER_DEBUG_CPU2 = 0x1C
+REGISTER_DEBUG_CPU3 = 0x20
+REGISTER_STAT_STALLS = 0x24
+REGISTER_STAT_CLOCKS = 0x28
+REGISTER_BLIT_CONTROL = 0x2C
+REGISTER_BLIT_ADDRESS = 0x30
 
 JOYPAD_BUTTONS = [
     controller.Button.START, controller.Button.SELECT, controller.Button.B, controller.Button.A,
@@ -31,7 +43,8 @@ class Gameboy:
         self._paused = True
         self._reset = False
         self._emu_cartridge = False
-
+        self._blit_active = False
+        
         # Load the overlay
         logging.info("Loading overlay...")
         resource_dir = importlib.resources.files(resources)
@@ -48,6 +61,10 @@ class Gameboy:
         for x in self._joypad.values():
             x.write(0)
 
+        # Framebuffer for UI
+        framebuffer_size = WIDTH * HEIGHT
+        self._framebuffer = allocate(shape=(framebuffer_size, ), dtype="uint16")
+
     def _write_reg_control(self) -> None:
         value = 0
         value |= int(not self._paused) << 0
@@ -56,6 +73,9 @@ class Gameboy:
 
     def set_paused(self, paused: bool) -> None:
         """Set whether the Gameboy is paused"""
+        if not paused:
+            # Cannot unpause while blit is in progress.
+            self._wait_for_blit_complete()
         self._paused = paused
         self._write_reg_control()
 
@@ -162,4 +182,17 @@ class Gameboy:
         if button in self._joypad:
             self._joypad[button].write(int(pressed))
 
-        
+    def _wait_for_blit_complete(self) -> None:
+        if self._blit_active:
+            while self._registers.read(REGISTER_BLIT_CONTROL) != 0:
+                time.sleep(0.01)
+
+        self._blit_active = False
+
+    def copy_framebuffer(self, image: Image) -> None:
+        self._wait_for_blit_complete()
+        self.set_paused(True)
+        np.copyto(self._framebuffer, np.array(image).flatten())
+        self._registers.write(REGISTER_BLIT_ADDRESS, self._framebuffer.device_address)
+        self._registers.write(REGISTER_BLIT_CONTROL, 1)
+        self._blit_active = True
