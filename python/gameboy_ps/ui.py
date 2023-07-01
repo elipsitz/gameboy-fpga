@@ -3,6 +3,7 @@ from enum import Enum
 import importlib.resources
 import logging
 from typing import List
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -89,9 +90,7 @@ class MainMenuScreen(Screen):
             if button == Button.A:
                 if self._select_widget.pos == 0:
                     # Run cartridge
-                    self.ui.system.gameboy.set_physical_cartridge()
-                    self.ui.system.gameboy.reset()
-                    self.ui.set_screen(GameScreen(self.ui))
+                    self.ui.set_screen(GameScreen(self.ui, None))
                     return
 
         self._render()
@@ -104,16 +103,61 @@ class MainMenuScreen(Screen):
 
 
 class GameScreen(Screen):
-    def __init__(self, ui: UI) -> None:
+    def __init__(self, ui: UI, rom_path: Path) -> None:
         self.ui = ui
+        self.playing = True
+        self._widget = SelectWidget(["Resume", "Reset", "Main Menu"])
+
+        if rom_path is None:
+            self.ui.system.gameboy.set_physical_cartridge()
+        else:
+            self.ui.system.gameboy.set_emulated_cartridge(rom_path)
+        self.ui.system.gameboy.reset()
 
     def on_attach(self) -> None:
         self.ui.system.gameboy.set_paused(False)
 
     def on_button_event(self, button: Button, event: ButtonEvent) -> None:
-        if button == Button.HOME and event == ButtonEvent.PRESSED:
-            self.ui.system.gameboy.set_paused(True)
-            self.ui.set_screen(MainMenuScreen(self.ui))
+        if self.playing:
+            if button == Button.HOME and event == ButtonEvent.PRESSED:
+                self.playing = False
+                self.ui.system.gameboy.set_paused(True)
+                self._widget.pos = 0
+                self._render()
+            return
+
+        if event == ButtonEvent.PRESSED:
+            if button == Button.UP:
+                self._widget.move_up()
+            if button == Button.DOWN:
+                self._widget.move_down()
+            if button == Button.HOME:
+                self.ui.system.gameboy.set_paused(False)
+                self.playing = True
+                return
+            if button == Button.A:
+                if self._widget.pos == 0:
+                    # Resume
+                    self.ui.system.gameboy.set_paused(False)
+                    self.playing = True
+                    return
+                if self._widget.pos == 1:
+                    # Reset
+                    self.ui.system.gameboy.reset()
+                    self.ui.system.gameboy.set_paused(False)
+                    self.playing = True
+                    return
+                if self._widget.pos == 2:
+                    # Main Menu
+                    self.ui.set_screen(MainMenuScreen(self.ui))
+                    return
+            self._render()
+
+    def _render(self) -> None:
+        self.ui.draw.rectangle([(0, 0), (self.ui.width, self.ui.height)], fill=COLOR_TRANSPARENT)
+        self.ui.draw.rectangle([(30, 40), (130, 110)], fill=COLOR_BG)
+        self._widget.render(self.ui, 40, 50, 80, 50)
+        self.ui.show_framebuffer()
 
 
 class SelectWidget:
