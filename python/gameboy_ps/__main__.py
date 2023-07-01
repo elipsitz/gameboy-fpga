@@ -8,7 +8,14 @@ Must be run as root.
 
 import logging
 logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.DEBUG)
+import sys
 
 from . import system
-system = system.System()
+
+if len(sys.argv) < 2:
+    rom_path = None
+else:
+    rom_path = Path(sys.argv[1])
+
+system = system.System(rom_path)
 system.start()

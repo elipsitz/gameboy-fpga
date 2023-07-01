@@ -8,12 +8,13 @@ from pathlib import Path
 from typing import Optional
 
 from .gameboy import Gameboy
-from . import controller
+from . import controller, ui
 
 class System:
     def __init__(self, rom_path: Optional[Path]):
         self.gameboy = Gameboy()
-        self.buttons = {e.value: False for e in controller.Button}
+        self.buttons = {e: False for e in controller.Button}
+        self.ui = ui.UI(self)
 
         if rom_path is None:
             logging.info("Using physical cartridge")
@@ -24,18 +25,19 @@ class System:
 
         # Set up controllers.
         def controller_callback(button: controller.Button, pressed: bool) -> None:
+            self.gameboy.set_button(button, pressed)
+
             was_pressed = self.buttons[button]
             if was_pressed != pressed:
                 self.buttons[button] = pressed
-
-            self.gameboy.set_button(button, pressed)
+                self.ui.on_button_state(button, pressed)     
     
         controllers = [c(controller_callback) for c in controller.CONTROLLER_LISTENERS]
 
         logging.info("Initialization complete.")
 
     def start(self) -> None:
-        self.gameboy.set_paused(False)
+        # self.gameboy.set_paused(False)
 
         # Wait.
         try:
