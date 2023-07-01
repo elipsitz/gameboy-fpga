@@ -172,7 +172,7 @@ class Gameboy:
         self._ram_buffer.sync_from_device()
         with open(self._save_path, "wb") as f:
             f.write(self._ram_buffer.tobytes())
-        logger.info("Wrote save file to %s", self._save_path)
+        logging.info("Wrote save file to %s", self._save_path)
 
         if not was_paused:
             self.set_paused(False)

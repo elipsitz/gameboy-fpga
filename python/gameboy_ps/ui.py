@@ -128,6 +128,7 @@ class GameScreen(Screen):
             if button == Button.HOME and event == ButtonEvent.PRESSED:
                 self.playing = False
                 self.ui.system.gameboy.set_paused(True)
+                self.ui.system.gameboy.persist_ram()
                 self._widget.pos = 0
                 self._render()
             return
