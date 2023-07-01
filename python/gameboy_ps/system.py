@@ -13,6 +13,7 @@ from . import controller
 class System:
     def __init__(self, rom_path: Optional[Path]):
         self.gameboy = Gameboy()
+        self.buttons = {e.value: False for e in controller.Button}
 
         if rom_path is None:
             logging.info("Using physical cartridge")
@@ -23,6 +24,10 @@ class System:
 
         # Set up controllers.
         def controller_callback(button: controller.Button, pressed: bool) -> None:
+            was_pressed = self.buttons[button]
+            if was_pressed != pressed:
+                self.buttons[button] = pressed
+
             self.gameboy.set_button(button, pressed)
     
         controllers = [c(controller_callback) for c in controller.CONTROLLER_LISTENERS]
