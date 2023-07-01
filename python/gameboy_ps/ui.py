@@ -25,7 +25,7 @@ def convert_image(image: Image) -> Image:
     return output
 
 COLOR_TRANSPARENT = 0
-COLOR_BG = 0xF7BD
+COLOR_BG = rgba_to_i16(236, 236, 236)
 COLOR_BLACK = rgba_to_i16(0, 0, 0)
 COLOR_WHITE = rgba_to_i16(255, 255, 255)
 COLOR_RED = rgba_to_i16(255, 0, 0)
@@ -44,7 +44,9 @@ class UI:
         self.framebuffer = Image.new("I", (self.width, self.height), COLOR_TRANSPARENT)
         self.draw = ImageDraw.Draw(self.framebuffer)
         with (importlib.resources.files(resources) / "pixelmix.ttf") as r:
-            self.draw.font = ImageFont.truetype(r.open("rb"), 8)
+            self.draw.font = self.font = ImageFont.truetype(r.open("rb"), 8)
+        with (importlib.resources.files(resources) / "pixelmix_bold.ttf") as r:
+            self.font_bold = ImageFont.truetype(r.open("rb"), 8)
         with (importlib.resources.files(resources) / "logo.png") as r:
             self.logo = convert_image(Image.open(r))
 
@@ -91,6 +93,10 @@ class MainMenuScreen(Screen):
                 if self._select_widget.pos == 0:
                     # Run cartridge
                     self.ui.set_screen(GameScreen(self.ui, None))
+                    return
+                if self._select_widget.pos == 1:
+                    # Load ROM file
+                    self.ui.set_screen(RomSelectScreen(self.ui))
                     return
 
         self._render()
@@ -158,6 +164,104 @@ class GameScreen(Screen):
         self.ui.draw.rectangle([(30, 40), (130, 110)], fill=COLOR_BG)
         self._widget.render(self.ui, 40, 50, 80, 50)
         self.ui.show_framebuffer()
+
+
+class RomSelectScreen(Screen):
+    def __init__(self, ui: UI) -> None:
+        self.ui = ui
+        rom_directory = self.ui.system.rom_directory
+        self.roms = sorted(rom_directory.glob("*.gb"))
+        rom_filenames = [str(x.relative_to(rom_directory)) for x in self.roms]
+        self._widget = ListWidget(rom_filenames, lines=9)
+
+    def on_attach(self) -> None:
+        self._render()
+
+    def on_button_event(self, button: Button, event: ButtonEvent) -> None:
+        if event == ButtonEvent.PRESSED:
+            if button == Button.UP:
+                self._widget.move_up()
+
+            if button == Button.DOWN:
+                self._widget.move_down()
+
+            if button == Button.B:
+                self.ui.set_screen(MainMenuScreen(self.ui))
+                return
+
+            if button == Button.A:
+                rom_path = self.roms[self._widget.pos]
+                self.ui.set_screen(GameScreen(self.ui, rom_path))
+                return
+
+        self._render()
+        
+    def _render(self) -> None:
+        self.ui.draw.rectangle([(0, 0), (self.ui.width, self.ui.height)], fill=COLOR_BG)
+        self.ui.draw.rectangle([(4, 16), (160 - 8, 144 - 16)], outline=COLOR_BLACK)
+        self.ui.draw.text(
+            (4, 4),
+            "Load ROM file...",
+            fill=COLOR_BLACK,
+            font=self.ui.font_bold,
+        )
+        self.ui.draw.text(
+            (4, 144 - 12),
+            "A: Select              B: Back",
+            fill=COLOR_BLACK,
+        )
+        self._widget.render(self.ui, 6, 18, 150, 108)
+        self.ui.show_framebuffer()
+
+
+class ListWidget:
+    def __init__(self, items: List[str], lines: int) -> None:
+        self.items = items
+        self.pos = 0
+        self.start = 0
+        self.lines = lines
+    
+    def move_up(self) -> None:
+        if self.pos > 0:
+            self.pos -= 1
+            if self.pos < self.start:
+                self.start -= 1
+
+    def move_down(self) -> None:
+        if self.pos < len(self.items) - 1:
+            self.pos += 1
+            if self.pos >= self.start + self.lines:
+                self.start += 1
+
+    def render(self, ui: UI, x: int, y: int, w: int, h: int) -> None:
+        # Draw cursor
+        if len(self.items) > self.lines:
+            cursor_unit = float(h) / len(self.items)
+            cursor_y = int(cursor_unit * self.start)
+            cursor_h = int(cursor_unit * self.lines)
+            ui.draw.rectangle(
+                [x + w - 2, y + cursor_y, x + w, y + cursor_y + cursor_h],
+                fill=COLOR_BLACK)
+        
+        # Draw items
+        y += 2
+        for i, text in enumerate(self.items[self.start : (self.start + self.lines)]):
+            # Ellipsize text if needed
+            max_width = w - 8
+            if ui.draw.font.getlength(text) > max_width:
+                while ui.draw.font.getlength(text + "...") > max_width:
+                    truncated = True
+                    text = text[:-1]
+                text = text + "..."
+                
+            bbox = ui.draw.textbbox((0, 0), text)
+            text_w = bbox[2]
+            text_h = bbox[3]
+            ui.draw.text((x + 2, y), text, fill=COLOR_BLACK)
+            if self.pos == (i + self.start):
+                ui.draw.rectangle([x, y - 2, x + max_width + 2, y + text_h + 2], outline=COLOR_BLACK)
+            y += 4 + text_h
+            i += 1
 
 
 class SelectWidget:

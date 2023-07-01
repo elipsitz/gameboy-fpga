@@ -11,17 +11,11 @@ from .gameboy import Gameboy
 from . import controller, ui
 
 class System:
-    def __init__(self, rom_path: Optional[Path]):
+    def __init__(self, rom_directory: Path):
         self.gameboy = Gameboy()
         self.buttons = {e: False for e in controller.Button}
         self.ui = ui.UI(self)
-
-        if rom_path is None:
-            logging.info("Using physical cartridge")
-            self.gameboy.set_physical_cartridge()
-        else:
-            logging.info("Loading ROM from %s", rom_path)
-            self.gameboy.set_emulated_cartridge(rom_path)
+        self.rom_directory = rom_directory
 
         # Set up controllers.
         def controller_callback(button: controller.Button, pressed: bool) -> None:
