@@ -171,7 +171,10 @@ class RomSelectScreen(Screen):
     def __init__(self, ui: UI) -> None:
         self.ui = ui
         rom_directory = self.ui.system.rom_directory
-        self.roms = sorted(rom_directory.glob("*.gb"))
+        self.roms = []
+        self.roms.extend(rom_directory.glob("*.gb"))
+        self.roms.extend(rom_directory.glob("*.gbc"))
+        self.roms.sort()
         rom_filenames = [str(x.relative_to(rom_directory)) for x in self.roms]
         self._widget = ListWidget(rom_filenames, lines=9)
 
