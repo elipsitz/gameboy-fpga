@@ -27,7 +27,7 @@ void Simulator::reset()
     top->io_dataAccess_dataRead = 0;
     top->io_cartConfig_mbcType = cart->mbc_type;
     top->io_cartConfig_hasRam = cart->has_ram;
-    top->io_cartConfig_hasTimer = cart->has_timer;
+    top->io_cartConfig_hasRtc = cart->has_timer;
     top->io_cartConfig_hasRumble = cart->has_rumble;
     top->reset = 1;
 

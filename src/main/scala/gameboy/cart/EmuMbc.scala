@@ -42,6 +42,7 @@ class EmuMbc extends Module {
   val mbcNone = Module(new MbcNone())
   val mbc1 = Module(new Mbc1())
   val mbc3 = Module(new Mbc3())
+  mbc3.io.hasRtc := io.config.hasRtc
   val mbc5 = Module(new Mbc5())
 
   val mbcs = Seq(

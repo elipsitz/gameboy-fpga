@@ -16,7 +16,7 @@ class EmuCartConfig extends Bundle {
   /** Whether the cartridge has a rumble feature (MBC5 and MBC7 only) */
   val hasRumble = Bool()
   /** Whether there is an RTC (MBC3 only) */
-  val hasTimer = Bool()
+  val hasRtc = Bool()
   /** Whether there is any RAM (external, or for MBC2, internal)  */
   val hasRam = Bool()
   /** The MBC chip type */
