@@ -4,7 +4,7 @@ import axi.{AxiLiteInitiator, AxiLiteSignals, AxiLiteTarget}
 import chisel3._
 import chisel3.util._
 import gameboy.apu.ApuOutput
-import gameboy.cart.{EmuCartConfig, EmuCartridge}
+import gameboy.cart.{EmuCartConfig, EmuCartridge, Mbc3RtcAccess, RtcState}
 import gameboy.{CartridgeIo, Gameboy, JoypadState, SerialIo}
 import gameboy.ppu.PpuOutput
 import gameboy.util.BundleInit.AddInitConstruct
@@ -72,6 +72,11 @@ class ZynqGameboy extends Module {
   val configRegRamMask = RegInit(0.U(17.W))
   val configRegBlitAddress = RegInit(0.U(32.W))
   val configRegBlitControl = RegInit(0.U.asTypeOf(new RegBlitControl))
+  val rtcAccess = Wire(new Mbc3RtcAccess)
+  rtcAccess.writeEnable := false.B
+  rtcAccess.writeState := DontCare
+  rtcAccess.latchSelect := DontCare
+
   val axiTarget = Module(new AxiLiteTarget(Registers.maxId))
   io.axiTarget <> axiTarget.io.signals
   axiTarget.io.readData := 0.U
@@ -108,6 +113,14 @@ class ZynqGameboy extends Module {
     is (Registers.StatNumClocks.id.U) { axiTarget.io.readData := statNumClocks }
     is (Registers.BlitAddress.id.U) { axiTarget.io.readData := configRegBlitAddress }
     is (Registers.BlitControl.id.U) { axiTarget.io.readData := configRegBlitControl.asUInt }
+    is (Registers.RtcState.id.U) {
+      rtcAccess.latchSelect := false.B
+      axiTarget.io.readData := rtcAccess.readState.asUInt
+    }
+    is (Registers.RtcStateLatched.id.U) {
+      rtcAccess.latchSelect := true.B
+      axiTarget.io.readData := rtcAccess.readState.asUInt
+    }
   }
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
@@ -124,6 +137,16 @@ class ZynqGameboy extends Module {
       is (Registers.BlitAddress.id.U) { configRegBlitAddress := axiTarget.io.writeData }
       is (Registers.BlitControl.id.U) {
         configRegBlitControl := axiTarget.io.writeData.asTypeOf(new RegBlitControl)
+      }
+      is (Registers.RtcState.id.U) {
+        rtcAccess.writeEnable := true.B
+        rtcAccess.latchSelect := false.B
+        rtcAccess.writeState := axiTarget.io.writeData.asTypeOf(new RtcState)
+      }
+      is (Registers.RtcStateLatched.id.U) {
+        rtcAccess.writeEnable := true.B
+        rtcAccess.latchSelect := true.B
+        rtcAccess.writeState := axiTarget.io.writeData.asTypeOf(new RtcState)
       }
     }
   }
@@ -167,9 +190,10 @@ class ZynqGameboy extends Module {
   }
 
   // Emulated cartridge and physical connections
-  val emuCart = Module(new EmuCartridge())
+  val emuCart = Module(new EmuCartridge(8 * 1024 * 1024))
   emuCart.io.config := configRegEmuCart
   emuCart.io.tCycle := gameboy.io.tCycle
+  rtcAccess <> emuCart.io.rtcAccess
   when (configRegEmuCart.enabled) {
     waitingForCart := emuCart.io.waitingForAccess
 

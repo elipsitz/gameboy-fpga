@@ -4,18 +4,33 @@ import chisel3._
 import chisel3.util._
 
 class RtcState extends Bundle {
-  val seconds = UInt(6.W)
-  val minutes = UInt(6.W)
-  val hours = UInt(5.W)
-  val days = UInt(9.W)
   val halt = Bool()
   val dayOverflow = Bool()
+  val days = UInt(9.W)
+  val hours = UInt(5.W)
+  val minutes = UInt(6.W)
+  val seconds = UInt(6.W)
 }
 
-/** MBC3 */
-class Mbc3 extends Module {
+class Mbc3RtcAccess extends Bundle {
+  /** The read  */
+  val readState = Output(new RtcState)
+  val writeState = Input(new RtcState)
+  /** Whether the data in writeState should be copied to the selected state. */
+  val writeEnable = Input(Bool())
+  /** True to select latched state, False to select backing state. */
+  val latchSelect = Input(Bool())
+}
+
+/**
+ * MBC3
+ *
+ * clockRate: clock rate (in hertz), used for calibrating RTC
+ * */
+class Mbc3(clockRate: Int) extends Module {
   val io = IO(new MbcIo {
     val hasRtc = Input(Bool())
+    val rtcAccess = new Mbc3RtcAccess
   })
 
   val ramEnable = RegInit(false.B)
@@ -31,7 +46,7 @@ class Mbc3 extends Module {
   val rtcState = RegInit(0.U.asTypeOf(new RtcState))
   val rtcStateLatched = RegInit(0.U.asTypeOf(new RtcState))
   // TODO update for handling 8 MHz clock and enable
-  val rtcCounter = new Counter(4 * 1024 * 1024)
+  val rtcCounter = new Counter(clockRate)
   when (io.hasRtc && !rtcState.halt) {
     val secondTick = rtcCounter.inc()
     when (secondTick) {
@@ -74,6 +89,12 @@ class Mbc3 extends Module {
         rtcState.dayOverflow := io.memDataWrite(7)
       }
     }
+  }
+  // RTC access (for saving / loading)
+  io.rtcAccess.readState := Mux(io.rtcAccess.latchSelect, rtcStateLatched, rtcState)
+  when (io.rtcAccess.writeEnable) {
+    when (io.rtcAccess.latchSelect) { rtcStateLatched := io.rtcAccess.writeState }
+      .otherwise { rtcState := io.rtcAccess.writeState }
   }
 
   when (io.memEnable && io.memWrite && io.selectRom) {

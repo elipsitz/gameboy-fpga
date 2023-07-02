@@ -33,16 +33,19 @@ class MbcIo extends Bundle {
  * Each ROM bank switches 16 KiB (14 bits)
  * Each RAM bank switches 8 KiB (13 bits)
  */
-class EmuMbc extends Module {
+class EmuMbc(clockRate: Int) extends Module {
   val io = IO(new Bundle {
     val config = Input(new EmuCartConfig())
     val mbc = new MbcIo()
+    /** Direct access to MBC3 RTC registes */
+    val rtcAccess = new Mbc3RtcAccess
   })
 
   val mbcNone = Module(new MbcNone())
   val mbc1 = Module(new Mbc1())
-  val mbc3 = Module(new Mbc3())
+  val mbc3 = Module(new Mbc3(clockRate))
   mbc3.io.hasRtc := io.config.hasRtc
+  io.rtcAccess <> mbc3.io.rtcAccess
   val mbc5 = Module(new Mbc5())
 
   val mbcs = Seq(

@@ -35,7 +35,7 @@ class EmuCartConfig extends Bundle {
  *
  * Gets the actual data through something with the EmuCartridgeDataAccess interface.
  */
-class EmuCartridge extends Module {
+class EmuCartridge(clockRate: Int) extends Module {
   val io = IO(new Bundle {
     /** The current cart configuration (including MBC info) */
     val config = Input(new EmuCartConfig())
@@ -47,6 +47,9 @@ class EmuCartridge extends Module {
     val tCycle = Input(UInt(2.W))
     /** Whether we're waiting on the results of a data access */
     val waitingForAccess = Output(Bool())
+
+    /** Direct access to MBC3 RTC registes */
+    val rtcAccess = new Mbc3RtcAccess
   })
 
   // True if we're accessing ROM (rather than RAM)
@@ -64,13 +67,14 @@ class EmuCartridge extends Module {
   io.waitingForAccess := waitingForAccess
   io.dataAccess.enable := accessEnable && io.tCycle > 0.U
 
-  val mbc = Module(new EmuMbc)
+  val mbc = Module(new EmuMbc(clockRate))
   mbc.io.config := io.config
   mbc.io.mbc.memEnable := io.cartridgeIo.enable
   mbc.io.mbc.memWrite := io.cartridgeIo.write && io.tCycle === 3.U
   mbc.io.mbc.memAddress := io.cartridgeIo.address
   mbc.io.mbc.memDataWrite := io.cartridgeIo.dataWrite
   mbc.io.mbc.selectRom := selectRom
+  io.rtcAccess <> mbc.io.rtcAccess
 
   // We cannot write to ROM
   io.dataAccess.write := io.cartridgeIo.write && !selectRom

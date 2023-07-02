@@ -36,7 +36,7 @@ class SimGameboy extends Module {
   gameboy.io.serial.in := true.B
 
   // Emulated cartridge
-  val emuCart = Module(new EmuCartridge())
+  val emuCart = Module(new EmuCartridge(4 * 1024 * 1024))
   gameboy.io.cartridge <> emuCart.io.cartridgeIo
   emuCart.io.dataAccess <> io.dataAccess
   emuCart.io.config := io.cartConfig

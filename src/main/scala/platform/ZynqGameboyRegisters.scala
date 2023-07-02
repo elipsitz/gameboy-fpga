@@ -9,13 +9,18 @@ object Registers extends Enumeration {
   val RomMask = Value
   val RamAddress = Value
   val RamMask = Value
+
   val CpuDebug1 = Value
   val CpuDebug2 = Value
   val CpuDebug3 = Value
   val StatCartStalls = Value
   val StatNumClocks = Value
+
   val BlitControl = Value
   val BlitAddress = Value
+
+  val RtcState = Value
+  val RtcStateLatched = Value
 }
 
 /** Register 0x0: Gameboy Control */
