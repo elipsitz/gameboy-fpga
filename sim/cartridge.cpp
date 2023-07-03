@@ -60,6 +60,18 @@ Cartridge::Cartridge(std::filesystem::path rom_path) : rom_path(rom_path) {
             mbc_type = 1;
             has_ram = true;
             break;
+        // MBC2
+        case 0x05:
+            mbc_type = 2;
+            has_ram = true;
+            ram_size = 512;
+            break;
+        // MBC2+BATTERY
+        case 0x06:
+            mbc_type = 2;
+            has_ram = true;
+            ram_size = 512;
+            break;
         // MBC3+TIMER+BATTERY
         case 0x0F:
             mbc_type = 3;

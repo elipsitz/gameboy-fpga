@@ -95,10 +95,16 @@ class EmuCartridge(clockRate: Int) extends Module {
     accessEnable := io.cartridgeIo.enable && !mbc.io.mbc.ramReadMbc && io.config.hasRam
     io.dataAccess.write := io.cartridgeIo.write
     io.dataAccess.address := Cat(mbc.io.mbc.bankRam, io.cartridgeIo.address(12, 0))
-    io.cartridgeIo.dataRead := Mux(mbc.io.mbc.ramReadMbc, mbc.io.mbc.memDataRead, io.dataAccess.dataRead)
+    when (mbc.io.mbc.ramReadMbc) {
+      io.cartridgeIo.dataRead := mbc.io.mbc.memDataRead
+    } .elsewhen (io.config.mbcType === MbcType.Mbc2) {
+      // Special case for MBC2: only bottom 4 bits are valid
+      io.cartridgeIo.dataRead := Cat(0xF.U(4.W), io.dataAccess.dataRead(3, 0))
+    } .otherwise {
+      io.cartridgeIo.dataRead := io.dataAccess.dataRead
+    }
   }
 }
-
 
 /**
  * Max ROM: 8 MiB (23 bits)
