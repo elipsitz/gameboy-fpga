@@ -133,7 +133,10 @@ class Gameboy:
             0x1D: dict(mbc=4, has_ram=True, has_rumble=True),
             0x1E: dict(mbc=4, has_ram=True, has_rumble=True),
         }
-        self._emu_cart_config = EMU_CONFIGS[rom_data[0x147]]
+        cartridge_type = rom_data[0x147]
+        if cartridge_type not in EMU_CONFIGS:
+            raise RomLoadException(f"Unsupported cart {hex(cartridge_type)}")
+        self._emu_cart_config = EMU_CONFIGS[cartridge_type]
         header_rom_size = 32 * 1024 * (1 << rom_data[0x148])
         header_ram_size = {0: 0, 2: (8 * 1024), 3: (32 * 1024), 4: (128 * 1024), 5: (64 * 1024)}[rom_data[0x149]]
         logging.info(f"Cart type: {rom_data[0x147]}, config={self._emu_cart_config}")
@@ -231,6 +234,11 @@ class Gameboy:
         self._registers.write(REGISTER_BLIT_ADDRESS, self._framebuffer.device_address)
         self._registers.write(REGISTER_BLIT_CONTROL, 1)
         self._blit_active = True
+
+
+class RomLoadException(Exception):
+    pass
+
 
 class RtcState:
     seconds: int

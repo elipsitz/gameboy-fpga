@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .controller import Button
 from . import resources
+from .gameboy import RomLoadException
 
 def rgba_to_i16(r, g, b, a = 255):
     if a == 0:
@@ -92,7 +93,8 @@ class MainMenuScreen(Screen):
             if button == Button.A:
                 if self._select_widget.pos == 0:
                     # Run cartridge
-                    self.ui.set_screen(GameScreen(self.ui, None))
+                    self.ui.system.gameboy.set_physical_cartridge()
+                    self.ui.set_screen(GameScreen(self.ui))
                     return
                 if self._select_widget.pos == 1:
                     # Load ROM file
@@ -114,10 +116,6 @@ class GameScreen(Screen):
         self.playing = True
         self._widget = SelectWidget(["Resume", "Reset", "Main Menu"])
 
-        if rom_path is None:
-            self.ui.system.gameboy.set_physical_cartridge()
-        else:
-            self.ui.system.gameboy.set_emulated_cartridge(rom_path)
         self.ui.system.gameboy.reset()
 
     def on_attach(self) -> None:
@@ -177,12 +175,18 @@ class RomSelectScreen(Screen):
         self.roms.sort()
         rom_filenames = [str(x.relative_to(rom_directory)) for x in self.roms]
         self._widget = ListWidget(rom_filenames, lines=9)
+        self._error = None
 
     def on_attach(self) -> None:
         self._render()
 
     def on_button_event(self, button: Button, event: ButtonEvent) -> None:
         if event == ButtonEvent.PRESSED:
+            if self._error is not None:
+                self._error = None
+                self._render()
+                return
+
             if button == Button.UP:
                 self._widget.move_up()
 
@@ -195,7 +199,12 @@ class RomSelectScreen(Screen):
 
             if button == Button.A:
                 rom_path = self.roms[self._widget.pos]
-                self.ui.set_screen(GameScreen(self.ui, rom_path))
+                try:
+                    self.ui.system.gameboy.set_emulated_cartridge(rom_path)
+                except RomLoadException as e:
+                    self._error = str(e)
+                    return
+                self.ui.set_screen(GameScreen(self.ui))
                 return
 
         self._render()
@@ -215,6 +224,19 @@ class RomSelectScreen(Screen):
             fill=COLOR_BLACK,
         )
         self._widget.render(self.ui, 6, 18, 150, 108)
+
+        # Draw error modal
+        if self._error is not None:
+            bbox = self.ui.draw.textbbox((0, 0), self._error)
+            text_w = bbox[2]
+            text_h = bbox[3]
+            draw_x = (160 // 2) - (text_w // 2)
+            draw_y = (144 // 2) - (text_h // 2)
+            self.ui.draw.rectangle(
+                [draw_x - 4, draw_y - 4, draw_x + text_w + 4, draw_y + text_h + 4],
+                outline=COLOR_BLACK, fill=COLOR_WHITE)
+            self.ui.draw.text((draw_x, draw_y), self._error, fill=COLOR_BLACK)
+
         self.ui.show_framebuffer()
 
 
