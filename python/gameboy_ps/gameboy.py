@@ -285,5 +285,25 @@ class RtcState:
         )
     
     def advance(self, seconds: int) -> None:
-        # TODO
-        pass
+        def compute_ticks(value, ticks, wrap_point, max_value):
+            if value >= wrap_point:
+                needed = max_value - value
+                if ticks >= needed:
+                    ticks -= needed
+                    value = 0
+                else:
+                    value += ticks
+                    ticks = 0
+
+            value += ticks
+            next_ticks = value // wrap_point
+            value = value % wrap_point
+            return value, next_ticks
+
+        ticks = seconds
+        self.seconds, ticks = compute_ticks(self.seconds, ticks, 60, 2 ** 6)
+        self.minutes, ticks = compute_ticks(self.minutes, ticks, 60, 2 ** 6)
+        self.hours, ticks = compute_ticks(self.hours, ticks, 24, 2 ** 5)
+        self.days, ticks = compute_ticks(self.days, ticks, 2 ** 9, 2 ** 9)
+        if ticks > 0:
+            self.days_overflow = True
