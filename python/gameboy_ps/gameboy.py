@@ -97,14 +97,6 @@ class Gameboy:
         self._rom_buffer = None
         self._ram_buffer = None
 
-    def _write_reg_emu_cart_config(self, mbc, has_ram = False, has_rtc = False, has_rumble = False) -> None:
-        value = 1  # Lowest bit: is emulated cartridge enabled
-        value |= mbc << 1
-        value |= int(has_ram) << 4
-        value |= int(has_rtc) << 5
-        value |= int(has_rumble) << 6
-        self._registers.write(REGISTER_EMU_CART_CONFIG, value)
-
     def set_emulated_cartridge(self, rom_path: Path) -> None:
         """Sets the use of an enumated cartridge"""
         self._emu_cartridge = True
@@ -116,38 +108,17 @@ class Gameboy:
 
         # Parse ROM header
         logging.info("Parsing ROM header...")
-        EMU_CONFIGS = {
-            0x00: dict(mbc=0),
-            0x01: dict(mbc=1),
-            0x02: dict(mbc=1, has_ram=True),
-            0x03: dict(mbc=1, has_ram=True),
-            0x0F: dict(mbc=3, has_rtc=True),
-            0x10: dict(mbc=3, has_ram=True, has_rtc=True),
-            0x11: dict(mbc=3),
-            0x12: dict(mbc=3, has_ram=True),
-            0x13: dict(mbc=3, has_ram=True),
-            0x19: dict(mbc=4),
-            0x1C: dict(mbc=4, has_rumble=True),
-            0x1A: dict(mbc=4, has_ram=True),
-            0x1B: dict(mbc=4, has_ram=True),
-            0x1D: dict(mbc=4, has_ram=True, has_rumble=True),
-            0x1E: dict(mbc=4, has_ram=True, has_rumble=True),
-        }
-        cartridge_type = rom_data[0x147]
-        if cartridge_type not in EMU_CONFIGS:
-            raise RomLoadException(f"Unsupported cart {hex(cartridge_type)}")
-        self._emu_cart_config = EMU_CONFIGS[cartridge_type]
-        header_rom_size = 32 * 1024 * (1 << rom_data[0x148])
-        header_ram_size = {0: 0, 2: (8 * 1024), 3: (32 * 1024), 4: (128 * 1024), 5: (64 * 1024)}[rom_data[0x149]]
-        logging.info(f"Cart type: {rom_data[0x147]}, config={self._emu_cart_config}")
-        logging.info(f"ROM size: {header_rom_size}")
-        logging.info(f"RAM size: {header_ram_size}")
+        self.rom_header = RomHeader(rom_data)
+        logging.info(f"Cart type: {self.rom_header.cartridge_type}")
+        logging.info(f"Ram? {self.rom_header.has_ram}  Rtc? {self.rom_header.has_rtc}  Rumble? {self.rom_header.has_rumble}")
+        logging.info(f"ROM size: {self.rom_header.rom_size}")
+        logging.info(f"RAM size: {self.rom_header.ram_size}")
         logging.info("Done parsing ROM information")
 
         # Allocate RAM
         self._ram_buffer = None
-        if header_ram_size > 0:
-            self._ram_buffer = allocate(shape=(header_ram_size, ), dtype="uint8")
+        if self.rom_header.ram_size > 0:
+            self._ram_buffer = allocate(shape=(self.rom_header.ram_size, ), dtype="uint8")
             self._ram_buffer.fill(0xFF)
 
         # Load save file, if one exists.
@@ -155,9 +126,9 @@ class Gameboy:
         if self._save_path.is_file():
             save_data = np.fromfile(self._save_path, dtype="uint8")
             if self._ram_buffer is not None:
-                self._ram_buffer[:] = save_data[:header_ram_size]
+                self._ram_buffer[:] = save_data[:self.rom_header.ram_size]
                 logging.info("Loaded save file at %s", self._save_path)
-            if self._emu_cart_config["has_rtc"] and (len(save_data) - header_ram_size == 48):
+            if self.rom_header.has_rtc and (len(save_data) - self.rom_header.ram_size == 48):
                 # Load saved RTC data
                 rtc_data = bytes(save_data[-48:])
                 rtc_state = RtcState.from_disk(rtc_data[0:20])
@@ -170,12 +141,12 @@ class Gameboy:
                 logging.info("Loaded saved RTC data")
 
         # Set registers
-        self._write_reg_emu_cart_config(**self._emu_cart_config)
+        self._registers.write(REGISTER_EMU_CART_CONFIG, self.rom_header.get_emu_cart_config())
         self._registers.write(REGISTER_ROM_ADDRESS, self._rom_buffer.device_address)
         self._registers.write(REGISTER_ROM_MASK, rom_size - 1)
         if self._ram_buffer is not None:
             self._registers.write(REGISTER_RAM_ADDRESS, self._ram_buffer.device_address)
-            self._registers.write(REGISTER_RAM_MASK, header_ram_size - 1)
+            self._registers.write(REGISTER_RAM_MASK, self.rom_header.ram_size - 1)
         else:
             self._registers.write(REGISTER_RAM_ADDRESS, 0)
             self._registers.write(REGISTER_RAM_MASK, 0)
@@ -184,7 +155,7 @@ class Gameboy:
         """Persists battery-backed ram (if present) to disk."""
         if not self._emu_cartridge:
             return
-        has_rtc = self._emu_cart_config["has_rtc"]
+        has_rtc = self.rom_header.has_rtc
         if self._ram_buffer is None and not has_rtc:
             return
 
@@ -234,6 +205,51 @@ class Gameboy:
         self._registers.write(REGISTER_BLIT_ADDRESS, self._framebuffer.device_address)
         self._registers.write(REGISTER_BLIT_CONTROL, 1)
         self._blit_active = True
+
+
+class RomHeader:
+    def __init__(self, rom_data: bytes) -> None:
+        self.mbc = 0
+        self.has_ram = False
+        self.has_rtc = False
+        self.has_rumble = False
+
+        emu_configs = {
+            0x00: dict(mbc=0),
+            0x01: dict(mbc=1),
+            0x02: dict(mbc=1, has_ram=True),
+            0x03: dict(mbc=1, has_ram=True),
+            0x05: dict(mbc=2, has_ram=True),
+            0x06: dict(mbc=2, has_ram=True),
+            0x0F: dict(mbc=3, has_rtc=True),
+            0x10: dict(mbc=3, has_ram=True, has_rtc=True),
+            0x11: dict(mbc=3),
+            0x12: dict(mbc=3, has_ram=True),
+            0x13: dict(mbc=3, has_ram=True),
+            0x19: dict(mbc=4),
+            0x1C: dict(mbc=4, has_rumble=True),
+            0x1A: dict(mbc=4, has_ram=True),
+            0x1B: dict(mbc=4, has_ram=True),
+            0x1D: dict(mbc=4, has_ram=True, has_rumble=True),
+            0x1E: dict(mbc=4, has_ram=True, has_rumble=True),
+        }
+        self.cartridge_type = rom_data[0x147]
+        if self.cartridge_type not in emu_configs:
+            raise RomLoadException(f"Unsupported cart {hex(self.cartridge_type)}")
+        self.__dict__.update(emu_configs[self.cartridge_type])
+
+        self.rom_size = 32 * 1024 * (1 << rom_data[0x148])
+        self.ram_size = {0: 0, 2: (8 * 1024), 3: (32 * 1024), 4: (128 * 1024), 5: (64 * 1024)}[rom_data[0x149]]
+        if self.mbc == 2:
+            self.ram_size = 512
+
+    def get_emu_cart_config(self) -> int:
+        value = 1  # Lowest bit: is emulated cartridge enabled
+        value |= self.mbc << 1
+        value |= int(self.has_ram) << 4
+        value |= int(self.has_rtc) << 5
+        value |= int(self.has_rumble) << 6
+        return value
 
 
 class RomLoadException(Exception):

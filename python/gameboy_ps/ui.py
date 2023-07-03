@@ -111,7 +111,7 @@ class MainMenuScreen(Screen):
 
 
 class GameScreen(Screen):
-    def __init__(self, ui: UI, rom_path: Path) -> None:
+    def __init__(self, ui: UI) -> None:
         self.ui = ui
         self.playing = True
         self._widget = SelectWidget(["Resume", "Reset", "Main Menu"])
