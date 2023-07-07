@@ -49,6 +49,8 @@ class XboxController(Controller):
         controller.button_select.when_released = lambda _: callback(Button.SELECT, False)
         controller.button_start.when_pressed = lambda _: callback(Button.START, True)
         controller.button_start.when_released = lambda _: callback(Button.START, False)
+        controller.button_mode.when_pressed = lambda _: callback(Button.HOME, True)
+        controller.button_mode.when_released = lambda _: callback(Button.HOME, False)
         controller.hat.when_moved = on_hat_moved
         logging.info("Initialized Xbox controller")
 
