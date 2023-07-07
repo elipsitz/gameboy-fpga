@@ -252,12 +252,20 @@ class ListWidget:
             self.pos -= 1
             if self.pos < self.start:
                 self.start -= 1
+        else:
+            # Wrap to the bottom
+            self.pos = len(self.items) - 1
+            self.start = max(0, len(self.items) - self.lines)
 
     def move_down(self) -> None:
         if self.pos < len(self.items) - 1:
             self.pos += 1
             if self.pos >= self.start + self.lines:
                 self.start += 1
+        else:
+            # Wrap to the top
+            self.pos = 0
+            self.start = 0
 
     def render(self, ui: UI, x: int, y: int, w: int, h: int) -> None:
         # Draw cursor
