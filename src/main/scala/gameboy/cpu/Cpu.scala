@@ -2,7 +2,7 @@ package gameboy.cpu
 
 import chisel3._
 import chisel3.util._
-import gameboy.Gameboy
+import gameboy.{Clocker, Gameboy}
 import gameboy.cpu.Cpu.DebugState
 
 object Cpu {
@@ -34,6 +34,8 @@ object Cpu {
 /** Gameboy CPU - Sharp SM83 */
 class Cpu(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
+    val clocker = Input(new Clocker)
+
     /** System bus address selection */
     val memAddress = Output(UInt(16.W))
     /** System bus access enable */
@@ -46,7 +48,6 @@ class Cpu(config: Gameboy.Configuration) extends Module {
     val memDataOut = Output(UInt(8.W))
     /** Interrupt requests from peripherals */
     val interruptRequest = Input(new Cpu.InterruptFlags)
-    val tCycle = Output(UInt(2.W))
 
     /** Debug */
     val debugState = Output(new DebugState)
@@ -58,37 +59,34 @@ class Cpu(config: Gameboy.Configuration) extends Module {
   val aluFlagNext = Wire(new Alu.Flags)
   val memDataRead = WireDefault(io.memDataIn)
 
-  // Clocking: T-Cycles
-  val tCycle = RegInit(0.U(2.W))
-  tCycle := tCycle + 1.U
-  io.tCycle := tCycle
-
   // Interrupts
   // XXX: IE is 8 bits actually? and IF top 3 bits are 1?
   val regIE = RegInit(0.U(5.W))
   val regIF = RegInit(0.U(5.W))
-  regIF := regIF | io.interruptRequest.asUInt
-  when (io.memEnable) {
-    when (io.memWrite) {
-      when (io.memAddress === Cpu.REG_IE.U) { regIE := io.memDataOut(4, 0) }
-      when (io.memAddress === Cpu.REG_IF.U) { regIF := io.memDataOut(4, 0) | io.interruptRequest.asUInt }
-    }.otherwise {
-      when (io.memAddress === Cpu.REG_IE.U) { memDataRead := regIE }
-      when (io.memAddress === Cpu.REG_IF.U) { memDataRead := regIF }
+  when (io.clocker.enable) {
+    regIF := regIF | io.interruptRequest.asUInt
+    when (io.memEnable) {
+      when (io.memWrite) {
+        when (io.memAddress === Cpu.REG_IE.U) { regIE := io.memDataOut(4, 0) }
+        when (io.memAddress === Cpu.REG_IF.U) { regIF := io.memDataOut(4, 0) | io.interruptRequest.asUInt }
+      }.otherwise {
+        when (io.memAddress === Cpu.REG_IE.U) { memDataRead := regIE }
+        when (io.memAddress === Cpu.REG_IF.U) { memDataRead := regIF }
+      }
     }
   }
   val pendingInterruptField = regIE & regIF
   val pendingInterruptIndex = PriorityEncoder(pendingInterruptField)
   control.io.interruptsPending := pendingInterruptField =/= 0.U
-  when (tCycle === 3.U && controlSignals.pcNext === PcNext.interrupt) {
+  when (io.clocker.phiPulse && controlSignals.pcNext === PcNext.interrupt) {
     // Final step of interrupt process: jump to interrupt (and ack it in 'IF').
     regIF := regIF & (~(1.U(1.W) << pendingInterruptIndex)).asUInt
   }
 
   // Control
-  control.io.tCycle := tCycle
+  control.io.clocker := io.clocker
   control.io.memDataIn := memDataRead
-  val instructionRegister = RegEnable(memDataRead, 0.U(8.W), tCycle === 3.U && controlSignals.instLoad)
+  val instructionRegister = RegEnable(memDataRead, 0.U(8.W), io.clocker.phiPulse && controlSignals.instLoad)
 
   // Registers
   // Includes incrementer/decrementer.
@@ -155,7 +153,7 @@ class Cpu(config: Gameboy.Configuration) extends Module {
     is (IncOp.dec) { incOut := incIn - 1.U }
   }
   // Register write
-  when (tCycle === 3.U) {
+  when (io.clocker.phiPulse) {
     switch (controlSignals.regOp) {
       is (RegOp.writeAlu) { registers(regWriteIndex) := alu.io.out }
       is (RegOp.writeMem) {
@@ -207,7 +205,7 @@ class Cpu(config: Gameboy.Configuration) extends Module {
   }
 
   // ALU
-  val aluCarry = RegEnable(alu.io.flagOut.c, 0.B, tCycle === 3.U & controlSignals.aluOp === AluOp.addLo)
+  val aluCarry = RegEnable(alu.io.flagOut.c, 0.B, io.clocker.phiPulse & controlSignals.aluOp === AluOp.addLo)
   alu.io.a := DontCare
   switch (controlSignals.aluSelA) {
     is (AluSelA.regA) { alu.io.a := registers(7) }
@@ -278,7 +276,7 @@ class Cpu(config: Gameboy.Configuration) extends Module {
   io.debugState.regA := registers(7)
   io.debugState.regSp := Cat(registers(8), registers(9))
   io.debugState.regPc := Cat(registers(12), registers(13))
-//  when (tCycle === 3.U) {
+//  when (io.clocker.phiPulse) {
 //    printf(cf"* PC=$pc%x inst=${instructionRegister}%x B=${registers(0)}%x C=${registers(1)}%x D=${registers(2)}%x E=${registers(3)}%x HL=${Cat(registers(4), registers(5))}%x F=${registers(6)}%x A=${registers(7)}%x SP=${Cat(registers(8),registers(9))}%x\n")
 //  }
 }

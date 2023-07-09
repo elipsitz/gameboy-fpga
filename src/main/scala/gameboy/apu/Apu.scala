@@ -2,7 +2,7 @@ package gameboy.apu
 
 import chisel3._
 import chisel3.util._
-import gameboy.{Gameboy, PeripheralAccess}
+import gameboy.{Clocker, Gameboy, PeripheralAccess}
 
 class ApuOutput extends Bundle {
   /** Left sample value */
@@ -23,6 +23,7 @@ class ApuOutput extends Bundle {
  */
 class Apu(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
+    val clocker = Input(new Clocker)
     val output = new ApuOutput
     val reg = new PeripheralAccess
     val divApu = Input(Bool())
@@ -41,6 +42,8 @@ class Apu(config: Gameboy.Configuration) extends Module {
 
   // Frame sequencer
   val frameSequencer = Module(new FrameSequencer)
+  frameSequencer.io.clockEnable := io.clocker.enable
+  // TODO: CGB: handle double-speed mode
   frameSequencer.io.divApu := io.divApu
 
   // Channel 1
@@ -98,8 +101,9 @@ class Apu(config: Gameboy.Configuration) extends Module {
   for (i <- 0 to 3) {
     channels(i).trigger := channelTrigger(i)
     channels(i).ticks := frameSequencer.io.ticks
-    when (channelTrigger(i)) { channelEnabled(i) := true.B }
-    when (channels(i).channelDisable || !channels(i).dacEnabled) { channelEnabled(i) := false.B }
+    channels(i).pulse4Mhz := io.clocker.pulse4Mhz
+    when (io.clocker.enable && channelTrigger(i)) { channelEnabled(i) := true.B }
+    when (io.clocker.enable && channels(i).channelDisable || !channels(i).dacEnabled) { channelEnabled(i) := false.B }
   }
 
   // Register memory mapping
@@ -218,7 +222,7 @@ class Apu(config: Gameboy.Configuration) extends Module {
   io.reg.valid := io.reg.address >= 0x10.U && io.reg.address <= 0x3F.U
 
   // APU off reset
-  when (!regApuEnable) {
+  when (!regApuEnable && io.clocker.enable) {
     regPanning := 0.U.asTypeOf(new RegisterSoundPanning)
     regVolume := 0.U.asTypeOf(new RegisterMasterVolume)
     regLengthEnable := 0.U.asTypeOf(regLengthEnable)
@@ -248,15 +252,6 @@ class Apu(config: Gameboy.Configuration) extends Module {
     // DMG: length counters are not affected by poweroff
   }
 
-
-//  when (io.reg.valid && io.reg.enabled) {
-//    when (io.reg.write) {
-//      printf(cf"write to ${io.reg.address}%x <- ${io.reg.dataWrite}%x\n")
-//    } .otherwise {
-//      printf(cf"read from ${io.reg.address}%x -> ${io.reg.dataRead}%x\n")
-//    }
-//  }
-
   // Mixer
   val dacOutput = VecInit((0 to 3).map(i =>
     Mux(channelEnabled(i), 0xF.S(5.W) - (channels(i).out << 1).asSInt, 0.S)
@@ -265,10 +260,4 @@ class Apu(config: Gameboy.Configuration) extends Module {
   val mixerRight = VecInit((0 to 3).map(i => Mux(regPanning.right(i), dacOutput(i), 0.S))).reduceTree(_ +& _)
   io.output.left := mixerLeft * (regVolume.leftVolume +& 1.U).zext
   io.output.right := mixerRight * (regVolume.rightVolume +& 1.U).zext
-
-  // val test = RegInit(0.U(7.W))
-  // test := test + 1.U
-  // when (test === 0.U) {
-  //   printf(cf"chan=${channels(0).out} dac=${dacOutput(0)}  mixer = ${mixerLeft}, out = ${io.output.left}\n")
-  // }
 }

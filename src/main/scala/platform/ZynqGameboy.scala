@@ -45,11 +45,7 @@ class ZynqGameboy extends Module {
     skipBootrom = false,
     optimizeForSimulation = false,
   )
-  val gameboyClock = RegInit(false.B)
-  val gameboy = withClock(gameboyClock.asClock) {
-    Module(new Gameboy(gameboyConfig))
-  }
-
+  val gameboy = Module(new Gameboy(gameboyConfig))
   io.ppu <> gameboy.io.ppu
   io.joypad <> gameboy.io.joypad
   io.apu <> gameboy.io.apu
@@ -151,32 +147,34 @@ class ZynqGameboy extends Module {
     }
   }
 
-  // Gameboy clock (4 MHz)
+  // Gameboy enable (and clock, 4 Mhz)
+  val pulse4Mhz = RegInit(false.B)
+  pulse4Mhz := !pulse4Mhz
   val waitingForCart = Wire(Bool())
-  // Stall if we're on the second half of t=3 and we're still waiting for the emulated cartridge.
-  val cartStall = waitingForCart && gameboy.io.tCycle === 3.U && !gameboyClock
-  when (configRegControl.running) {
+  // Stall if we're on t=3 and we're still waiting for the emulated cartridge.
+  val cartStall = waitingForCart && gameboy.io.tCycle === 3.U
+  gameboy.io.enable := false.B
+  when (pulse4Mhz && configRegControl.running) {
     when (cartStall) {
       statNumStalls := statNumStalls + 1.U
     } .otherwise {
-      gameboyClock := !gameboyClock
+      gameboy.io.enable := true.B
       statNumClocks := statNumClocks + 1.U
     }
   }
   gameboy.reset := configRegControl.reset
-  when (configRegControl.reset) {
-    gameboyClock := !gameboyClock
-  }
 
   // Framebuffer output
   val framebufferX = RegInit(0.U(8.W))
   val framebufferY = RegInit(0.U(8.W))
 
-  when (gameboyClock && !RegNext(gameboyClock)) {
+  val prevHblank = RegInit(false.B)
+  when (gameboy.io.enable) {
+    prevHblank := gameboy.io.ppu.hblank
     when (gameboy.io.ppu.vblank) {
       framebufferX := 0.U
       framebufferY := 0.U
-    } .elsewhen (gameboy.io.ppu.hblank && !RegNext(gameboy.io.ppu.hblank)) {
+    } .elsewhen (gameboy.io.ppu.hblank && !prevHblank) {
       framebufferX := 0.U
       framebufferY := framebufferY + 1.U
     } .elsewhen (gameboy.io.ppu.valid) {

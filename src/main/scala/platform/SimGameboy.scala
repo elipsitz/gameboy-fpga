@@ -12,6 +12,8 @@ object SimGameboy extends App {
 
 class SimGameboy extends Module {
   val io = IO(new Bundle {
+    val enable = Input(Bool())
+
     val ppu = new PpuOutput
     val joypad = Input(new JoypadState)
     val apu = new ApuOutput
@@ -27,6 +29,7 @@ class SimGameboy extends Module {
     optimizeForSimulation = true,
   )
   val gameboy = Module(new Gameboy(gameboyConfig))
+  gameboy.io.enable := io.enable
   io.ppu <> gameboy.io.ppu
   io.joypad <> gameboy.io.joypad
   io.apu <> gameboy.io.apu

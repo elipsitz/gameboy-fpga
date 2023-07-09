@@ -36,15 +36,17 @@ class WaveChannel extends Module {
     waveCounter := waveCounterMax
   }
 
-  when (waveCounter === 0.U) {
-    waveIndex := waveIndex + 1.U
-    waveCounter := waveCounterMax
+  when (io.pulse4Mhz) {
+    when (waveCounter === 0.U) {
+      waveIndex := waveIndex + 1.U
+      waveCounter := waveCounterMax
 
-    // TODO we're actually off by one because waveIndex is registered?
-    // Maybe this should be turned into single port ram?
-    currentSample := Mux(waveIndex(0), io.waveRamDataRead(7, 4), io.waveRamDataRead(3, 0))
-  }.otherwise {
-    waveCounter := waveCounter - 1.U
+      // TODO we're actually off by one because waveIndex is registered?
+      // Maybe this should be turned into single port ram?
+      currentSample := Mux(waveIndex(0), io.waveRamDataRead(7, 4), io.waveRamDataRead(3, 0))
+    } .otherwise {
+      waveCounter := waveCounter - 1.U
+    }
   }
 
   io.out := VecInit(0.U, currentSample, currentSample >> 1, currentSample >> 2)(io.volume)

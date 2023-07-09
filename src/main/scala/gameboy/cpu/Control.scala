@@ -3,7 +3,7 @@ package gameboy.cpu
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.util._
-import gameboy.Gameboy
+import gameboy.{Clocker, Gameboy}
 import gameboy.util.MemRomTable
 
 import scala.io.Source
@@ -198,7 +198,7 @@ class ControlSignals extends Bundle {
 
 class Control(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
-    val tCycle = Input(UInt(2.W))
+    val clocker = Input(new Clocker)
 
     /** Current memory data in. */
     val memDataIn = Input(UInt(8.W))
@@ -260,8 +260,11 @@ class Control(config: Gameboy.Configuration) extends Module {
 
   val halted = state === microcode.stateForLabel("HALT").U
   val justFetched = RegInit(false.B)
-  justFetched := false.B
-  when (io.tCycle === 0.U && io.interruptsPending && (justFetched || halted)) {
+  when (io.clocker.enable) {
+    justFetched := false.B
+  }
+
+  when (io.clocker.enable && io.clocker.tCycle === 0.U && io.interruptsPending && (justFetched || halted)) {
     // Handle interrupts.
     when (ime) {
       // Note: IME is unset in microcode
@@ -272,7 +275,7 @@ class Control(config: Gameboy.Configuration) extends Module {
     }
   }
 
-  when (io.tCycle === 3.U) {
+  when (io.clocker.phiPulse) {
     // Advance the state machine.
     switch (row.microOp) {
       is (Microbranch.next) {
@@ -305,13 +308,11 @@ class Control(config: Gameboy.Configuration) extends Module {
 
     // Maybe enable/disable IME.
     val delayedImeSet = RegInit(false.B)
-    when (io.tCycle === 3.U) {
-      when(delayedImeSet) {
-        ime := true.B
-        delayedImeSet := false.B
-      }
-      when(row.imeUpdate === ImeUpdate.enable) { delayedImeSet := true.B }
-      when(row.imeUpdate === ImeUpdate.disable) { ime := false.B}
+    when (delayedImeSet) {
+      ime := true.B
+      delayedImeSet := false.B
     }
+    when (row.imeUpdate === ImeUpdate.enable) { delayedImeSet := true.B }
+    when (row.imeUpdate === ImeUpdate.disable) { ime := false.B}
   }
 }

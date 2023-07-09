@@ -25,6 +25,8 @@ class SerialIo extends Bundle {
  */
 class Serial(config: Gameboy.Configuration) extends Module {
   val io = IO(new PeripheralAccess {
+    val clocker = Input(new Clocker)
+
     val interruptRequest = Output(Bool())
     /**
      * 16384 Hz timer (x2 in double speed)
@@ -80,12 +82,12 @@ class Serial(config: Gameboy.Configuration) extends Module {
   io.serial.clockOut := clockOut
   io.serial.clockEnable := regClockMode
   val clockSignal = Mux(regClockMode, clockOut, io.serial.clockIn)
-  val prevClockSignal = RegNext(clockSignal)
+  val prevClockSignal = RegEnable(clockSignal, io.clocker.enable)
   val clockRising = !prevClockSignal && clockSignal
   val clockFalling = prevClockSignal && !clockSignal
 
   // Internal clock
-  when (regEnable && regClockMode && RegNext(io.divSerial) && !io.divSerial) {
+  when (regEnable && regClockMode && RegEnable(io.divSerial, io.clocker.enable) && !io.divSerial) {
     clockOut := !clockOut
   }
 
@@ -93,11 +95,11 @@ class Serial(config: Gameboy.Configuration) extends Module {
   io.interruptRequest := false.B
   val regOut = RegInit(1.U(1.W))
   io.serial.out := regOut
-  when (clockFalling) {
+  when (io.clocker.enable && clockFalling) {
     regOut := regData(7)
     regData := regData << 1
   }
-  when (clockRising) {
+  when (io.clocker.enable && clockRising) {
     regData := Cat(regData(7, 1), io.serial.in)
 
     regBitsLeft := regBitsLeft - 1.U

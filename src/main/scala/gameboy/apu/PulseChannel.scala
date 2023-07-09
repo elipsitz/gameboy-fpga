@@ -42,11 +42,13 @@ class PulseChannel extends Module {
     waveCounter := waveCounterMax
   }
 
-  when (waveCounter === 0.U) {
-    waveIndex := waveIndex + 1.U
-    waveCounter := waveCounterMax
-  } .otherwise {
-    waveCounter := waveCounter - 1.U
+  when (io.pulse4Mhz) {
+    when(waveCounter === 0.U) {
+      waveIndex := waveIndex + 1.U
+      waveCounter := waveCounterMax
+    }.otherwise {
+      waveCounter := waveCounter - 1.U
+    }
   }
 
   io.dacEnabled := io.volumeConfig.initialVolume =/= 0.U || io.volumeConfig.modeIncrease
@@ -99,6 +101,7 @@ class PulseChannelWithSweep extends Module {
   // This channel is just the regular pulse channel with a frequency sweep unit.
   // (Is there an easier way to connect these up?)
   val pulseChannel = Module(new PulseChannel)
+  pulseChannel.io.pulse4Mhz := io.pulse4Mhz
   pulseChannel.io.trigger := io.trigger
   pulseChannel.io.ticks := io.ticks
   pulseChannel.io.lengthConfig := io.lengthConfig

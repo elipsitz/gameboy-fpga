@@ -37,18 +37,20 @@ class NoiseChannel extends Module {
   val timer = RegInit(0.U(22.W))
   val timerMax = Mux(io.lfsrConfig.divider === 0.U, 8.U, io.lfsrConfig.divider << 4) << io.lfsrConfig.shift
   val shiftRegister = RegInit(0.U(15.W))
-  
-  when (timer === 0.U) {
-    timer := timerMax
-    val bit = !(shiftRegister(0) ^ shiftRegister(1))
-    shiftRegister := Cat(
-      bit,
-      shiftRegister(14, 8),
-      Mux(io.lfsrConfig.size, bit, shiftRegister(7)),
-      shiftRegister(6, 1),
-    )
-  } .otherwise {
-    timer := timer - 1.U
+
+  when (io.pulse4Mhz) {
+    when (timer === 0.U) {
+      timer := timerMax
+      val bit = !(shiftRegister(0) ^ shiftRegister(1))
+      shiftRegister := Cat(
+        bit,
+        shiftRegister(14, 8),
+        Mux(io.lfsrConfig.size, bit, shiftRegister(7)),
+        shiftRegister(6, 1),
+      )
+    } .otherwise {
+      timer := timer - 1.U
+    }
   }
 
   when (io.trigger) {

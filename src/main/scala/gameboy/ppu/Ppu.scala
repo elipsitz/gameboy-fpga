@@ -2,7 +2,7 @@ package gameboy.ppu
 
 import chisel3._
 import chisel3.util._
-import gameboy.{Gameboy, PeripheralAccess}
+import gameboy.{Clocker, Gameboy, PeripheralAccess}
 
 class PpuOutput extends Bundle {
   /** Output pixel value */
@@ -118,6 +118,7 @@ class TileAttributes extends Bundle {
 
 class Ppu(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
+    val clocker = Input(new Clocker)
     val output = new PpuOutput
     val registers = new PeripheralAccess
 
@@ -171,16 +172,18 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   val regWx = RegInit(0.U(8.W))
 
   // Tick and scanline adjustment
-  when (tick === (Ppu.NumTicks - 1).U) {
-    tick := 0.U
-    regLx := 0.U
-    when (regLy === (Ppu.NumScanlines - 1).U) {
-      regLy := 0.U
+  when (io.clocker.pulse4Mhz) {
+    when (tick === (Ppu.NumTicks - 1).U) {
+      tick := 0.U
+      regLx := 0.U
+      when (regLy === (Ppu.NumScanlines - 1).U) {
+        regLy := 0.U
+      } .otherwise {
+        regLy := regLy + 1.U
+      }
     } .otherwise {
-      regLy := regLy + 1.U
+      tick := tick + 1.U
     }
-  } .otherwise {
-    tick := tick + 1.U
   }
 
   // HACK: On the last scanline of vblank (153), LY=153 only for one cycle (at most 1 m-cycle) on DMG (2 on CGB),
@@ -241,14 +244,14 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     ).asUInt.orR
 
   // Interrupt request generation
-  io.vblankIrq := !ShiftRegister(stateVblank, 1, false.B, true.B) && stateVblank && regLcdc.enable
+  io.vblankIrq := !RegEnable(stateVblank, false.B, io.clocker.pulse4Mhz) && stateVblank && regLcdc.enable
   val statInterrupt = Cat(Seq(
     (lycEqualFlag && regStat.interruptLyEnable),
     (stateOamSearch && regStat.interruptOamEnable),
     (stateVblank && regStat.interruptVblankEnable),
     (stateHblank && regStat.interruptHblankEnable),
   )).orR
-  io.statIrq := !ShiftRegister(statInterrupt, 1, false.B, true.B) && statInterrupt && regLcdc.enable
+  io.statIrq := !RegEnable(statInterrupt, false.B, io.clocker.pulse4Mhz) && statInterrupt && regLcdc.enable
 
   // Background FIFO
   val bgFifo = Module(new PixelFifo(new BgPixel, true))
@@ -256,7 +259,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   bgFifo.io.reloadEnable := false.B
   bgFifo.io.reloadData := DontCare
   val bgScrollCounter = RegInit(0.U(3.W))
-  when(tick === 80.U) {
+  when (io.clocker.pulse4Mhz && tick === 80.U) {
     // Latch the lower 3 bits of SCX for the bg pixel skip register.
     // Ensure we do this right after OAM search in each scanline
     //   (because SCX can be set up to the last dot of OAM search)
@@ -276,14 +279,13 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   val objActive = oamBufferActive.asUInt.orR && regLcdc.objEnable
   /** The index of the sprite (in the OAM buffer) that is activated */
   val objActiveIndex = PriorityEncoder(oamBufferActive)
-  io.oamAddress := 0.U
   /** Whether we're waiting to fetch or actively fetching an object. */
   val objFetchWaiting = Wire(Bool())
 
   // Output pixel logic
   io.output.pixel := DontCare
   io.output.valid := false.B
-  when (regLcdc.enable && stateDrawing && bgFifo.io.outValid) {
+  when (io.clocker.pulse4Mhz && regLcdc.enable && stateDrawing && bgFifo.io.outValid) {
     when (bgScrollCounter > 0.U) {
       // If we have bg pixels to discard (for SCX % 8) do that now.
       bgFifo.io.popEnable := true.B
@@ -304,6 +306,8 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       // Skip the first 8 pixels to output
       io.output.valid := regLx >= 8.U
       regLx := regLx + 1.U
+
+//      printf(cf"pix ly=${regLy} lx=${regLx} valid=${io.output.valid} bgcol=${bgColor} objColor=${objColor}\n")
     }
   }
 
@@ -312,8 +316,29 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   val windowActive = RegInit(false.B)
   val windowY = Reg(UInt(8.W))
 
+  // OAM and VRAM access are one-cycle delayed. This poses an issue with clock enable,
+  // because if we set the address and update some state, and then the next cycle we
+  // have clock disabled, the data will be gone by the time we are enabled again and
+  // need to use it. The fix for this is to store the addresses in a register, so
+  // we keep outputting the same address until we're done with it.
+  val vramAddress = WireDefault(0.U(13.W))
+  val vramAddressValid = WireDefault(false.B)
+  val regVramAddress = RegInit(0.U(13.W))
+  io.vramAddress := regVramAddress
+  when (vramAddressValid) {
+    io.vramAddress := vramAddress
+    regVramAddress := vramAddress
+  }
+  val oamAddress = WireDefault(0.U(8.W))
+  val oamAddressValid = WireDefault(false.B)
+  val regOamAddress = RegInit(0.U(8.W))
+  io.oamAddress := regOamAddress
+  when (oamAddressValid) {
+    io.oamAddress := oamAddress
+    regOamAddress := oamAddress
+  }
+
   // Background fetch logic
-  io.vramAddress := DontCare
   val fetcherState = RegInit(FetcherState.id0)
   val fetcherTileAttrs = Reg(new TileAttributes)
   val fetcherTileId = RegInit(0.U(8.W))
@@ -339,7 +364,8 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     Mux(fetcherTileAttrs.flipY, ~fetcherTileRow, fetcherTileRow),
   )
   objFetchWaiting := objActive || fetcherIsObj
-  when (stateDrawing) {
+  when (io.clocker.pulse4Mhz && stateDrawing) {
+//    printf(cf"fetcherState=${fetcherState}\n")
     switch(fetcherState) {
       // For the fetcher, we want to ensure that we can push on 'hi1'.
       // We also need to ensure that fetcherTileId is set by lo0.
@@ -349,28 +375,37 @@ class Ppu(config: Gameboy.Configuration) extends Module {
           // Window mode
           val tileY = windowY(7, 3)
           val tileX = fetcherBgX(7, 3)
-          io.vramAddress := Cat("b11".U(2.W), regLcdc.windowTileMapArea, tileY, tileX)
+          vramAddress := Cat("b11".U(2.W), regLcdc.windowTileMapArea, tileY, tileX)
         } .otherwise {
           // Background mode
           val tileY = (regLy + regScy)(7, 3)
           val tileX = (fetcherBgX + regScx)(7, 3)
-          io.vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
+          vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
         }
+        vramAddressValid := true.B
+
         // Start fetching from OAM (only relevant for OBJ)
-        io.oamAddress := Cat(oamBuffer(fetcherObjIndex).index, Ppu.OamByteTile.U(2.W))
+        oamAddress := Cat(oamBuffer(fetcherObjIndex).index, Ppu.OamByteTile.U(2.W))
+        oamAddressValid := true.B
 
         // Read the tile attributes we started reading when we started sprite fetch
         // DMG: BG doesn't have attributes, set this to 0
         fetcherTileAttrs := io.oamDataRead.asTypeOf(new TileAttributes)
         when (!fetcherIsObj) { fetcherTileAttrs := 0.U.asTypeOf(new TileAttributes) }
       }
-      is (FetcherState.id1) { fetcherTileId := Mux(fetcherIsObj, io.oamDataRead, io.vramDataRead) }
-      is (FetcherState.lo0) { io.vramAddress := Cat(fetcherTileAddress, 0.U(1.W)) }
+      is (FetcherState.id1) {
+        fetcherTileId := Mux(fetcherIsObj, io.oamDataRead, io.vramDataRead)
+      }
+      is (FetcherState.lo0) {
+        vramAddress := Cat(fetcherTileAddress, 0.U(1.W))
+        vramAddressValid := true.B
+      }
       is (FetcherState.lo1) {
         // Store this, but also start the address hi fetch so the data is stored by hi1.
         // The most significant bit is the first, so we reverse the order if it's *not* flipped.
         fetcherTileLo := Mux(fetcherTileAttrs.flipX, io.vramDataRead, Reverse(io.vramDataRead))
-        io.vramAddress := Cat(fetcherTileAddress, 1.U(1.W))
+        vramAddress := Cat(fetcherTileAddress, 1.U(1.W))
+        vramAddressValid := true.B
       }
       is (FetcherState.hi0) {
         fetcherTileHi := Mux(fetcherTileAttrs.flipX, io.vramDataRead, Reverse(io.vramDataRead))
@@ -398,24 +433,26 @@ class Ppu(config: Gameboy.Configuration) extends Module {
         }
       }
     }
-    when (fetcherState < FetcherState.hi1) { fetcherState := fetcherState.next }
+    when (fetcherState < FetcherState.hi1) {
+      fetcherState := fetcherState.next
+    }
     // Handle sprite fetch.
     // It's unclear exactly what's supposed to happen here, but it seems:
     //  * a sprite has to be active
     //  * the fetcher must be in the pushing state OR the background fifo isn't empty (?)
-    when(objActive && fetcherState === FetcherState.hi1 && bgFifo.io.outValid) {
+    when (objActive && fetcherState === FetcherState.hi1 && bgFifo.io.outValid) {
       fetcherState := FetcherState.id0
       fetcherIsObj := true.B
       fetcherObjIndex := objActiveIndex
       // Mark this object as invalid (now that we're starting the fetch)
       oamBuffer(objActiveIndex).valid := false.B
-      // Set the address to start fetching the OAM data
-      io.oamAddress := Cat(oamBuffer(objActiveIndex).index, Ppu.OamByteAttributes.U(2.W))
       // The first fetch is repeated twice (only increment if we're not at the start).
       when (bgFifo.io.reloadAck && regLx =/= 0.U) {
         fetcherBgX := fetcherBgX + 8.U
       }
-//      printf(cf"start lx=$regLx obj=${oamBuffer(objActiveIndex).index} objX=${oamBuffer(objActiveIndex).x}\n")
+      // Set the address to start fetching the OAM data
+      oamAddress := Cat(oamBuffer(objActiveIndex).index, Ppu.OamByteAttributes.U(2.W))
+      oamAddressValid := true.B
     } .elsewhen (fetcherState === FetcherState.hi1 && (bgFifo.io.reloadAck || fetcherIsObj)) {
       // Restart as BG fetcher if 1) we're pushing 2) push was successful
       fetcherState := FetcherState.id0
@@ -434,13 +471,15 @@ class Ppu(config: Gameboy.Configuration) extends Module {
 
   // Window activation logic
   // XXX: windowHitWy should only activate at the beginning of oam search?
-  when(stateOamSearch && (regLy === regWy)) { windowHitWy := true.B }
-  when(stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx >= regWx && !objFetchWaiting) {
-    windowActive := true.B
-    fetcherState := FetcherState.id0
-    fetcherBgX := 0.U
-    bgFifo.reset := true.B
-    bgScrollCounter := 0.U
+  when (io.clocker.pulse4Mhz) {
+    when (stateOamSearch && (regLy === regWy)) { windowHitWy := true.B }
+    when (stateDrawing && !windowActive && regLcdc.windowEnable && windowHitWy && regLx >= regWx && !objFetchWaiting) {
+      windowActive := true.B
+      fetcherState := FetcherState.id0
+      fetcherBgX := 0.U
+      bgFifo.reset := true.B
+      bgScrollCounter := 0.U
+    }
   }
 
   // OAM search logic
@@ -450,36 +489,37 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   val oamSearchIndex = tick(6, 1) // index of OAM we're currently searching
   val oamBufferLen = RegInit(0.U(4.W)) // number of objs in the current scanline buffer
   val oamBufferSave = RegInit(false.B) // whether we're saving the current object
-  when (stateOamSearch) {
+  when (io.clocker.pulse4Mhz && stateOamSearch) {
+    oamAddressValid := true.B
     switch (tick(0).asUInt) {
       //  cycle 0: load obj #n's y, set address to obj #n's x
       is (0.U) {
         val objY = io.oamDataRead
         val objHeight = Mux(regLcdc.objSize.asBool, 16.U, 8.U)
         val objActive = ((regLy + 16.U) >= objY) && ((regLy + 16.U) < (objY + objHeight))
+//        printf(cf"obj=$oamSearchIndex objY=$objY ly=$regLy act=$objActive\n")
         oamBufferSave := false.B
         when (objActive && oamBufferLen < Ppu.OamBufferLength.U) {
-//          printf(cf"ly=$regLy, save ${oamSearchIndex}\n")
           oamBufferSave := true.B
           oamBuffer(oamBufferLen).valid := true.B
           oamBuffer(oamBufferLen).index := oamSearchIndex
           oamBuffer(oamBufferLen).y := regLy - objY
         }
-        io.oamAddress := Cat(oamSearchIndex, Ppu.OamByteX.U(2.W))
+        oamAddress := Cat(oamSearchIndex, Ppu.OamByteX.U(2.W))
       }
-      //  cycle 1: load obj #n's x, set address to obj #n's y
+      //  cycle 1: load obj #n's x, set address to obj #(n+1)'s y
       is (1.U) {
-        io.oamAddress := Cat(oamSearchIndex + 1.U, Ppu.OamByteY.U(2.W))
         when (oamBufferSave) {
           oamBuffer(oamBufferLen).x := io.oamDataRead
           oamBufferLen := oamBufferLen + 1.U
         }
+        oamAddress := Cat(oamSearchIndex + 1.U, Ppu.OamByteY.U(2.W))
       }
     }
   }
 
   // On hblank, reset scanline registers
-  when(stateHblank) {
+  when (io.clocker.pulse4Mhz && stateHblank) {
     fetcherState := FetcherState.id0
     fetcherBgX := 0.U
     bgFifo.reset := true.B
@@ -492,14 +532,16 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       oamBuffer(i).valid := false.B
     }
     oamBufferLen := 0.U
+    oamAddress := 0.U
+    oamAddressValid := true.B
   }
   // On vblank, reset frame registers
-  when (stateVblank) {
+  when (io.clocker.pulse4Mhz && stateVblank) {
     windowHitWy := false.B
     windowY := 0.U
   }
   // When LCD/PPU is turned off, reset state
-  when (!regLcdc.enable) {
+  when (io.clocker.pulse4Mhz && !regLcdc.enable) {
     regLy := 0.U
     tick := Ppu.OamScanLength.U
     regLx := (Ppu.Width + 8).U

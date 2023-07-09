@@ -8,6 +8,8 @@ class ChannelIO extends Bundle {
   val trigger = Input(Bool())
   /** Frame sequencer ticks */
   val ticks = Input(new FrameSequencerTicks)
+  /** 4Mhz pulse (with clock enable) */
+  val pulse4Mhz = Input(Bool())
 
   /** Output value of the channel */
   val out = Output(UInt(4.W))

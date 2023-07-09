@@ -8,7 +8,7 @@ class PeripheralAccess extends Bundle {
   val address = Input(UInt(8.W))
   /** Whether there's an access attempt */
   val enabled = Input(Bool())
-  /** Whether the access is a write */
+  /** Whether the access is a write. Includes clock enable gate. */
   val write = Input(Bool())
   /** The data being written */
   val dataWrite = Input(UInt(8.W))

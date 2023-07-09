@@ -2,23 +2,19 @@ package gameboy
 
 import chisel3._
 import chisel3.util._
-import gameboy.Timer.{RegisterControl, fallingEdgeDetector}
+import gameboy.Timer.RegisterControl
 
 object Timer {
   class RegisterControl extends Bundle {
     val enable = Bool()
     val frequency = UInt(2.W)
   }
-
-  private def fallingEdgeDetector(in: Bool): Bool = {
-    ShiftRegister(in, 1, false.B, true.B) && (!in)
-  }
 }
 
 class Timer extends Module {
   val io = IO(new PeripheralAccess {
+    val clocker = Input(new Clocker)
     val interruptRequest = Output(Bool())
-    val phiPulse = Input(Bool())
     /** Bit 4 (5 in double-speed) of DIV, at 512 Hz */
     val divApu = Output(Bool())
     /** From DIV, edges at 16384 Hz (x2 in double speed) */
@@ -27,7 +23,7 @@ class Timer extends Module {
 
   // Register definitions
   val regDivider = RegInit(0.U(16.W))
-  when (io.phiPulse) { regDivider := regDivider + 1.U }
+  when (io.clocker.phiPulse) { regDivider := regDivider + 1.U }
   val regCounter = RegInit(0.U(8.W))
   val regModulo = RegInit(0.U(8.W))
   val regControl = RegInit(0.U.asTypeOf(new RegisterControl))
@@ -35,11 +31,11 @@ class Timer extends Module {
   io.divSerial := regDivider(5)
 
   // Timer logic
-  val dividerOut = VecInit(Seq(7, 1, 3, 5).map(regDivider(_)))(regControl.frequency)
-  val counterIncrement = fallingEdgeDetector(dividerOut && regControl.enable)
+  val dividerOut = regControl.enable && VecInit(Seq(7, 1, 3, 5).map(regDivider(_)))(regControl.frequency)
+  val counterIncrement = RegEnable(dividerOut, false.B, io.clocker.enable) && !dividerOut
   val counterReload = WireDefault(regModulo)
   val counterPostIncrement = regCounter +& 1.U
-  val counterOverflowDelay = ShiftRegister(counterIncrement && counterPostIncrement(8), 1, false.B, true.B)
+  val counterOverflowDelay = RegEnable(counterIncrement && counterPostIncrement(8), false.B, io.clocker.enable)
   val counterWritten = WireDefault(false.B)
 
   // Priority 3/3: memory mapped write to counter
@@ -76,14 +72,15 @@ class Timer extends Module {
     // FF07 — TAC: Timer control
     when (io.address === 0x07.U) {
       io.valid := true.B
-      when (io.write) { regControl := io.dataWrite(2, 0).asTypeOf(new RegisterControl) }
-        .otherwise { io.dataRead := Cat(1.U(5.W), regControl.asUInt) }
+      when (io.write) {
+        regControl := io.dataWrite(2, 0).asTypeOf(new RegisterControl)
+      } .otherwise { io.dataRead := Cat(1.U(5.W), regControl.asUInt) }
     }
   }
 
   val counterOverflowed = counterOverflowDelay && !counterWritten
   io.interruptRequest := counterOverflowed
-  when (counterOverflowed) {
+  when (counterOverflowed && io.clocker.enable) {
     // Priority 1/3: reload overflowing counter
     regCounter := counterReload
   }

@@ -5,7 +5,7 @@ import chisel3.util._
 
 class OamDma extends Module {
   val io = IO(new PeripheralAccess {
-    val phiPulse = Input(Bool())
+    val clocker = Input(new Clocker)
     val active = Output(Bool())
     val dmaAddress = Output(UInt(16.W))
   })
@@ -29,7 +29,7 @@ class OamDma extends Module {
     }
   }
 
-  when (active && io.phiPulse) {
+  when (active && io.clocker.phiPulse) {
     when (counter === (160 - 1).U) {
       active := false.B
     } .otherwise {

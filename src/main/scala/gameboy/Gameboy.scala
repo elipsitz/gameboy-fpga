@@ -44,6 +44,10 @@ class JoypadState extends Bundle {
  */
 class Gameboy(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
+    // Control signals
+    val enable = Input(Bool())
+
+    // Regular I/O signals
     val cartridge = new CartridgeIo()
     val ppu = new PpuOutput()
     val joypad = Input(new JoypadState)
@@ -55,15 +59,20 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     val cpuDebug = Output(new Cpu.DebugState)
   })
 
+  // Clock control module
+  val clockControl = Module(new ClockControl)
+  clockControl.io.enable := io.enable
+  io.tCycle := clockControl.io.clocker.tCycle
+
   // Module: CPU
   val cpu = Module(new Cpu(config))
+  cpu.io.clocker := clockControl.io.clocker
   cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
-  val phiPulse = cpu.io.tCycle === 3.U
-  io.tCycle := cpu.io.tCycle
   io.cpuDebug := cpu.io.debugState
 
   // Module: PPU
   val ppu = Module(new Ppu(config))
+  ppu.io.clocker := clockControl.io.clocker
   io.ppu := ppu.io.output
   cpu.io.interruptRequest.vblank := ppu.io.vblankIrq
   cpu.io.interruptRequest.lcdStat := ppu.io.statIrq
@@ -71,12 +80,13 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // Module: OAM DMA
   val oamDma = Module(new OamDma)
   val oamDmaData = WireDefault(0xFF.U(8.W))
-  oamDma.io.phiPulse := phiPulse
+  oamDma.io.clocker := clockControl.io.clocker
   val oamDmaSelectExternal = oamDma.io.dmaAddress(15, 8) < 0x80.U || oamDma.io.dmaAddress(15, 8) >= 0xA0.U
   val oamDmaSelectVram = !oamDmaSelectExternal
 
   // Module: APU
   val apu = Module(new Apu(config))
+  apu.io.clocker := clockControl.io.clocker
   io.apu := apu.io.output
 
   // Memories
@@ -87,7 +97,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
   // Peripheral: Timer
   val timer = Module(new Timer)
-  timer.io.phiPulse := phiPulse
+  timer.io.clocker := clockControl.io.clocker
   cpu.io.interruptRequest.timer := timer.io.interruptRequest
   apu.io.divApu := timer.io.divApu
 
@@ -98,6 +108,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
   // Peripheral: Serial
   val serial = Module(new Serial(config))
+  serial.io.clocker := clockControl.io.clocker
   serial.io.divSerial := timer.io.divSerial
   cpu.io.interruptRequest.serial := serial.io.interruptRequest
   io.serial <> serial.io.serial
@@ -140,7 +151,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // Work ram
   workRam.io.address := busAddress(12, 0)
   workRam.io.enabled := busMemEnable && workRamSelect
-  workRam.io.write := busMemWrite && phiPulse
+  workRam.io.write := busMemWrite && clockControl.io.clocker.phiPulse
   workRam.io.dataWrite := busDataWrite
 
   // Video ram
@@ -164,7 +175,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     // CPU is controlling VRAM bus
     videoRam.io.address := cpu.io.memAddress
     videoRam.io.enabled := cpu.io.memEnable && cpuVideoRamSelect
-    videoRam.io.write := cpu.io.memWrite && phiPulse
+    videoRam.io.write := cpu.io.memWrite && clockControl.io.clocker.phiPulse
     videoRam.io.dataWrite := cpu.io.memDataOut
   }
   ppu.io.vramDataRead := videoRam.io.dataRead
@@ -178,7 +189,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     // OAM DMA is writing
     oam.io.address := oamDma.io.dmaAddress(7, 0)
     oam.io.enabled := true.B
-    oam.io.write := phiPulse
+    oam.io.write := clockControl.io.clocker.phiPulse
     oam.io.dataWrite := oamDmaData
   } .elsewhen (ppu.io.oamEnabled) {
     // PPU has control of OAM bus
@@ -190,7 +201,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     // CPU is controlling OAM bus
     oam.io.address := cpu.io.memAddress(7, 0)
     oam.io.enabled := cpu.io.memEnable && cpuOamSelect
-    oam.io.write := cpu.io.memWrite && phiPulse
+    oam.io.write := cpu.io.memWrite && clockControl.io.clocker.phiPulse
     oam.io.dataWrite := cpu.io.memDataOut
   }
   ppu.io.oamDataRead := oam.io.dataRead
@@ -210,7 +221,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   for (peripheral <- peripherals) {
     peripheral.address := cpu.io.memAddress(7, 0)
     peripheral.enabled := peripheralSelect && cpu.io.memEnable
-    peripheral.write := cpu.io.memWrite && phiPulse
+    peripheral.write := cpu.io.memWrite && clockControl.io.clocker.phiPulse
     peripheral.dataWrite := cpu.io.memDataOut
   }
   val peripheralValid = peripheralSelect && VecInit(peripherals.map(_.valid)).asUInt.orR

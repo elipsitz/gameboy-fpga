@@ -70,6 +70,13 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
         this->stepFramebuffer();
         this->stepAudio();
 
+        // Simulate 8 Mhz clock
+        top->io_enable = false;
+        top->clock = 0;
+        top->eval();
+        top->clock = 1;
+        top->eval();
+        top->io_enable = true;
         top->clock = 0;
         top->eval();
         top->clock = 1;
