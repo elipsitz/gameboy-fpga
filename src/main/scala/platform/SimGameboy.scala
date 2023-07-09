@@ -27,6 +27,7 @@ class SimGameboy extends Module {
   val gameboyConfig = Gameboy.Configuration(
     skipBootrom = true,
     optimizeForSimulation = true,
+    model = Gameboy.Model.Cgb,
   )
   val gameboy = Module(new Gameboy(gameboyConfig))
   gameboy.io.enable := io.enable

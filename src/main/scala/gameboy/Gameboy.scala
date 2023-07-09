@@ -241,10 +241,26 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 }
 
 object Gameboy extends App {
+  object Model extends Enumeration {
+    type Model = Value
+    val Dmg = Value
+    val Cgb = Value
+
+    implicit class ModelValue(model: Value) {
+      def isCgb: Boolean = model match {
+        case Cgb => true
+        case _ => false
+      }
+    }
+  }
+  import Gameboy.Model.Model
+
   case class Configuration(
     /** Whether to skip the boot rom */
     skipBootrom: Boolean,
     /** Whether to optimize for simulation, at the cost of potentially breaking synthesis. */
     optimizeForSimulation: Boolean = false,
+    /** The model of Gameboy */
+    model: Model = Model.Dmg,
   )
 }
