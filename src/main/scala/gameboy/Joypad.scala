@@ -5,6 +5,7 @@ import chisel3.util._
 
 class Joypad extends Module {
   val io = IO(new PeripheralAccess {
+    val clocker = Input(new Clocker)
     val state = Input(new JoypadState())
     val interruptRequest = Output(Bool())
   })
@@ -20,7 +21,7 @@ class Joypad extends Module {
 
   io.dataRead := Cat("b1100".U(4.W), readState)
   // IRQ when any bit in readState goes from high to low
-  io.interruptRequest := (RegNext(readState, 0.U) & (~readState).asUInt).orR
+  io.interruptRequest := (RegEnable(readState, 0.U, io.clocker.enable) & (~readState).asUInt).orR
 
   io.valid := false.B
   when (io.enabled && io.address === 0x00.U) {

@@ -39,7 +39,7 @@ class Timer extends Module {
   val counterWritten = WireDefault(false.B)
 
   // Priority 3/3: memory mapped write to counter
-  when (counterIncrement) { regCounter := counterPostIncrement(7, 0) }
+  when (counterIncrement && io.clocker.enable) { regCounter := counterPostIncrement(7, 0) }
 
   // Register read/write (memory mapped)
   io.dataRead := DontCare

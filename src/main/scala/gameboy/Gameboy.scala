@@ -103,6 +103,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
   // Peripheral: Joypad
   val joypad = Module(new Joypad)
+  joypad.io.clocker := clockControl.io.clocker
   joypad.io.state := io.joypad
   cpu.io.interruptRequest.joypad := joypad.io.interruptRequest
 
