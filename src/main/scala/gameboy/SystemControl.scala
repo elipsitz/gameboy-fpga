@@ -20,7 +20,12 @@ class SystemControl(config: Gameboy.Configuration) extends Module {
   val regVramBank = RegInit(0.U(1.W))
   val regWramBank = RegInit(0.U(3.W))
   io.bootRomMapped := !regBootOff
-  io.cgbMode := regCgbMode
+  if (config.model.isCgb) {
+    // DMG compatibility mode doesn't take effect until leaving the bootrom.
+    io.cgbMode := !regBootOff || regCgbMode
+  } else {
+    io.cgbMode := false.B
+  }
   io.vramBank := regVramBank
   io.wramBank := Mux(regWramBank === 0.U, 1.U, regWramBank)
 
