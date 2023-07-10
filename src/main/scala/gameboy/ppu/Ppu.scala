@@ -364,6 +364,19 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     fetcherTileIdLsb,
     Mux(fetcherTileAttrs.flipY, ~fetcherTileRow, fetcherTileRow),
   )
+  val fetcherBgWindowTileIdAddress = Wire(UInt(13.W))
+  when (windowActive) {
+    // Window mode
+    val tileY = windowY(7, 3)
+    val tileX = fetcherBgX(7, 3)
+    fetcherBgWindowTileIdAddress := Cat("b11".U(2.W), regLcdc.windowTileMapArea, tileY, tileX)
+  } .otherwise {
+    // Background mode
+    val tileY = (regLy + regScy)(7, 3)
+    val tileX = (fetcherBgX + regScx)(7, 3)
+    fetcherBgWindowTileIdAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
+  }
+
   objFetchWaiting := objActive || fetcherIsObj
   when (io.clocker.pulse4Mhz && stateDrawing) {
 //    printf(cf"fetcherState=${fetcherState}\n")
@@ -372,17 +385,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       // We also need to ensure that fetcherTileId is set by lo0.
       is (FetcherState.id0) {
         // Set tile ID address (only relevant for BG/Window)
-        when (windowActive) {
-          // Window mode
-          val tileY = windowY(7, 3)
-          val tileX = fetcherBgX(7, 3)
-          vramAddress := Cat("b11".U(2.W), regLcdc.windowTileMapArea, tileY, tileX)
-        } .otherwise {
-          // Background mode
-          val tileY = (regLy + regScy)(7, 3)
-          val tileX = (fetcherBgX + regScx)(7, 3)
-          vramAddress := Cat("b11".U(2.W), regLcdc.bgTileMapArea, tileY, tileX)
-        }
+        vramAddress := Cat(0.U(1.W), fetcherBgWindowTileIdAddress)
         vramAddressValid := true.B
 
         // Start fetching from OAM (only relevant for OBJ)
@@ -396,8 +399,17 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       }
       is (FetcherState.id1) {
         fetcherTileId := Mux(fetcherIsObj, io.oamDataRead, io.vramDataRead)
+
+        // CGB: load BG tile attributes
+        vramAddress := Cat(1.U(1.W), fetcherBgWindowTileIdAddress)
+        vramAddressValid := true.B
       }
       is (FetcherState.lo0) {
+        // CGB: store BG tile attributes
+        when (!fetcherIsObj && io.cgbMode) {
+          fetcherTileAttrs := io.vramDataRead.asTypeOf(new TileAttributes)
+        }
+
         vramAddress := Cat(fetcherTileAddress, 0.U(1.W))
         vramAddressValid := true.B
       }
