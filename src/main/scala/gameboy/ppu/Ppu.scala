@@ -6,7 +6,7 @@ import gameboy.{Clocker, Gameboy, PeripheralAccess}
 
 class PpuOutput extends Bundle {
   /** Output pixel value */
-  val pixel = Output(UInt(2.W))
+  val pixel = Output(UInt(15.W))
   /** Whether the pixel this clock is valid */
   val valid = Output(Bool())
   /** Whether the PPU is in hblank */
@@ -299,10 +299,10 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       // CGB: LCDC.bgEnable has a different meaning (sprite priority)
       bgFifo.io.popEnable := true.B
       val bgIndex = Mux(regLcdc.bgEnable || io.cgbMode, bgFifo.io.outData.color, 0.U)
-      val bgColor = regBgp.colors(bgIndex)
+      val bgColorDmg = regBgp.colors(bgIndex)
       objFifo.io.popEnable := true.B
       val objIndex = Mux(objFifo.io.outValid && regLcdc.objEnable, objFifo.io.outData.color, 0.U)
-      val objColor = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp0).colors(objIndex)
+      val objColorDmg = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp0).colors(objIndex)
       // Mix pixels and output
       val bgPriority = Wire(Bool())
       when (io.cgbMode) {
@@ -316,7 +316,24 @@ class Ppu(config: Gameboy.Configuration) extends Module {
             objFifo.io.outData.bgPriority
       }
 
-      io.output.pixel := Mux(objIndex === 0.U || bgPriority, bgColor, objColor)
+      if (config.model.isCgb) {
+        when (io.cgbMode) {
+          // Use CGB palettes
+        } .otherwise {
+          // DMG compatibility mode: index into CGB palettes with DMG palettes
+        }
+
+        // TODO implement this, and delete this code:
+        val grayPixel = Mux(objIndex === 0.U || bgPriority, bgColorDmg, objColorDmg)
+        io.output.pixel := Fill(3, Fill(3, (~grayPixel).asUInt)(5, 1))
+      } else {
+        // DMG output. Expand the grayscale to 15-bits.
+        // Note that DMG grayscale is inverted -- 00 is white, 11 is black.
+        // Fill(3, Fill(3, (~gameboy.io.ppu.pixel).asUInt)(5, 1))
+        val grayPixel = Mux(objIndex === 0.U || bgPriority, bgColorDmg, objColorDmg)
+        io.output.pixel := Fill(3, Fill(3, (~grayPixel).asUInt)(5, 1))
+      }
+
       // Skip the first 8 pixels to output
       io.output.valid := regLx >= 8.U
       regLx := regLx + 1.U

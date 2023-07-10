@@ -5,7 +5,7 @@
 // "hollow knight inspired" palette
 //static const uint32_t palette[4] = {0xfafbf6, 0xc6b7be, 0x565a75, 0x0f0f1b};
 // gray palette
-static const uint32_t palette[4] = {0xffffff, 0xaaaaaa, 0x555555, 0x000000};
+//static const uint32_t palette[4] = {0xffffff, 0xaaaaaa, 0x555555, 0x000000};
 
 Simulator::Simulator(std::unique_ptr<Cartridge> cart) : cart(std::move(cart))
 {
@@ -102,11 +102,13 @@ void Simulator::stepFramebuffer()
             return;
         }
 
-        uint8_t pixel = top->io_ppu_pixel;
-        uint32_t color = palette[pixel];
-        framebuffer[framebufferIndex++] = (color >> 0) & 0xFF;
-        framebuffer[framebufferIndex++] = (color >> 8) & 0xFF;
-        framebuffer[framebufferIndex++] = (color >> 16) & 0xFF;
+        uint16_t pixel = top->io_ppu_pixel;
+        uint8_t r = (pixel >> 0) & 0x1F;
+        uint8_t g = (pixel >> 5) & 0x1F;
+        uint8_t b = (pixel >> 10) & 0x1F;
+        framebuffer[framebufferIndex++] = (r << 3) | (r >> 2);
+        framebuffer[framebufferIndex++] = (g << 3) | (g >> 2);
+        framebuffer[framebufferIndex++] = (b << 3) | (b >> 2);
         framebuffer[framebufferIndex++] = 0xFF;
     }
 

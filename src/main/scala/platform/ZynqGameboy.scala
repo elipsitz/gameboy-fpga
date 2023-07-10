@@ -44,6 +44,7 @@ class ZynqGameboy extends Module {
   val gameboyConfig = Gameboy.Configuration(
     skipBootrom = false,
     optimizeForSimulation = false,
+    model = Gameboy.Model.Dmg,
   )
   val gameboy = Module(new Gameboy(gameboyConfig))
   io.ppu <> gameboy.io.ppu
@@ -179,9 +180,7 @@ class ZynqGameboy extends Module {
     } .elsewhen (gameboy.io.ppu.valid) {
       io.framebufferWriteEnable := true.B
       io.framebufferWriteAddr := (framebufferY * 160.U(8.W)) + framebufferX
-      // TODO deal with 15-bit output from gameboy
-      // DMG output is inverted -- 00 is white, not black.
-      io.framebufferWriteData := Fill(3, Fill(3, (~gameboy.io.ppu.pixel).asUInt)(5, 1))
+      io.framebufferWriteData := gameboy.io.ppu.pixel
       framebufferX := framebufferX + 1.U
     }
   }
