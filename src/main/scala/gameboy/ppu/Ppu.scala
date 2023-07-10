@@ -85,6 +85,8 @@ class ObjPixel extends Bundle {
   val palette = UInt(1.W)
   /** BG priority (0: obj has priority, 1: bg colors 1-3 have priority) */
   val bgPriority = Bool()
+  /** [CGB only] OAM index */
+  val oamIndex = UInt(6.W)
 }
 
 object FetcherState extends ChiselEnum {
@@ -442,11 +444,15 @@ class Ppu(config: Gameboy.Configuration) extends Module {
           objFifo.io.reloadEnable := true.B
           objFifo.io.reloadData := VecInit((0 until 8).map(i => {
             val pixel = WireDefault(objFifo.io.register(i))
-            // Merge with existing contents. Only overwrite if the pixel index is 0.
-            when (objFifo.io.register(i).color === 0.U) {
+            // Merge with existing contents.
+            // Overwrite if the pixel index is 0,
+            //  OR in CGB-mode and this obj has a lower OAM index than the existing one.
+            val overwrite = io.cgbMode && (fetcherObjIndex < objFifo.io.register(i).oamIndex)
+            when (overwrite || objFifo.io.register(i).color === 0.U) {
               pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
               pixel.palette := fetcherTileAttrs.palette
               pixel.bgPriority := fetcherTileAttrs.priority
+              pixel.oamIndex := fetcherObjIndex
             }
             pixel
           }))
