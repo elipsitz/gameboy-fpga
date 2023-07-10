@@ -391,6 +391,8 @@ module top_pynq_z2 (
     assign gb_dataRead = cartridge_D;
     assign cartridge_D = (gb_cart_enable && gb_cart_write) ? gb_dataWrite : 8'hzz;
     assign cartridge_A = gb_cart_address;
+    // TODO: see how this interacts with HDMA in regular speed mode.
+    // Probably doesn't matter, because even though HDMA is faster, it *never* writes.
     assign cartridge_nWR = ~(gb_cart_enable && gb_cart_write && (gb_tCycle == 2'd1 || gb_tCycle == 2'd2));
     assign cartridge_nRD = ~cartridge_nWR;
     assign cartridge_nCS = gb_cart_chipSelect; // high for ROM low for RAM 

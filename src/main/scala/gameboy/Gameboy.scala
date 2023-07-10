@@ -12,6 +12,11 @@ class CartridgeIo extends Bundle {
   val address = Output(UInt(16.W))
   /** Whether a memory access is being performed */
   val enable = Output(Bool())
+  /**
+   * Whether the cartridge access started previously must complete by the next clock rise.
+   * If the access isn't ready, the Gameboy should be stalled until it is.
+   */
+  val deadline = Output(Bool())
   /** Whether the memory access is a write */
   val write = Output(Bool())
   /** Chip select (high for ROM, low for RAM) */
@@ -143,6 +148,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
   // Cartridge access signals
   io.cartridge.enable := busMemEnable && (cartRomSelect || cartRamSelect)
+  io.cartridge.deadline := clockControl.io.clocker.tCycle === 3.U
   io.cartridge.write := busMemWrite
   io.cartridge.chipSelect := cartRomSelect
   io.cartridge.dataWrite := busDataWrite

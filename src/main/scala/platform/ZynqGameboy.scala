@@ -151,8 +151,8 @@ class ZynqGameboy extends Module {
   val pulse4Mhz = RegInit(false.B)
   pulse4Mhz := !pulse4Mhz
   val waitingForCart = Wire(Bool())
-  // Stall if we're on t=3 and we're still waiting for the emulated cartridge.
-  val cartStall = waitingForCart && gameboy.io.tCycle === 3.U
+  // Stall if the access deadline is here but we're still waiting for the emulated cartridge.
+  val cartStall = gameboy.io.cartridge.deadline && waitingForCart
   gameboy.io.enable := false.B
   when (pulse4Mhz && configRegControl.running) {
     when (cartStall) {
@@ -200,6 +200,7 @@ class ZynqGameboy extends Module {
     // Disconnect physical cartridge
     io.cartridge.write := false.B
     io.cartridge.enable := false.B
+    io.cartridge.deadline := false.B
     io.cartridge.dataWrite := 0.U
     io.cartridge.chipSelect := false.B
     io.cartridge.address := 0.U
@@ -211,6 +212,7 @@ class ZynqGameboy extends Module {
     // Disconnect emulated cartridge
     emuCart.io.cartridgeIo.write := false.B
     emuCart.io.cartridgeIo.enable := false.B
+    emuCart.io.cartridgeIo.deadline := false.B
     emuCart.io.cartridgeIo.dataWrite := 0.U
     emuCart.io.cartridgeIo.chipSelect := false.B
     emuCart.io.cartridgeIo.address := 0.U
