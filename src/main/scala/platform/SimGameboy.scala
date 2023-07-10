@@ -3,7 +3,7 @@ package platform
 import chisel3._
 import gameboy.apu.ApuOutput
 import gameboy.cart.{EmuCartConfig, EmuCartridge, EmuCartridgeDataAccess, EmuMbc}
-import gameboy.{Gameboy, JoypadState}
+import gameboy.{ClockConfig, Gameboy, JoypadState}
 import gameboy.ppu.PpuOutput
 
 object SimGameboy extends App {
@@ -12,7 +12,7 @@ object SimGameboy extends App {
 
 class SimGameboy extends Module {
   val io = IO(new Bundle {
-    val enable = Input(Bool())
+    val clockConfig = new ClockConfig
 
     val ppu = new PpuOutput
     val joypad = Input(new JoypadState)
@@ -30,7 +30,7 @@ class SimGameboy extends Module {
     model = Gameboy.Model.Cgb,
   )
   val gameboy = Module(new Gameboy(gameboyConfig))
-  gameboy.io.enable := io.enable
+  io.clockConfig <> gameboy.io.clockConfig
   io.ppu <> gameboy.io.ppu
   io.joypad <> gameboy.io.joypad
   io.apu <> gameboy.io.apu

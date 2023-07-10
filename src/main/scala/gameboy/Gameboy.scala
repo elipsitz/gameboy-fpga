@@ -50,7 +50,7 @@ class JoypadState extends Bundle {
 class Gameboy(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
     // Control signals
-    val enable = Input(Bool())
+    val clockConfig = new ClockConfig
 
     // Regular I/O signals
     val cartridge = new CartridgeIo()
@@ -66,7 +66,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
   // Clock control module
   val clockControl = Module(new ClockControl)
-  clockControl.io.enable := io.enable
+  io.clockConfig <> clockControl.io.clockConfig
   io.tCycle := clockControl.io.clocker.tCycle
 
   // Module: CPU

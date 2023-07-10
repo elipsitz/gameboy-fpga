@@ -17,25 +17,39 @@ class Clocker extends Bundle {
   val tCycle = UInt(2.W)
 }
 
+class ClockConfig extends Bundle {
+  /// Global clock enable signal.
+  val enable = Input(Bool())
+  /// Whether an 8 MHz clock is required.
+  val need8Mhz = Output(Bool())
+  /// True if an 8 Mhz clock is being provided (false for a 4 Mhz one)
+  val provide8Mhz = Input(Bool())
+}
+
+// TODO: handle double-speed mode
 class ClockControl extends Module {
   val io = IO(new Bundle {
-    /// Global enable signal
-    val enable = Input(Bool())
-
+    /// Clock configuration
+    val clockConfig = new ClockConfig
     /// Output clocker signals
     val clocker = Output(new Clocker)
   })
 
-  io.clocker.enable := io.enable
+  io.clockConfig.need8Mhz := false.B
 
-  val tCycle = RegInit(0.U(2.W))
-  when (io.enable) {
-    tCycle := tCycle + 1.U
+  // Combined tCycle counter and clock divider
+  val counter = RegInit(0.U(3.W))
+  when (io.clockConfig.enable) {
+    counter := counter + Mux(io.clockConfig.provide8Mhz, 1.U, 2.U)
   }
-  io.clocker.tCycle := tCycle
 
-  io.clocker.phiPulse := io.enable && (tCycle === 3.U)
-
-  // TODO handle double speed
-  io.clocker.pulse4Mhz := io.enable
+  when (io.clockConfig.provide8Mhz) {
+    io.clocker.enable := io.clockConfig.enable && counter(0)
+    io.clocker.pulse4Mhz := io.clocker.enable
+  } .otherwise {
+    io.clocker.enable := io.clockConfig.enable
+    io.clocker.pulse4Mhz := io.clocker.enable
+  }
+  io.clocker.tCycle := counter(2, 1)
+  io.clocker.phiPulse := io.clocker.enable && (io.clocker.tCycle === 3.U)
 }

@@ -147,21 +147,20 @@ class ZynqGameboy extends Module {
     }
   }
 
-  // Gameboy enable (and clock, 4 Mhz)
-  val pulse4Mhz = RegInit(false.B)
-  pulse4Mhz := !pulse4Mhz
+  // Gameboy clock control
   val waitingForCart = Wire(Bool())
   // Stall if the access deadline is here but we're still waiting for the emulated cartridge.
   val cartStall = gameboy.io.cartridge.deadline && waitingForCart
-  gameboy.io.enable := false.B
-  when (pulse4Mhz && configRegControl.running) {
+  gameboy.io.clockConfig.enable := false.B
+  when (configRegControl.running) {
     when (cartStall) {
       statNumStalls := statNumStalls + 1.U
     } .otherwise {
-      gameboy.io.enable := true.B
+      gameboy.io.clockConfig.enable := true.B
       statNumClocks := statNumClocks + 1.U
     }
   }
+  gameboy.io.clockConfig.provide8Mhz := true.B
   gameboy.reset := configRegControl.reset
 
   // Framebuffer output
@@ -169,7 +168,7 @@ class ZynqGameboy extends Module {
   val framebufferY = RegInit(0.U(8.W))
 
   val prevHblank = RegInit(false.B)
-  when (gameboy.io.enable) {
+  when (gameboy.io.clockConfig.enable) {
     prevHblank := gameboy.io.ppu.hblank
     when (gameboy.io.ppu.vblank) {
       framebufferX := 0.U

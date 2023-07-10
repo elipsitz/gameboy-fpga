@@ -24,6 +24,7 @@ Simulator::~Simulator()
 
 void Simulator::reset()
 {
+    top->io_clockConfig_enable = true;
     top->io_dataAccess_dataRead = 0;
     top->io_cartConfig_mbcType = cart->mbc_type;
     top->io_cartConfig_hasRam = cart->has_ram;
@@ -31,7 +32,7 @@ void Simulator::reset()
     top->io_cartConfig_hasRumble = cart->has_rumble;
     top->reset = 1;
 
-    uint64_t total = 4 - (cycles % 4);
+    uint64_t total = 8 - (cycles % 8);
     simulate_cycles(total);
 
     top->reset = 0;
@@ -53,7 +54,12 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
 {
     bool prevAccessEnable = false;
 
-    for (uint64_t i = 0; i < num_cycles; i++) {
+    for (uint64_t i = 0; i < num_cycles * 2; i++) {
+        top->io_clockConfig_provide8Mhz = top->io_clockConfig_need8Mhz;
+        if (!top->io_clockConfig_provide8Mhz) {
+            i++;
+        }
+
         // Handle memory.
         if (top->io_dataAccess_enable && !prevAccessEnable) {
             std::vector<uint8_t>& mem = top->io_dataAccess_selectRom ? cart->rom : cart->ram;
@@ -70,13 +76,6 @@ void Simulator::simulate_cycles(uint64_t num_cycles)
         this->stepFramebuffer();
         this->stepAudio();
 
-        // Simulate 8 Mhz clock
-        top->io_enable = false;
-        top->clock = 0;
-        top->eval();
-        top->clock = 1;
-        top->eval();
-        top->io_enable = true;
         top->clock = 0;
         top->eval();
         top->clock = 1;
