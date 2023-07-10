@@ -44,7 +44,7 @@ class ZynqGameboy extends Module {
   val gameboyConfig = Gameboy.Configuration(
     skipBootrom = false,
     optimizeForSimulation = false,
-    model = Gameboy.Model.Dmg,
+    model = Gameboy.Model.Cgb,
   )
   val gameboy = Module(new Gameboy(gameboyConfig))
   io.ppu <> gameboy.io.ppu

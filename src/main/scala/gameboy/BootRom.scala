@@ -19,7 +19,11 @@ class BootRom(config: Gameboy.Configuration) extends Module {
     case Model.Dmg => "/dmg_boot.bin"
     case Model.Cgb => "/cgb_boot.bin"
   }
-  val data = getClass.getResourceAsStream(filename).readAllBytes()
+  var data = getClass.getResourceAsStream(filename).readAllBytes()
+  if (data.length == (2048 + 256)) {
+    // CGB-style bootrom, but with extra padding in the middle. Remove it.
+    data = data.slice(0, 256) ++ data.slice(512, 2048 + 256)
+  }
   val rom = Module(new MemRomTable(config,
     UInt(log2Ceil(data.length).W),
     data.map(x => (x & 0xFF).U(8.W)).toIndexedSeq)
