@@ -76,6 +76,8 @@ class BgPixel extends Bundle {
   val color = UInt(2.W)
   /** [CGB only] BG-to-OAM priority (0=Use OAM Priority bit, 1=BG Priority) */
   val bgPriority = Bool()
+  /** [CGB only] CGB Palette */
+  val paletteCgb = UInt(3.W)
 }
 
 class ObjPixel extends Bundle {
@@ -87,6 +89,8 @@ class ObjPixel extends Bundle {
   val bgPriority = Bool()
   /** [CGB only] OAM index */
   val oamIndex = UInt(6.W)
+  /** [CGB only] CGB Palette */
+  val paletteCgb = UInt(3.W)
 }
 
 object FetcherState extends ChiselEnum {
@@ -118,6 +122,16 @@ class TileAttributes extends Bundle {
   val vramBank = UInt(1.W)
   /** CGB: palette number */
   val paletteCgb = UInt(3.W)
+}
+
+/** In CGB mode, used to index into palette memory. */
+class RegisterCgbPaletteIndex extends Bundle {
+  /** Increment address writing data if true. */
+  val autoIncrement = Bool()
+  /** Padding bit. */
+  val padding = UInt(1.W)
+  /** Palette memory address */
+  val address = UInt(6.W)
 }
 
 class Ppu(config: Gameboy.Configuration) extends Module {
@@ -176,6 +190,13 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   /** $FF4B -- WX: Window X position (plus 7) */
   val regWx = RegInit(0.U(8.W))
 
+  /** $FF68 -- BCPS (CGB only): BG palette index */
+  val regBcps = RegInit(0.U.asTypeOf(new RegisterCgbPaletteIndex))
+  /** $FF6A -- OCPS (CGB only): Obj palette index */
+  val regOcps = RegInit(0.U.asTypeOf(new RegisterCgbPaletteIndex))
+  val cgbPaletteBg = RegInit(VecInit(Seq.fill(64)(0.U(8.W))))
+  val cgbPaletteObj = RegInit(VecInit(Seq.fill(64)(0.U(8.W))))
+
   // Tick and scanline adjustment
   when (io.clocker.pulse4Mhz) {
     when (tick === (Ppu.NumTicks - 1).U) {
@@ -221,6 +242,30 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       is (0x49.U) { regObp1 := io.registers.dataWrite.asTypeOf(new RegisterPalette) }
       is (0x4A.U) { regWy := io.registers.dataWrite }
       is (0x4B.U) { regWx := io.registers.dataWrite }
+
+      // CGB-only palette registers
+      is (0x68.U) {
+        when (io.cgbMode) {
+          regBcps := io.registers.dataWrite.asTypeOf(new RegisterCgbPaletteIndex)
+        }
+      }
+      is (0x69.U) {
+        when (io.cgbMode && !stateDrawing) {
+          cgbPaletteBg(regBcps.address) := io.registers.dataWrite
+          when (regBcps.autoIncrement) { regBcps.address := regBcps.address + 1.U }
+        }
+      }
+      is (0x6A.U) {
+        when (io.cgbMode) {
+          regOcps := io.registers.dataWrite.asTypeOf(new RegisterCgbPaletteIndex)
+        }
+      }
+      is (0x6B.U) {
+        when (io.cgbMode && !stateDrawing) {
+          cgbPaletteObj(regOcps.address) := io.registers.dataWrite
+          when (regOcps.autoIncrement) { regOcps.address := regOcps.address + 1.U }
+        }
+      }
     }
   }
   io.registers.dataRead := 0xFF.U
@@ -240,13 +285,28 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       is (0x49.U) { io.registers.dataRead := regObp1.asUInt }
       is (0x4A.U) { io.registers.dataRead := regWy }
       is (0x4B.U) { io.registers.dataRead := regWx }
+
+      // CGB-only palette registers
+      is (0x68.U) { io.registers.dataRead := regBcps.asUInt }
+      is (0x69.U) {
+        when (!stateDrawing) {
+          io.registers.dataRead := cgbPaletteBg(regBcps.address)
+        }
+      }
+      is (0x6A.U) { io.registers.dataRead := regOcps.asUInt }
+      is (0x6B.U) {
+        when (!stateDrawing) {
+          io.registers.dataRead := cgbPaletteObj(regOcps.address)
+        }
+      }
     }
   }
   io.registers.valid :=
     VecInit(
       Seq(0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x47, 0x48, 0x49, 0x4A, 0x4B)
         .map(io.registers.address === _.U)
-    ).asUInt.orR
+    ).asUInt.orR ||
+      (io.cgbMode && io.registers.address >= 0x68.U && io.registers.address <= 0x6B.U)
 
   // Interrupt request generation
   io.vblankIrq := !RegEnable(stateVblank, false.B, io.clocker.pulse4Mhz) && stateVblank && regLcdc.enable
@@ -317,19 +377,24 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       }
 
       if (config.model.isCgb) {
+        val bgPalette = Wire(UInt(5.W))
+        val objPalette = Wire(UInt(5.W))
         when (io.cgbMode) {
           // Use CGB palettes
+          bgPalette := Cat(bgFifo.io.outData.paletteCgb, bgIndex)
+          objPalette := Cat(objFifo.io.outData.paletteCgb, objIndex)
         } .otherwise {
           // DMG compatibility mode: index into CGB palettes with DMG palettes
+          // TODO test this once bootrom works
+          bgPalette := Cat(bgFifo.io.outData.paletteCgb, bgColorDmg)
+          objPalette := Cat(objFifo.io.outData.paletteCgb, objColorDmg)
         }
-
-        // TODO implement this, and delete this code:
-        val grayPixel = Mux(objIndex === 0.U || bgPriority, bgColorDmg, objColorDmg)
-        io.output.pixel := Fill(3, Fill(3, (~grayPixel).asUInt)(5, 1))
+        val bgColorCgb = Cat(cgbPaletteBg(Cat(bgPalette, 1.U(1.W))), cgbPaletteBg(Cat(bgPalette, 0.U(1.W))))
+        val objColorCgb = Cat(cgbPaletteObj(Cat(objPalette, 1.U(1.W))), cgbPaletteObj(Cat(objPalette, 0.U(1.W))))
+        io.output.pixel := Mux(objIndex === 0.U || bgPriority, bgColorCgb, objColorCgb)
       } else {
         // DMG output. Expand the grayscale to 15-bits.
         // Note that DMG grayscale is inverted -- 00 is white, 11 is black.
-        // Fill(3, Fill(3, (~gameboy.io.ppu.pixel).asUInt)(5, 1))
         val grayPixel = Mux(objIndex === 0.U || bgPriority, bgColorDmg, objColorDmg)
         io.output.pixel := Fill(3, Fill(3, (~grayPixel).asUInt)(5, 1))
       }
@@ -470,6 +535,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
               pixel.palette := fetcherTileAttrs.palette
               pixel.bgPriority := fetcherTileAttrs.priority
               pixel.oamIndex := fetcherObjIndex
+              pixel.paletteCgb := fetcherTileAttrs.paletteCgb
             }
             pixel
           }))
@@ -479,6 +545,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
             val pixel = Wire(new BgPixel)
             pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
             pixel.bgPriority := fetcherTileAttrs.priority
+            pixel.paletteCgb := fetcherTileAttrs.paletteCgb
             pixel
           }))
         }

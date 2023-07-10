@@ -106,9 +106,9 @@ void Simulator::stepFramebuffer()
         uint8_t r = (pixel >> 0) & 0x1F;
         uint8_t g = (pixel >> 5) & 0x1F;
         uint8_t b = (pixel >> 10) & 0x1F;
-        framebuffer[framebufferIndex++] = (r << 3) | (r >> 2);
-        framebuffer[framebufferIndex++] = (g << 3) | (g >> 2);
         framebuffer[framebufferIndex++] = (b << 3) | (b >> 2);
+        framebuffer[framebufferIndex++] = (g << 3) | (g >> 2);
+        framebuffer[framebufferIndex++] = (r << 3) | (r >> 2);
         framebuffer[framebufferIndex++] = 0xFF;
     }
 
