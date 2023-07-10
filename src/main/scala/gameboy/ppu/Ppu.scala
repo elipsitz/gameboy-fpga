@@ -359,6 +359,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     fetcherTileIdLsb := oamBuffer(fetcherObjIndex).y(3) ^ fetcherTileAttrs.flipY
   }
   val fetcherTileAddress = Cat(
+    Mux(io.cgbMode, fetcherTileAttrs.vramBank, 0.U(1.W)),
     !fetcherIsObj && !(regLcdc.bgTileDataArea | fetcherTileId(7)),
     fetcherTileId(7, 1),
     fetcherTileIdLsb,
