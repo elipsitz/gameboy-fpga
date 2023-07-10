@@ -98,8 +98,10 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   io.apu := apu.io.output
 
   // Memories
-  val workRam = Module(new SinglePortRam(8 * 1024)) // DMG: 0xC000 to 0xDFFF
-  val videoRam = Module(new SinglePortRam(8 * 1024)) // 0x8000 to 0x9FFF
+  val workRamSize = if (config.model.isCgb) { 32 * 1024} else { 8 * 1024 }
+  val workRam = Module(new SinglePortRam(workRamSize)) // DMG: 0xC000 to 0xDFFF
+  val videoRamSize = if (config.model.isCgb) { 16 * 1024} else { 8 * 1024 }
+  val videoRam = Module(new SinglePortRam(videoRamSize)) // 0x8000 to 0x9FFF
   val oam = Module(new SinglePortRam(160)) // 0xFE00 to 0xFE9F
   val highRam = Module(new HighRam)
 
@@ -160,7 +162,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   when (cartRomSelect || cartRamSelect) { busDataRead := io.cartridge.dataRead }
 
   // Work ram
-  workRam.io.address := busAddress(12, 0)
+  workRam.io.address := Cat(Mux(busAddress(12), systemControl.io.wramBank, 0.U), busAddress(11, 0))
   workRam.io.enabled := busMemEnable && workRamSelect
   workRam.io.write := busMemWrite && clockControl.io.clocker.phiPulse
   workRam.io.dataWrite := busDataWrite
@@ -171,7 +173,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // Priority: OAM DMA > PPU > CPU
   val cpuVideoRamSelect = cpu.io.memAddress >= 0x8000.U && cpu.io.memAddress < 0xA000.U
   when (oamDma.io.active && oamDmaSelectVram) {
-    videoRam.io.address := oamDma.io.dmaAddress(12, 0)
+    videoRam.io.address := Cat(systemControl.io.vramBank, oamDma.io.dmaAddress(12, 0))
     videoRam.io.enabled := true.B
     videoRam.io.write := false.B
     videoRam.io.dataWrite := DontCare
@@ -184,7 +186,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     videoRam.io.dataWrite := DontCare
   } .otherwise {
     // CPU is controlling VRAM bus
-    videoRam.io.address := cpu.io.memAddress
+    videoRam.io.address := Cat(systemControl.io.vramBank, cpu.io.memAddress(12, 0))
     videoRam.io.enabled := cpu.io.memEnable && cpuVideoRamSelect
     videoRam.io.write := cpu.io.memWrite && clockControl.io.clocker.phiPulse
     videoRam.io.dataWrite := cpu.io.memDataOut
