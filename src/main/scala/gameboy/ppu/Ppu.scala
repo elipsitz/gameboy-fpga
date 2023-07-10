@@ -74,6 +74,8 @@ class PixelFifo[T <: Data](gen: T, mustBeEmpty: Boolean) extends Module {
 class BgPixel extends Bundle {
   /** Color */
   val color = UInt(2.W)
+  /** [CGB only] BG-to-OAM priority (0=Use OAM Priority bit, 1=BG Priority) */
+  val bgPriority = Bool()
 }
 
 class ObjPixel extends Bundle {
@@ -300,10 +302,19 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       val objIndex = Mux(objFifo.io.outValid && regLcdc.objEnable, objFifo.io.outData.color, 0.U)
       val objColor = Mux(objFifo.io.outData.palette.asBool, regObp1, regObp0).colors(objIndex)
       // Mix pixels and output
-      io.output.pixel := Mux(
-        objIndex === 0.U || (objFifo.io.outData.bgPriority && bgIndex =/= 0.U),
-        bgColor, objColor
-      )
+      val bgPriority = Wire(Bool())
+      when (io.cgbMode) {
+        bgPriority :=
+            bgIndex =/= 0.U &&
+            regLcdc.bgEnable &&
+            (objFifo.io.outData.bgPriority || bgFifo.io.outData.bgPriority)
+      } .otherwise {
+        bgPriority :=
+            bgIndex =/= 0.U &&
+            objFifo.io.outData.bgPriority
+      }
+
+      io.output.pixel := Mux(objIndex === 0.U || bgPriority, bgColor, objColor)
       // Skip the first 8 pixels to output
       io.output.valid := regLx >= 8.U
       regLx := regLx + 1.U
@@ -441,9 +452,12 @@ class Ppu(config: Gameboy.Configuration) extends Module {
           }))
         } .otherwise {
           bgFifo.io.reloadEnable := true.B
-          bgFifo.io.reloadData := VecInit(
-            (0 until 8).map(i => Cat(fetcherTileHi(i), fetcherTileLo(i)).asTypeOf(new BgPixel))
-          )
+          bgFifo.io.reloadData := VecInit((0 until 8).map(i => {
+            val pixel = Wire(new BgPixel)
+            pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
+            pixel.bgPriority := fetcherTileAttrs.priority
+            pixel
+          }))
         }
       }
     }
