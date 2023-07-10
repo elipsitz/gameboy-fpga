@@ -69,6 +69,9 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   io.clockConfig <> clockControl.io.clockConfig
   io.tCycle := clockControl.io.clocker.tCycle
 
+  // Module: System control
+  val systemControl = Module(new SystemControl(config))
+
   // Module: CPU
   val cpu = Module(new Cpu(config))
   cpu.io.clocker := clockControl.io.clocker
@@ -122,6 +125,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // Boot rom
   val bootRom = Module(new BootRom(config))
   bootRom.io.address := cpu.io.memAddress
+  bootRom.io.mapped := systemControl.io.bootRomMapped
 
   // External bus read/write logic
   val busAddress = WireDefault(cpu.io.memAddress)
@@ -221,7 +225,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     ppu.io.registers,
     oamDma.io,
     joypad.io,
-    bootRom.io.peripheral,
+    systemControl.io,
     apu.io.reg,
   )
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
