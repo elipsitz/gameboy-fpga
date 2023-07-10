@@ -121,6 +121,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     val clocker = Input(new Clocker)
     val output = new PpuOutput
     val registers = new PeripheralAccess
+    val cgbMode = Input(Bool())
 
     // IRQs
     val vblankIrq = Output(Bool())
@@ -130,7 +131,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     /** Whether the PPU is accessing VRAM */
     val vramEnabled = Output(Bool())
     /** Which VRAM address the PPU is accessing */
-    val vramAddress = Output(UInt(13.W))
+    val vramAddress = Output(UInt(14.W))
     /** Data read from VRAM (synchronous, in the next clock cycle) */
     val vramDataRead = Input(UInt(8.W))
 
@@ -293,7 +294,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     } .elsewhen (!objFetchWaiting) {
       // CGB: LCDC.bgEnable has a different meaning (sprite priority)
       bgFifo.io.popEnable := true.B
-      val bgIndex = Mux(regLcdc.bgEnable, bgFifo.io.outData.color, 0.U)
+      val bgIndex = Mux(regLcdc.bgEnable || io.cgbMode, bgFifo.io.outData.color, 0.U)
       val bgColor = regBgp.colors(bgIndex)
       objFifo.io.popEnable := true.B
       val objIndex = Mux(objFifo.io.outValid && regLcdc.objEnable, objFifo.io.outData.color, 0.U)
@@ -321,9 +322,9 @@ class Ppu(config: Gameboy.Configuration) extends Module {
   // have clock disabled, the data will be gone by the time we are enabled again and
   // need to use it. The fix for this is to store the addresses in a register, so
   // we keep outputting the same address until we're done with it.
-  val vramAddress = WireDefault(0.U(13.W))
+  val vramAddress = WireDefault(0.U(14.W))
   val vramAddressValid = WireDefault(false.B)
-  val regVramAddress = RegInit(0.U(13.W))
+  val regVramAddress = RegInit(0.U(14.W))
   io.vramAddress := regVramAddress
   when (vramAddressValid) {
     io.vramAddress := vramAddress

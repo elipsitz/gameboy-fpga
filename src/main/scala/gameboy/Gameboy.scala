@@ -81,6 +81,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // Module: PPU
   val ppu = Module(new Ppu(config))
   ppu.io.clocker := clockControl.io.clocker
+  ppu.io.cgbMode := systemControl.io.cgbMode
   io.ppu := ppu.io.output
   cpu.io.interruptRequest.vblank := ppu.io.vblankIrq
   cpu.io.interruptRequest.lcdStat := ppu.io.statIrq
