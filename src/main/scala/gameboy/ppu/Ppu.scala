@@ -453,12 +453,16 @@ class Ppu(config: Gameboy.Configuration) extends Module {
     // For an 8x16 object, the lower bit is 0 for the top half, 1 for the bottom (inverted if flipped)
     fetcherTileIdLsb := oamBuffer(fetcherObjIndex).y(3) ^ fetcherTileAttrs.flipY
   }
+  // Bypass the tile attrs register if we're fetching the attrs *this clock*.
+  val fetcherTileAttrsBypass = WireDefault(false.B)
+  val fetcherTileAttrsEffective = Mux(fetcherTileAttrsBypass,
+    io.vramDataRead.asTypeOf(new TileAttributes), fetcherTileAttrs)
   val fetcherTileAddress = Cat(
-    Mux(io.cgbMode, fetcherTileAttrs.vramBank, 0.U(1.W)),
+    Mux(io.cgbMode, fetcherTileAttrsEffective.vramBank, 0.U(1.W)),
     !fetcherIsObj && !(regLcdc.bgTileDataArea | fetcherTileId(7)),
     fetcherTileId(7, 1),
     fetcherTileIdLsb,
-    Mux(fetcherTileAttrs.flipY, ~fetcherTileRow, fetcherTileRow),
+    Mux(fetcherTileAttrsEffective.flipY, ~fetcherTileRow, fetcherTileRow),
   )
   val fetcherBgWindowTileIdAddress = Wire(UInt(13.W))
   when (windowActive) {
@@ -504,6 +508,9 @@ class Ppu(config: Gameboy.Configuration) extends Module {
         // CGB: store BG tile attributes
         when (!fetcherIsObj && io.cgbMode) {
           fetcherTileAttrs := io.vramDataRead.asTypeOf(new TileAttributes)
+          // We need these attrs to compute fetcherTileAddress, so tell it to bypass the register
+          // and just use the io.vramDataRead (for now).
+          fetcherTileAttrsBypass := true.B
         }
 
         vramAddress := Cat(fetcherTileAddress, 0.U(1.W))
