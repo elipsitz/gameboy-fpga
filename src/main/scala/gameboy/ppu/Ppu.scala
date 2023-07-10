@@ -533,12 +533,13 @@ class Ppu(config: Gameboy.Configuration) extends Module {
           objFifo.io.reloadEnable := true.B
           objFifo.io.reloadData := VecInit((0 until 8).map(i => {
             val pixel = WireDefault(objFifo.io.register(i))
+            val newColor = Cat(fetcherTileHi(i), fetcherTileLo(i))
             // Merge with existing contents.
             // Overwrite if the pixel index is 0,
             //  OR in CGB-mode and this obj has a lower OAM index than the existing one.
-            val overwrite = io.cgbMode && (fetcherObjIndex < objFifo.io.register(i).oamIndex)
+            val overwrite = io.cgbMode && (fetcherObjIndex < objFifo.io.register(i).oamIndex) && newColor =/= 0.U
             when (overwrite || objFifo.io.register(i).color === 0.U) {
-              pixel.color := Cat(fetcherTileHi(i), fetcherTileLo(i))
+              pixel.color := newColor
               pixel.palette := fetcherTileAttrs.palette
               pixel.bgPriority := fetcherTileAttrs.priority
               pixel.oamIndex := fetcherObjIndex
