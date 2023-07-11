@@ -49,12 +49,18 @@ class Cpu(config: Gameboy.Configuration) extends Module {
     val memDataOut = Output(UInt(8.W))
     /** Interrupt requests from peripherals */
     val interruptRequest = Input(new Cpu.InterruptFlags)
+    /** Whether the CPU is in the STOP state */
+    val stopState = Output(Bool())
+    /** Whether the CPU should exit the STOP state */
+    val stopStateExit = Input(Bool())
 
     /** Debug */
     val debugState = Output(new DebugState)
   })
 
   val control = Module(new Control(config))
+  io.stopState := control.io.stopState
+  control.io.stopStateExit := io.stopStateExit
   val controlSignals = control.io.signals
   val alu = Module(new Alu())
   val aluFlagNext = Wire(new Alu.Flags)

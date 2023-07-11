@@ -385,7 +385,6 @@ class Ppu(config: Gameboy.Configuration) extends Module {
           objPalette := Cat(objFifo.io.outData.paletteCgb, objIndex)
         } .otherwise {
           // DMG compatibility mode: index into CGB palettes with DMG palettes
-          // TODO test this once bootrom works
           bgPalette := Cat(bgFifo.io.outData.paletteCgb, bgColorDmg)
           objPalette := Cat(objFifo.io.outData.paletteCgb, objColorDmg)
         }

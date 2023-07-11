@@ -19,6 +19,8 @@ class Timer extends Module {
     val divApu = Output(Bool())
     /** From DIV, edges at 16384 Hz (x2 in double speed) */
     val divSerial = Output(Bool())
+    /** Pulsed when DIV overflows back to 0 */
+    val divOverflow = Output(Bool())
   })
 
   // Register definitions
@@ -27,8 +29,9 @@ class Timer extends Module {
   val regCounter = RegInit(0.U(8.W))
   val regModulo = RegInit(0.U(8.W))
   val regControl = RegInit(0.U.asTypeOf(new RegisterControl))
-  io.divApu := regDivider(6 + 4)
+  io.divApu := Mux(io.clocker.doubleSpeed, regDivider(6 + 5), regDivider(6 + 4))
   io.divSerial := regDivider(5)
+  io.divOverflow := io.clocker.phiPulse && (regDivider + 1.U === 0.U)
 
   // Timer logic
   val dividerOut = regControl.enable && VecInit(Seq(7, 1, 3, 5).map(regDivider(_)))(regControl.frequency)

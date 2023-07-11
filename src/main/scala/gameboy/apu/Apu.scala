@@ -43,7 +43,6 @@ class Apu(config: Gameboy.Configuration) extends Module {
   // Frame sequencer
   val frameSequencer = Module(new FrameSequencer)
   frameSequencer.io.clockEnable := io.clocker.enable
-  // TODO: CGB: handle double-speed mode
   frameSequencer.io.divApu := io.divApu
 
   // Channel 1

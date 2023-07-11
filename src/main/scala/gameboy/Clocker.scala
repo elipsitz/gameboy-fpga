@@ -3,7 +3,7 @@ package gameboy
 import chisel3._
 
 class Clocker extends Bundle {
-  /// Clock enable signal.
+  /// Clock enable signal. 4 Mhz normally, or 8 Mhz in double-speed mode.
   val enable = Bool()
 
   /// 1-clock pulse at the end of a Phi cycle.
@@ -13,8 +13,11 @@ class Clocker extends Bundle {
   /// 4 MHz pulse (regardless of double-speed mode). Used by PPU and APU
   val pulse4Mhz = Bool()
 
-  // T-cycle counter
+  /// T-cycle counter
   val tCycle = UInt(2.W)
+
+  /// True if we're in double-speed mode
+  val doubleSpeed = Output(Bool())
 }
 
 class ClockConfig extends Bundle {
@@ -26,30 +29,38 @@ class ClockConfig extends Bundle {
   val provide8Mhz = Input(Bool())
 }
 
-// TODO: handle double-speed mode
 class ClockControl extends Module {
   val io = IO(new Bundle {
     /// Clock configuration
     val clockConfig = new ClockConfig
     /// Output clocker signals
     val clocker = Output(new Clocker)
+    /// Whether we're in double-speed mode
+    val doubleSpeed = Input(Bool())
   })
 
-  io.clockConfig.need8Mhz := false.B
+  io.clockConfig.need8Mhz := io.doubleSpeed
+  io.clocker.doubleSpeed := io.doubleSpeed
 
   // Combined tCycle counter and clock divider
   val counter = RegInit(0.U(3.W))
   when (io.clockConfig.enable) {
-    counter := counter + Mux(io.clockConfig.provide8Mhz, 1.U, 2.U)
+    // Assume the provided clock is 8 MHz if we're in double-speed mode.
+    counter := counter + Mux(io.clockConfig.provide8Mhz || io.doubleSpeed, 1.U, 2.U)
   }
 
-  when (io.clockConfig.provide8Mhz) {
-    io.clocker.enable := io.clockConfig.enable && counter(0)
-    io.clocker.pulse4Mhz := io.clocker.enable
+  when (io.clockConfig.provide8Mhz || io.doubleSpeed) {
+    when (io.doubleSpeed) {
+      io.clocker.enable := io.clockConfig.enable
+      io.clocker.pulse4Mhz := io.clocker.enable && counter(0)
+    } .otherwise {
+      io.clocker.enable := io.clockConfig.enable && counter(0)
+      io.clocker.pulse4Mhz := io.clocker.enable
+    }
   } .otherwise {
     io.clocker.enable := io.clockConfig.enable
     io.clocker.pulse4Mhz := io.clocker.enable
   }
-  io.clocker.tCycle := counter(2, 1)
+  io.clocker.tCycle := Mux(io.doubleSpeed, counter(1, 0), counter(2, 1))
   io.clocker.phiPulse := io.clocker.enable && (io.clocker.tCycle === 3.U)
 }

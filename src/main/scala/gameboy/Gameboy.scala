@@ -71,11 +71,15 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
 
   // Module: System control
   val systemControl = Module(new SystemControl(config))
+  systemControl.io.clocker := clockControl.io.clocker
+  clockControl.io.doubleSpeed := systemControl.io.doubleSpeed
 
   // Module: CPU
   val cpu = Module(new Cpu(config))
   cpu.io.clocker := clockControl.io.clocker
   cpu.io.interruptRequest := 0.U.asTypeOf(new Cpu.InterruptFlags)
+  systemControl.io.cpuStopState := cpu.io.stopState
+  cpu.io.stopStateExit := systemControl.io.cpuStopExit
   io.cpuDebug := cpu.io.debugState
 
   // Module: PPU
@@ -111,6 +115,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   timer.io.clocker := clockControl.io.clocker
   cpu.io.interruptRequest.timer := timer.io.interruptRequest
   apu.io.divApu := timer.io.divApu
+  systemControl.io.divOverflow := timer.io.divOverflow
 
   // Peripheral: Joypad
   val joypad = Module(new Joypad)

@@ -6,6 +6,8 @@ import chisel3.util._
 /** Miscellaneous 'system control' registers. */
 class SystemControl(config: Gameboy.Configuration) extends Module {
   val io = IO(new PeripheralAccess {
+    val clocker = Input(new Clocker)
+
     /** True if the boot rom is mapped. */
     val bootRomMapped = Output(Bool())
     /** True if this is a CGB and CGB mode has been enabled. */
@@ -13,12 +15,25 @@ class SystemControl(config: Gameboy.Configuration) extends Module {
 
     val vramBank = Output(UInt(1.W))
     val wramBank = Output(UInt(3.W))
+
+    /** Pulsed when DIV overflows */
+    val divOverflow = Input(Bool())
+    /** Whether the CPU is in the 'STOP' state */
+    val cpuStopState = Input(Bool())
+    /** Whether the CPU should exit the STOP state */
+    val cpuStopExit = Output(Bool())
+    /** Whether we're in double-speed mode */
+    val doubleSpeed = Output(Bool())
   })
 
   val regBootOff = RegInit(config.skipBootrom.B)
   val regCgbMode = RegInit(config.model.isCgb.B)
   val regVramBank = RegInit(0.U(1.W))
   val regWramBank = RegInit(0.U(3.W))
+  val regDoubleSpeed = RegInit(false.B)
+  /** True if speed should switch upon next STOP and DIV overflow. */
+  val regPrepareSpeedSwitch = RegInit(false.B)
+
   io.bootRomMapped := !regBootOff
   if (config.model.isCgb) {
     // DMG compatibility mode doesn't take effect until leaving the bootrom.
@@ -28,6 +43,16 @@ class SystemControl(config: Gameboy.Configuration) extends Module {
   }
   io.vramBank := regVramBank
   io.wramBank := Mux(regWramBank === 0.U, 1.U, regWramBank)
+
+  // Handle speed switching
+  io.cpuStopExit := false.B
+  when (io.clocker.enable && regPrepareSpeedSwitch && io.cpuStopState && io.divOverflow) {
+    printf(cf"Speed switch -> double speed: ${!regDoubleSpeed}\n")
+    io.cpuStopExit := true.B
+    regDoubleSpeed := !regDoubleSpeed
+    regPrepareSpeedSwitch := false.B
+  }
+  io.doubleSpeed := regDoubleSpeed
 
   // System control registers
   when (io.enabled && io.write) {
@@ -47,6 +72,11 @@ class SystemControl(config: Gameboy.Configuration) extends Module {
         }
       }
 
+      // 0xFF4D - KEY1 (CGB only): Prepare speed switch
+      is (0x4D.U) {
+        when (regCgbMode) { regPrepareSpeedSwitch := io.dataWrite(0) }
+      }
+
       // FF70 - SVBK (CGB Mode only): WRAM bank
       is (0x70.U) {
         when (regCgbMode) { regWramBank := io.dataWrite(2, 0) }
@@ -59,7 +89,7 @@ class SystemControl(config: Gameboy.Configuration) extends Module {
     }
   }
   when (regCgbMode) {
-    io.valid := Seq(0x50, 0x4C, 0x70, 0x4F).map(io.address === _.U).reduce((a, b) => a || b)
+    io.valid := Seq(0x50, 0x4C, 0x70, 0x4F, 0x4D).map(io.address === _.U).reduce((a, b) => a || b)
   } .otherwise {
     io.valid := (io.address === 0x50.U)
   }
@@ -69,6 +99,7 @@ class SystemControl(config: Gameboy.Configuration) extends Module {
       is (0x50.U) { io.dataRead := Cat("b1111111".U(7.W), regBootOff) }
       is (0x70.U) { io.dataRead := Cat("b11111".U(5.W), regWramBank) }
       is (0x4F.U) { io.dataRead := Cat("b1111111".U(7.W), regVramBank) }
+      is (0x4D.U) { io.dataRead := Cat(regDoubleSpeed, "b111111".U(6.W), regPrepareSpeedSwitch) }
     }
   }
 }

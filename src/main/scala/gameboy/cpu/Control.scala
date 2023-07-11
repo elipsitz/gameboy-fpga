@@ -206,6 +206,10 @@ class Control(config: Gameboy.Configuration) extends Module {
     val condition = Input(Bool())
     /** Whether interrupts are pending (IE & IF) =/= 0 */
     val interruptsPending = Input(Bool())
+    /** Whether CPU is in the 'STOP' state */
+    val stopState = Output(Bool())
+    /** Whether the CPU should exit the 'STOP' state */
+    val stopStateExit = Input(Bool())
 
     /** Control signals */
     val signals = Output(new ControlSignals)
@@ -314,5 +318,15 @@ class Control(config: Gameboy.Configuration) extends Module {
     }
     when (row.imeUpdate === ImeUpdate.enable) { delayedImeSet := true.B }
     when (row.imeUpdate === ImeUpdate.disable) { ime := false.B}
+  }
+
+  // Handle STOP mode.
+  // NOTE: 'STOP' actually has much more complex and inconsistent behavior...
+  // but for this we're only doing what's needed for speed switching
+  val stopped = state === microcode.stateForLabel("#STOP_loop").U
+  io.stopState := stopped
+  when (io.clocker.enable && stopped && io.stopStateExit) {
+    // Set this after microcode table above so it takes effect.
+    state := microcode.stateForLabel("NOP").U
   }
 }
