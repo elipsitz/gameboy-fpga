@@ -25,14 +25,11 @@ filesets:
       - verilog/zynq_ps.tcl : {file_type : tclSource}
       - verilog/top_pynq_z2.sv : {file_type : systemVerilogSource}
 
-  zynq_ps:
+  pynq_cartridge_access:
     files:
-      - verilog/zynq_ps.tcl : {file_type : tclSource}
-
-  pynq_overlay_test:
-    files:
-      - verilog/top_pynq_overlay_test.sv : {file_type : systemVerilogSource}
-      - verilog/pynq_overlay_test.xdc : {file_type : xdc}
+      - verilog/pynq_z2.xdc : {file_type : xdc}
+      - verilog/pynq_cartridge_access_ps.tcl : {file_type : tclSource}
+      - verilog/top_pynq_cartridge_access.sv : {file_type : systemVerilogSource}
 
 generate:
   gameboy:
@@ -61,18 +58,17 @@ targets:
   pynq_z2:
     default_tool: vivado
     description: Synthesize the design for Pynq-Z2 board
-    filesets: [base, hdmi, pynq_z2, zynq_ps]
+    filesets: [base, hdmi, pynq_z2]
     generate: [zynq_gameboy]
     tools:
       vivado:
         part: xc7z020clg400-1
     toplevel: top_pynq_z2
 
-  pynq_overlay_test:
+  pynq_cartridge_access:
     default_tool: vivado
-    filesets: [base, zynq_ps, pynq_overlay_test]
-    generate: [zynq_gameboy]
+    filesets: [base, pynq_cartridge_access]
     tools:
       vivado:
         part: xc7z020clg400-1
-    toplevel: top_pynq_overlay_test
+    toplevel: top_pynq_cartridge_access
