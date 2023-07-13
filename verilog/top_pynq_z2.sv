@@ -13,11 +13,27 @@ module top_pynq_z2 (
     output cartridge_nRD,
     output cartridge_nCS,
     output cartridge_nRST,
+    output cartridge_PHI,
+    input cartridge_VIN,
 
-    // Connections to serial
-    inout serial_clock,
-    input serial_in,
-    output serial_out,
+    // Cartridge shifter control
+    output cartridge_n_oe,
+    output cartridge_dir_ctrl,
+    output cartridge_dir_A_lo,
+    output cartridge_dir_A_hi,
+    output cartridge_dir_D,
+    output cartridge_dir_nRST,
+    output cartridge_dir_VIN,
+
+    // Connections to link port
+    output link_clock,
+    output link_dir_clock,
+    output link_data,
+    output link_dir_data,
+    output link_in,
+    output link_dir_in,
+    output link_out,
+    output link_dir_out,
 
     // PS EMIO I2C connections
     inout ps_i2c_scl,
@@ -388,6 +404,15 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     // Physical Cartridge I/O
     /////////////////////////////////////////////////
+    // Direction: high is output, low is input
+    assign cartridge_n_oe = 1'b0; // Enabled (active low).
+    assign cartridge_dir_ctrl = 1'b1; // Output
+    assign cartridge_dir_A_lo = 1'b1; // Output
+    assign cartridge_dir_A_hi = 1'b1; // Output
+    assign cartridge_dir_D = ~cartridge_nWR; // Output if writing.
+    assign cartridge_dir_nRST = 1'b1; // Output
+    assign cartridge_dir_VIN = 1'b0; // Input
+
     assign gb_dataRead = cartridge_D;
     assign cartridge_D = (gb_cart_enable && gb_cart_write) ? gb_dataWrite : 8'hzz;
     assign cartridge_A = gb_cart_address;
@@ -397,21 +422,20 @@ module top_pynq_z2 (
     assign cartridge_nRD = ~cartridge_nWR;
     assign cartridge_nCS = gb_cart_chipSelect; // high for ROM low for RAM 
     assign cartridge_nRST = ~reset_8mhz;
+    assign cartridge_PHI = 1'b0; // TODO?
 
     /////////////////////////////////////////////////
     // Physical Serial I/O
     /////////////////////////////////////////////////
-    logic serial_clock_pre;
-    logic serial_in_pre;
-    always_ff @(posedge clk_8mhz) begin
-        serial_clock_pre <= serial_clock;
-        gb_serial_clockIn <= serial_clock_pre;
-
-        serial_in_pre <= serial_in;
-        gb_serial_in <= serial_in_pre;
-    end
-    assign serial_clock = gb_serial_clockEnable ? (gb_serial_clockOut ? 1'bz : 1'b0) : 1'bz;
-    assign serial_out = gb_serial_out ? 1'bz : 1'b0;
+    // TODO re-do serial I/O with new connections
+    assign link_clock = 1'bz;
+    assign link_dir_clock = 1'b0;
+    assign link_data = 1'bz;
+    assign link_dir_data = 1'b0;
+    assign link_in = 1'bz;
+    assign link_dir_in = 1'b0;
+    assign link_out = 1'bz;
+    assign link_dir_out = 1'b0;
 
     /////////////////////////////////////////////////
     // Gameboy Audio output
