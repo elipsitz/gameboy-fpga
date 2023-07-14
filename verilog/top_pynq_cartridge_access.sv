@@ -19,14 +19,14 @@ module top_pynq_cartridge_access (
     inout cartridge_dir_VIN,
 
     // Link cable
-    output link_clock,
-    output link_dir_clock,
-    output link_data,
-    output link_dir_data,
-    output link_in,
-    output link_dir_in,
-    output link_out,
-    output link_dir_out,
+    inout link_clock,
+    inout link_dir_clock,
+    inout link_data,
+    inout link_dir_data,
+    inout link_in,
+    inout link_dir_in,
+    inout link_out,
+    inout link_dir_out,
 
     // Switches, buttons, and LEDs on the board
     output [3:0] leds
@@ -46,14 +46,14 @@ module top_pynq_cartridge_access (
 
     assign leds[3:0] = GPIO_O[3:0];
 
-    assign link_clock = 1'bz;
-    assign link_dir_clock = 1'b0;
-    assign link_data = 1'bz;
-    assign link_dir_data = 1'b0;
-    assign link_in = 1'bz;
-    assign link_dir_in = 1'b0;
-    assign link_out = 1'bz;
-    assign link_dir_out = 1'b0;
+    // assign link_clock = 1'bz;
+    // assign link_dir_clock = 1'b0;
+    // assign link_data = 1'bz;
+    // assign link_dir_data = 1'b0;
+    // assign link_in = 1'bz;
+    // assign link_dir_in = 1'b0;
+    // assign link_out = 1'bz;
+    // assign link_dir_out = 1'b0;
 
     /////////////////////////////////////////////////
     // Physical Cartridge I/O
@@ -100,5 +100,14 @@ module top_pynq_cartridge_access (
     IOBUF GPIO_iobuf_36 (.IO(cartridge_D[6]), .I(GPIO_O[36]), .O(GPIO_I[36]), .T(GPIO_T[36]));
     IOBUF GPIO_iobuf_37 (.IO(cartridge_D[7]), .I(GPIO_O[37]), .O(GPIO_I[37]), .T(GPIO_T[37]));
 
+
+    IOBUF GPIO_iobuf_38 (.IO(link_clock), .I(GPIO_O[38]), .O(GPIO_I[38]), .T(GPIO_T[38]));
+    IOBUF GPIO_iobuf_39 (.IO(link_dir_clock), .I(GPIO_O[39]), .O(GPIO_I[39]), .T(GPIO_T[39]));
+    IOBUF GPIO_iobuf_40 (.IO(link_data), .I(GPIO_O[40]), .O(GPIO_I[40]), .T(GPIO_T[40]));
+    IOBUF GPIO_iobuf_41 (.IO(link_dir_data), .I(GPIO_O[41]), .O(GPIO_I[41]), .T(GPIO_T[41]));
+    IOBUF GPIO_iobuf_42 (.IO(link_in), .I(GPIO_O[42]), .O(GPIO_I[42]), .T(GPIO_T[42]));
+    IOBUF GPIO_iobuf_43 (.IO(link_dir_in), .I(GPIO_O[43]), .O(GPIO_I[43]), .T(GPIO_T[43]));
+    IOBUF GPIO_iobuf_44 (.IO(link_out), .I(GPIO_O[44]), .O(GPIO_I[44]), .T(GPIO_T[44]));
+    IOBUF GPIO_iobuf_45 (.IO(link_dir_out), .I(GPIO_O[45]), .O(GPIO_I[45]), .T(GPIO_T[45]));
 
 endmodule

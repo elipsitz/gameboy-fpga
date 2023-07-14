@@ -26,11 +26,11 @@ module top_pynq_z2 (
     output cartridge_dir_VIN,
 
     // Connections to link port
-    output link_clock,
+    inout link_clock,
     output link_dir_clock,
-    output link_data,
+    inout link_data,
     output link_dir_data,
-    output link_in,
+    input link_in,
     output link_dir_in,
     output link_out,
     output link_dir_out,
@@ -427,15 +427,24 @@ module top_pynq_z2 (
     /////////////////////////////////////////////////
     // Physical Serial I/O
     /////////////////////////////////////////////////
-    // TODO re-do serial I/O with new connections
-    assign link_clock = 1'bz;
-    assign link_dir_clock = 1'b0;
-    assign link_data = 1'bz;
-    assign link_dir_data = 1'b0;
-    assign link_in = 1'bz;
+    logic serial_clock_pre;
+    logic serial_in_pre;
+    always_ff @(posedge clk_8mhz) begin
+        serial_clock_pre <= link_clock;
+        gb_serial_clockIn <= serial_clock_pre;
+
+        serial_in_pre <= link_in;
+        gb_serial_in <= serial_in_pre;
+    end
+    assign link_clock = gb_serial_clockEnable ? gb_serial_clockOut : 1'bz;
+    assign link_out = gb_serial_out;
+    assign link_dir_clock = gb_serial_clockEnable;
     assign link_dir_in = 1'b0;
-    assign link_out = 1'bz;
-    assign link_dir_out = 1'b0;
+    assign link_dir_out = 1'b1;
+
+    // SD: Unused
+    assign link_dir_data = 1'b0;
+    assign link_data  = 1'bz;
 
     /////////////////////////////////////////////////
     // Gameboy Audio output

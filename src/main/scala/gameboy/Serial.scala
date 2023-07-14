@@ -87,7 +87,7 @@ class Serial(config: Gameboy.Configuration) extends Module {
   val clockFalling = prevClockSignal && !clockSignal
 
   // Internal clock
-  when (regEnable && regClockMode && RegEnable(io.divSerial, io.clocker.enable) && !io.divSerial) {
+  when (io.clocker.enable && regEnable && regClockMode && RegEnable(io.divSerial, io.clocker.enable) && !io.divSerial) {
     clockOut := !clockOut
   }
 
