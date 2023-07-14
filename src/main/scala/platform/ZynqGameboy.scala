@@ -28,6 +28,7 @@ class ZynqGameboy extends Module {
     val apu = new ApuOutput
     val serial = new SerialIo()
     val tCycle = Output(UInt(2.W))
+    val cartridgeInUse = Output(Bool())
 
     // Framebuffer output
     val framebufferWriteAddr = Output(UInt(15.W))
@@ -190,6 +191,7 @@ class ZynqGameboy extends Module {
   emuCart.io.config := configRegEmuCart
   emuCart.io.tCycle := gameboy.io.tCycle
   rtcAccess <> emuCart.io.rtcAccess
+  io.cartridgeInUse := !configRegEmuCart.enabled
   when (configRegEmuCart.enabled) {
     waitingForCart := emuCart.io.waitingForAccess
 

@@ -304,6 +304,7 @@ module top_pynq_z2 (
     logic gb_cart_enable;
     logic gb_cart_write;
     logic gb_cart_chipSelect;
+    logic gb_cart_in_use;
 
     logic joypad_start = GPIO_O[8];
     logic joypad_select = GPIO_O[9];
@@ -339,6 +340,7 @@ module top_pynq_z2 (
         .io_cartridge_enable(gb_cart_enable),
         .io_cartridge_write(gb_cart_write),
         .io_cartridge_chipSelect(gb_cart_chipSelect),
+        .io_cartridgeInUse(gb_cart_in_use),
         .io_joypad_start(joypad_start),
         .io_joypad_select(joypad_select),
         .io_joypad_b(joypad_b),
@@ -405,7 +407,7 @@ module top_pynq_z2 (
     // Physical Cartridge I/O
     /////////////////////////////////////////////////
     // Direction: high is output, low is input
-    assign cartridge_n_oe = 1'b0; // Enabled (active low).
+    assign cartridge_n_oe = ~gb_cart_in_use; // Enabled if physical cartridge in use (active low).
     assign cartridge_dir_ctrl = 1'b1; // Output
     assign cartridge_dir_A_lo = 1'b1; // Output
     assign cartridge_dir_A_hi = 1'b1; // Output
