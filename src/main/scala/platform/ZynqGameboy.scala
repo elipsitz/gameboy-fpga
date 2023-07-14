@@ -119,6 +119,7 @@ class ZynqGameboy extends Module {
       rtcAccess.latchSelect := true.B
       axiTarget.io.readData := rtcAccess.readState.asUInt
     }
+    is (Registers.SerialDebug.id.U) { axiTarget.io.readData := gameboy.io.serialDebug.asUInt }
   }
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {

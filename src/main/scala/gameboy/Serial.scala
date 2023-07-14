@@ -4,6 +4,17 @@ import chisel3._
 import chisel3.util._
 import gameboy.Timer.RegisterControl
 
+class SerialDebug extends Bundle {
+  val regData = UInt(8.W)
+  val regBitsLeft = UInt(3.W)
+  val regEnable = Bool()
+  val regClockMode = Bool()
+  val clockIn = Bool()
+  val clockOut = Bool()
+  val dataOut = Bool()
+  val dataIn = Bool()
+}
+
 class SerialIo extends Bundle {
   /** Output bit */
   val out = Output(Bool())
@@ -36,6 +47,9 @@ class Serial(config: Gameboy.Configuration) extends Module {
     val divSerial = Input(Bool())
 
     val serial = new SerialIo()
+
+    /** Debug output */
+    val debug = Output(new SerialDebug)
   })
 
   val regData = RegInit(0.U(8.W))
@@ -109,4 +123,14 @@ class Serial(config: Gameboy.Configuration) extends Module {
       io.interruptRequest := true.B
     }
   }
+
+  // Debug output
+  io.debug.regData := regData
+  io.debug.regBitsLeft := regBitsLeft
+  io.debug.regEnable := regEnable
+  io.debug.regClockMode := regClockMode
+  io.debug.clockIn := io.serial.clockIn
+  io.debug.clockOut := clockOut
+  io.debug.dataOut := regData
+  io.debug.dataIn := io.serial.in
 }

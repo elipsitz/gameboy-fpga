@@ -62,6 +62,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     // Internal state signals
     val tCycle = Output(UInt(2.W))
     val cpuDebug = Output(new Cpu.DebugState)
+    val serialDebug = Output(new SerialDebug)
   })
 
   // Clock control module
@@ -129,6 +130,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   serial.io.divSerial := timer.io.divSerial
   cpu.io.interruptRequest.serial := serial.io.interruptRequest
   io.serial <> serial.io.serial
+  io.serialDebug := serial.io.debug
 
   // Boot rom
   val bootRom = Module(new BootRom(config))
