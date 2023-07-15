@@ -385,8 +385,8 @@ class Ppu(config: Gameboy.Configuration) extends Module {
           objPalette := Cat(objFifo.io.outData.paletteCgb, objIndex)
         } .otherwise {
           // DMG compatibility mode: index into CGB palettes with DMG palettes
-          bgPalette := Cat(bgFifo.io.outData.paletteCgb, bgColorDmg)
-          objPalette := Cat(objFifo.io.outData.paletteCgb, objColorDmg)
+          bgPalette := bgColorDmg
+          objPalette := Cat(objFifo.io.outData.palette, objColorDmg)
         }
         val bgColorCgb = Cat(cgbPaletteBg(Cat(bgPalette, 1.U(1.W))), cgbPaletteBg(Cat(bgPalette, 0.U(1.W))))
         val objColorCgb = Cat(cgbPaletteObj(Cat(objPalette, 1.U(1.W))), cgbPaletteObj(Cat(objPalette, 0.U(1.W))))
@@ -528,6 +528,8 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       is (FetcherState.hi1) {
         // Push!
         when (fetcherIsObj) {
+
+            printf(cf"lx=${regLx} ly=${regLy} obj, idx=${fetcherObjIndex}%x, lo=${fetcherTileLo}%x hi=${fetcherTileHi} attr=${fetcherTileAttrs.asUInt}%x \n")
 //          printf(cf"!!push ly=$regLy, lx=$regLx obj=${oamBuffer(fetcherObjIndex).index} tile=${fetcherTileId}%x addr=${Cat(fetcherTileAddress, 0.U(1.W))}%x\n")
           objFifo.io.reloadEnable := true.B
           objFifo.io.reloadData := VecInit((0 until 8).map(i => {
