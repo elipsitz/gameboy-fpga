@@ -1,3 +1,25 @@
+
+## Building
+
+### Setup
+
+Currently this project uses Vivado 2020.2.
+
+After installing, set up a shared IP cache to speed up synthesis of Xilinx IP:
+1. Create the `~/vivado_ip_cache` directory (could be located somewhere else).
+2. Create the file `~/.Xilinx/Vivado/Vivado_init.tcl`
+3. In that file, add `set_param project.defaultIPCacheSetting /home/eli/vivado_ip_cache/` (substituting the absolute path to the IP cache directory).
+
+### Running `fusesoc`
+
+From the top-level directory:
+
+```
+fusesoc --cores-root . run --build --target=pynq_z2 elipsitz:gameboy:gameboy
+```
+
+This will generate a `.bit` and `.hwh` file, which need to be accessible to the PS Python code.
+
 ## Getting Xbox controller to work on Pynq-Z2
 
 This needs the `xpad` and `joydev` drivers. The Pynq image doesn't come with it built,
