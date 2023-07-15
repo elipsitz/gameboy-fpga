@@ -37,6 +37,7 @@ class SerialIo extends Bundle {
 class Serial(config: Gameboy.Configuration) extends Module {
   val io = IO(new PeripheralAccess {
     val clocker = Input(new Clocker)
+    val cgbMode = Input(Bool())
 
     val interruptRequest = Output(Bool())
     /**
@@ -45,6 +46,8 @@ class Serial(config: Gameboy.Configuration) extends Module {
      * because we want a 8192 Hz clock.
      */
     val divSerial = Input(Bool())
+    /** 524,288 Hz timer (x2 in double speed), for fast serial mode. */
+    val divSerialFast = Input(Bool())
 
     val serial = new SerialIo()
 
@@ -56,6 +59,8 @@ class Serial(config: Gameboy.Configuration) extends Module {
   val regEnable = RegInit(false.B)
   /** false: external clock, true: internal clock */
   val regClockMode = RegInit(false.B)
+  /** In CGB mode, whether to use the fast internal clock */
+  val regClockFast = RegInit(false.B)
   val regBitsLeft = RegInit(0.U(3.W))
 
   // Register memory mapping
@@ -69,6 +74,7 @@ class Serial(config: Gameboy.Configuration) extends Module {
         val clockMode = io.dataWrite(0)
         regEnable := enabled
         regClockMode := clockMode
+        when (io.cgbMode) { regClockFast := io.dataWrite(1) }
 
         // Start a transfer
         when (enabled) {
@@ -87,7 +93,9 @@ class Serial(config: Gameboy.Configuration) extends Module {
   when (io.enabled && !io.write) {
     switch (io.address) {
       is (0x01.U) { io.dataRead := regData }
-      is (0x02.U) { io.dataRead := Cat(regEnable, "b111111".U(6.W), regClockMode) }
+      is (0x02.U) {
+        io.dataRead := Cat(regEnable, "b11111".U(5.W), !io.cgbMode || regClockFast, regClockMode)
+      }
     }
   }
 
@@ -101,7 +109,9 @@ class Serial(config: Gameboy.Configuration) extends Module {
   val clockFalling = prevClockSignal && !clockSignal
 
   // Internal clock
-  when (io.clocker.enable && regEnable && regClockMode && RegEnable(io.divSerial, io.clocker.enable) && !io.divSerial) {
+  val divider = Mux(regClockFast, io.divSerialFast, io.divSerial)
+  val dividerEdge = RegEnable(divider, io.clocker.enable) && !divider
+  when (io.clocker.enable && regEnable && regClockMode && dividerEdge) {
     clockOut := !clockOut
   }
 

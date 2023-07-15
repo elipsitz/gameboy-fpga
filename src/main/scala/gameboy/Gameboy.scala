@@ -127,7 +127,9 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // Peripheral: Serial
   val serial = Module(new Serial(config))
   serial.io.clocker := clockControl.io.clocker
+  serial.io.cgbMode := systemControl.io.cgbMode
   serial.io.divSerial := timer.io.divSerial
+  serial.io.divSerialFast := timer.io.divSerialFast
   cpu.io.interruptRequest.serial := serial.io.interruptRequest
   io.serial <> serial.io.serial
   io.serialDebug := serial.io.debug
