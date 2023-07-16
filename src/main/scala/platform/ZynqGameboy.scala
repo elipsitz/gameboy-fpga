@@ -1,6 +1,6 @@
 package platform
 
-import axi.{AxiLiteInitiator, AxiLiteSignals, AxiLiteTarget}
+import axi.{AxiLiteInitiator, AxiLiteSignals, AxiLiteTarget, SimpleCache}
 import chisel3._
 import chisel3.util._
 import gameboy.apu.ApuOutput
@@ -60,6 +60,8 @@ class ZynqGameboy extends Module {
 
   val statNumStalls = RegInit(0.U(32.W))
   val statNumClocks = RegInit(0.U(32.W))
+  val statCacheHits = RegInit(0.U(32.W))
+  val statCacheMisses = RegInit(0.U(32.W))
 
   // Configuration registers
   val configRegControl = RegInit(0.U.asTypeOf(new RegControl))
@@ -120,6 +122,8 @@ class ZynqGameboy extends Module {
       axiTarget.io.readData := rtcAccess.readState.asUInt
     }
     is (Registers.SerialDebug.id.U) { axiTarget.io.readData := gameboy.io.serialDebug.asUInt }
+    is (Registers.StatCacheHits.id.U) { axiTarget.io.readData := statCacheHits }
+    is (Registers.StatCacheMisses.id.U) { axiTarget.io.readData := statCacheMisses }
   }
   when (axiTarget.io.writeEnable) {
     switch (axiTarget.io.writeIndex) {
@@ -251,9 +255,14 @@ class ZynqGameboy extends Module {
   val axiInitiatorReadValid = Wire(Bool())
   val axiInitiatorReadDataBuffer = RegNext(axiInitiatorReadData)
   val axiInitiatorReadValidBuffer = RegNext(axiInitiatorReadValid)
+  val axiInitiatorStatHits = Wire(UInt(32.W))
+  val axiInitiatorStatMisses = Wire(UInt(32.W))
   val axiInitiator = withClock (io.clock_axi_dram) {
-    val axiInitiator = Module(new AxiLiteInitiator(32, 64))
+    val axiInitiator = Module(new SimpleCache(32, 64, indexWidth = 2))
     axiInitiator.io.signals <> io.axiInitiator
+    axiInitiator.io.cacheInvalidate := RegNext(configRegControl.reset)
+    axiInitiatorStatHits := axiInitiator.io.statHits
+    axiInitiatorStatMisses := axiInitiator.io.statMisses
 
     val bufferedDataEnable = RegNext(emuCart.io.dataAccess.enable)
     val bufferedDataEnableLast = RegNext(bufferedDataEnable)
@@ -292,6 +301,9 @@ class ZynqGameboy extends Module {
 
     axiInitiator
   }
+
+  statCacheHits := axiInitiatorStatHits
+  statCacheMisses := axiInitiatorStatMisses
 
   emuCart.io.dataAccess.dataRead := axiInitiatorReadDataBuffer
     .asTypeOf(Vec(8, UInt(8.W)))(

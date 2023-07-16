@@ -5,27 +5,30 @@ import chisel3._
 object AxiLiteInitiatorState extends ChiselEnum {
   val idle, readAddr, readData, writeAddrData, writeAddr, writeData, writeResp = Value
 }
+
+class AxiLiteInitiatorIo(addrWidth: Int, dataWidth: Int) extends Bundle {
+  /** The AXI-Lite signals */
+  val signals = new AxiLiteSignals(addrWidth, dataWidth)
+
+  /** Pulsed true to start a memory access. */
+  val enable = Input(Bool())
+  /** The address to read or write from */
+  val address = Input(UInt(addrWidth.W))
+  /** Whether this access is a read */
+  val read = Input(Bool())
+  /** If writing, the data to write. */
+  val writeData = Input(UInt(dataWidth.W))
+  /** If writing, the write strobe. */
+  val writeStrobe = Input(UInt((dataWidth / 8).W))
+
+  /** Whether we're waiting for a memory access to complete. */
+  val busy = Output(Bool())
+  /** The output data, valid after a read begins and `busy` is false. */
+  val readData = Output(UInt(dataWidth.W))
+}
+
 class AxiLiteInitiator(addrWidth: Int, dataWidth: Int = 32) extends Module {
-  val io = IO(new Bundle {
-    /** The AXI-Lite signals */
-    val signals = new AxiLiteSignals(addrWidth, dataWidth)
-
-    /** Pulsed true to start a memory access. */
-    val enable = Input(Bool())
-    /** The address to read or write from */
-    val address = Input(UInt(addrWidth.W))
-    /** Whether this access is a read */
-    val read = Input(Bool())
-    /** If writing, the data to write. */
-    val writeData = Input(UInt(dataWidth.W))
-    /** If writing, the write strobe. */
-    val writeStrobe = Input(UInt((dataWidth / 8).W))
-
-    /** Whether we're waiting for a memory access to complete. */
-    val busy = Output(Bool())
-    /** The output data, valid after a read begins and `busy` is false. */
-    val readData = Output(UInt(dataWidth.W))
-  })
+  val io = IO(new AxiLiteInitiatorIo(addrWidth, dataWidth))
 
   val state = RegInit(AxiLiteInitiatorState.idle)
 

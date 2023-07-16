@@ -23,6 +23,9 @@ object Registers extends Enumeration {
   val RtcStateLatched = Value
 
   val SerialDebug = Value
+
+  val StatCacheHits = Value
+  val StatCacheMisses = Value
 }
 
 /** Register 0x0: Gameboy Control */
