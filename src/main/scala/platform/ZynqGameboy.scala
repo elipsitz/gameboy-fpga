@@ -258,7 +258,7 @@ class ZynqGameboy extends Module {
   val axiInitiatorStatHits = Wire(UInt(32.W))
   val axiInitiatorStatMisses = Wire(UInt(32.W))
   val axiInitiator = withClock (io.clock_axi_dram) {
-    val axiInitiator = Module(new SimpleCache(32, 64, indexWidth = 2))
+    val axiInitiator = Module(new SimpleCache(32, 64, indexWidth = 9))
     axiInitiator.io.signals <> io.axiInitiator
     axiInitiator.io.cacheInvalidate := RegNext(configRegControl.reset)
     axiInitiatorStatHits := axiInitiator.io.statHits

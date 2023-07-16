@@ -528,9 +528,6 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       is (FetcherState.hi1) {
         // Push!
         when (fetcherIsObj) {
-
-            printf(cf"lx=${regLx} ly=${regLy} obj, idx=${fetcherObjIndex}%x, lo=${fetcherTileLo}%x hi=${fetcherTileHi} attr=${fetcherTileAttrs.asUInt}%x \n")
-//          printf(cf"!!push ly=$regLy, lx=$regLx obj=${oamBuffer(fetcherObjIndex).index} tile=${fetcherTileId}%x addr=${Cat(fetcherTileAddress, 0.U(1.W))}%x\n")
           objFifo.io.reloadEnable := true.B
           objFifo.io.reloadData := VecInit((0 until 8).map(i => {
             val pixel = WireDefault(objFifo.io.register(i))
