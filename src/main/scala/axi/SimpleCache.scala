@@ -39,7 +39,10 @@ class SimpleCache(addrWidth: Int, dataWidth: Int, indexWidth: Int) extends Modul
 
   // Cache
   val state = RegInit(SimpleCacheState.idle)
-  val cache = SyncReadMem(entries, new CacheEntry(tagWidth, dataWidth))
+  // N.B. This is written as Mem (an async read mem), but we manually add a read register (cacheEntry) to the output,
+  // to make it a sync read. This is to coax Vivado into synthesizing this as BRAM -- for whatever reason,
+  // it otherwise turns the `data` part of the cache into distributed RAM.
+  val cache = Mem(entries, new CacheEntry(tagWidth, dataWidth))
   val cacheValid = RegInit(VecInit(Seq.fill(entries)(false.B)))
   when (io.cacheInvalidate) {
     cacheValid := VecInit(Seq.fill(entries)(false.B))
@@ -61,8 +64,7 @@ class SimpleCache(addrWidth: Int, dataWidth: Int, indexWidth: Int) extends Modul
   val addrIndex = io.address(offsetWidth + indexWidth - 1, offsetWidth)
 
   // Cache access
-  val cacheEnable = WireDefault(false.B)
-  val cacheEntry = cache.read(addrIndex, cacheEnable)
+  val cacheEntry = Reg(new CacheEntry(tagWidth, dataWidth))
   val cacheHit = cacheValid(addrIndex) && cacheEntry.tag === addrTag
 
   val readData = Reg(UInt(dataWidth.W))
@@ -77,7 +79,7 @@ class SimpleCache(addrWidth: Int, dataWidth: Int, indexWidth: Int) extends Modul
       when (io.enable) {
         // TODO if not valid just skip to waitMem?
         state := SimpleCacheState.waitCache
-        cacheEnable := true.B
+        cacheEntry := cache.read(addrIndex)
         pendingRead := io.read
         pendingTag := addrTag
         pendingIndex := addrIndex
