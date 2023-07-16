@@ -24,6 +24,8 @@ class ApuOutput extends Bundle {
 class Apu(config: Gameboy.Configuration) extends Module {
   val io = IO(new Bundle {
     val clocker = Input(new Clocker)
+    val cgbMode = Input(Bool())
+
     val output = new ApuOutput
     val reg = new PeripheralAccess
     val divApu = Input(Bool())
@@ -212,13 +214,18 @@ class Apu(config: Gameboy.Configuration) extends Module {
       is (0x21.U) { io.reg.dataRead := channel4VolumeConfig.asUInt }
       is (0x22.U) { io.reg.dataRead := channel4LfsrConfig.asUInt }
       is (0x23.U) { io.reg.dataRead := Cat("b1".U(1.W), regLengthEnable(3), "b111111".U(6.W)) }
+
+      // CGB-only digital output registers
+      is (0x76.U) { io.reg.dataRead := Cat(channel2.io.out, channel1.io.out) }
+      is (0x77.U) { io.reg.dataRead := Cat(channel4.io.out, channel3.io.out) }
     }
 
     when(io.reg.address >= 0x30.U && io.reg.address < 0x40.U) {
       io.reg.dataRead := waveRam(io.reg.address(3, 0))
     }
   }
-  io.reg.valid := io.reg.address >= 0x10.U && io.reg.address <= 0x3F.U
+  io.reg.valid := io.reg.address >= 0x10.U && io.reg.address <= 0x3F.U ||
+    (io.cgbMode && (io.reg.address === 0x76.U || io.reg.address === 0x77.U))
 
   // APU off reset
   when (!regApuEnable && io.clocker.enable) {

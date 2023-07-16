@@ -101,6 +101,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // Module: APU
   val apu = Module(new Apu(config))
   apu.io.clocker := clockControl.io.clocker
+  apu.io.cgbMode := systemControl.io.cgbMode
   io.apu := apu.io.output
 
   // Memories
