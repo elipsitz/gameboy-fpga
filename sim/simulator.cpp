@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "audio.hpp"
 #include "common.hpp"
 #include "simulator.hpp"
@@ -114,7 +116,8 @@ void Simulator::stepFramebuffer()
 
     // Blank the screen if the LCD is disabled.
     if (prev_lcd_enabled && !top->io_ppu_lcdEnable) {
-        std::fill(framebuffer.begin(), framebuffer.end(), 0xFF);
+        std::fill(framebuffer0.begin(), framebuffer0.end(), 0xFF);
+        std::fill(framebuffer1.begin(), framebuffer1.end(), 0xFF);
         framebufferIndex = framebuffer.size();
     }
     prev_lcd_enabled = top->io_ppu_lcdEnable;

@@ -250,7 +250,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
         }
       }
       is (0x69.U) {
-        when (io.cgbMode && !stateDrawing) {
+        when (io.cgbMode && !(stateDrawing && regLcdc.enable)) {
           cgbPaletteBg(regBcps.address) := io.registers.dataWrite
           when (regBcps.autoIncrement) { regBcps.address := regBcps.address + 1.U }
         }
@@ -261,7 +261,7 @@ class Ppu(config: Gameboy.Configuration) extends Module {
         }
       }
       is (0x6B.U) {
-        when (io.cgbMode && !stateDrawing) {
+        when (io.cgbMode && !(stateDrawing && regLcdc.enable)) {
           cgbPaletteObj(regOcps.address) := io.registers.dataWrite
           when (regOcps.autoIncrement) { regOcps.address := regOcps.address + 1.U }
         }
@@ -289,13 +289,13 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       // CGB-only palette registers
       is (0x68.U) { io.registers.dataRead := regBcps.asUInt }
       is (0x69.U) {
-        when (!stateDrawing) {
+        when (!(stateDrawing && regLcdc.enable)) {
           io.registers.dataRead := cgbPaletteBg(regBcps.address)
         }
       }
       is (0x6A.U) { io.registers.dataRead := regOcps.asUInt }
       is (0x6B.U) {
-        when (!stateDrawing) {
+        when (!(stateDrawing && regLcdc.enable)) {
           io.registers.dataRead := cgbPaletteObj(regOcps.address)
         }
       }
