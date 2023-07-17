@@ -17,7 +17,13 @@ class Clocker extends Bundle {
   val tCycle = UInt(2.W)
 
   /// True if we're in double-speed mode
-  val doubleSpeed = Output(Bool())
+  val doubleSpeed = Bool()
+
+  /// For VRAM DMA: 2 MHz pulse at the end of a cycle (double speed) or half-cycle (single speed).
+  val pulseVramDma = Bool()
+
+  /// The 8 Mhz cycle counter (regardless of double speed)
+  val counter8Mhz = UInt(2.W)
 }
 
 class ClockConfig extends Bundle {
@@ -37,9 +43,11 @@ class ClockControl extends Module {
     val clocker = Output(new Clocker)
     /// Whether we're in double-speed mode
     val doubleSpeed = Input(Bool())
+    /// Whether CGB VRAM DMA is active.
+    val vramDmaActive = Input(Bool())
   })
 
-  io.clockConfig.need8Mhz := io.doubleSpeed
+  io.clockConfig.need8Mhz := io.doubleSpeed || io.vramDmaActive
   io.clocker.doubleSpeed := io.doubleSpeed
 
   // Combined tCycle counter and clock divider
@@ -63,4 +71,6 @@ class ClockControl extends Module {
   }
   io.clocker.tCycle := Mux(io.doubleSpeed, counter(1, 0), counter(2, 1))
   io.clocker.phiPulse := io.clocker.enable && (io.clocker.tCycle === 3.U)
+  io.clocker.pulseVramDma := io.clocker.enable && (counter(1, 0) === 3.U)
+  io.clocker.counter8Mhz := counter(1, 0)
 }

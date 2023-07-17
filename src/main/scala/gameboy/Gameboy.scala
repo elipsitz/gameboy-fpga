@@ -140,7 +140,22 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   bootRom.io.address := cpu.io.memAddress
   bootRom.io.mapped := systemControl.io.bootRomMapped
 
+  // Module: VRAM DMA (HDMA) - CGB only
+  val vramDma = Module(new VramDma)
+  val vramDmaData = WireDefault(0xFF.U(8.W))
+  vramDma.io.clocker := systemControl.io.clocker
+  vramDma.io.cgbMode := systemControl.io.cgbMode
+  vramDma.io.hblank := ppu.io.output.hblank
+  clockControl.io.vramDmaActive := vramDma.io.active
+  if (config.model.isCgb) {
+    // VRAM DMA suspends the CPU while it's active.
+    cpu.io.clocker.enable := systemControl.io.clocker.enable && !vramDma.io.active
+    cpu.io.clocker.phiPulse := systemControl.io.clocker.phiPulse && !vramDma.io.active
+    cpu.io.clocker.pulse4Mhz := systemControl.io.clocker.pulse4Mhz && !vramDma.io.active
+  }
+
   // External bus read/write logic
+  // TODO: on CGB wram and cartridge are on separate busses.
   val busAddress = WireDefault(cpu.io.memAddress)
   val busDataWrite = WireDefault(cpu.io.memDataOut)
   val busMemEnable = WireDefault(cpu.io.memEnable)
@@ -158,6 +173,16 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     busMemWrite := false.B
     busDataWrite := DontCare
     oamDmaData := busDataRead
+  }
+  if (config.model.isCgb) {
+    when (vramDma.io.active) {
+      busAddress := vramDma.io.addressSource
+      busMemEnable := true.B
+      busMemWrite := false.B
+      busDataWrite := DontCare
+      vramDmaData := busDataRead
+      io.cartridge.deadline := clockControl.io.clocker.counter8Mhz === 3.U
+    }
   }
   val cpuExternalBusSelect =
     cpu.io.memAddress < 0x8000.U ||
@@ -183,7 +208,12 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
   // OAM DMA locks it if reading from this region
   // Priority: OAM DMA > PPU > CPU
   val cpuVideoRamSelect = cpu.io.memAddress >= 0x8000.U && cpu.io.memAddress < 0xA000.U
-  when (oamDma.io.active && oamDmaSelectVram) {
+  when (vramDma.io.active) {
+    videoRam.io.address := Cat(systemControl.io.vramBank, vramDma.io.addressDest)
+    videoRam.io.enabled := true.B
+    videoRam.io.write := clockControl.io.clocker.pulseVramDma
+    videoRam.io.dataWrite := vramDmaData
+  } .elsewhen (oamDma.io.active && oamDmaSelectVram) {
     videoRam.io.address := Cat(systemControl.io.vramBank, oamDma.io.dmaAddress(12, 0))
     videoRam.io.enabled := true.B
     videoRam.io.write := false.B
@@ -240,7 +270,7 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     joypad.io,
     systemControl.io,
     apu.io.reg,
-  )
+  ) ++ Option.when(config.model.isCgb)(vramDma.io)
   val peripheralSelect = cpu.io.memAddress(15, 8) === 0xFF.U
   for (peripheral <- peripherals) {
     peripheral.address := cpu.io.memAddress(7, 0)
