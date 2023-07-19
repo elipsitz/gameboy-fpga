@@ -174,6 +174,8 @@ class GameScreen(Screen):
 
 
 class RomSelectScreen(Screen):
+    list_pos = 0
+
     def __init__(self, ui: UI) -> None:
         self.ui = ui
         rom_directory = self.ui.system.rom_directory
@@ -183,6 +185,7 @@ class RomSelectScreen(Screen):
         self.roms.sort()
         rom_filenames = [str(x.relative_to(rom_directory)) for x in self.roms]
         self._widget = ListWidget(rom_filenames, lines=9)
+        self._widget.pos = min(RomSelectScreen.list_pos, len(rom_filenames) - 1)
         self._error = None
 
     def on_attach(self) -> None:
@@ -206,6 +209,7 @@ class RomSelectScreen(Screen):
                 return
 
             if button == Button.A:
+                RomSelectScreen.list_pos = self._widget.pos
                 rom_path = self.roms[self._widget.pos]
                 try:
                     self.ui.system.gameboy.set_emulated_cartridge(rom_path)
