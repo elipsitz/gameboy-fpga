@@ -114,12 +114,13 @@ class GameScreen(Screen):
     def __init__(self, ui: UI) -> None:
         self.ui = ui
         self.playing = True
-        self._widget = SelectWidget(["Resume", "Reset", "Main Menu"])
+        self._widget = SelectWidget(["Resume", "Reset", "Stats", "Main Menu"])
 
         self.ui.system.gameboy.reset()
+        self.ui.system.gameboy.set_paused(False)
 
     def on_attach(self) -> None:
-        self.ui.system.gameboy.set_paused(False)
+        self._render()
 
     def on_button_event(self, button: Button, event: ButtonEvent) -> None:
         if self.playing:
@@ -153,15 +154,22 @@ class GameScreen(Screen):
                     self.playing = True
                     return
                 if self._widget.pos == 2:
+                    # Display Stats
+                    self.ui.set_screen(StatsScreen(self.ui, self))
+                    return
+                if self._widget.pos == 3:
                     # Main Menu
                     self.ui.set_screen(MainMenuScreen(self.ui))
                     return
             self._render()
 
     def _render(self) -> None:
+        if self.playing:
+            return
         self.ui.draw.rectangle([(0, 0), (self.ui.width, self.ui.height)], fill=COLOR_TRANSPARENT)
-        self.ui.draw.rectangle([(30, 40), (130, 110)], fill=COLOR_BG)
-        self._widget.render(self.ui, 40, 50, 80, 50)
+        self.ui.draw.rectangle([(30, 30), (130, 144 - 30)], fill=COLOR_BG)
+        self.ui.draw.rectangle([(30, 30), (130, 144 - 30)], outline=COLOR_BLACK)
+        self._widget.render(self.ui, 40, 40, 80, 70)
         self.ui.show_framebuffer()
 
 
@@ -239,6 +247,48 @@ class RomSelectScreen(Screen):
 
         self.ui.show_framebuffer()
 
+
+class StatsScreen(Screen):
+    def __init__(self, ui: UI, prev_screen: Screen) -> None:
+        self.ui = ui
+        self._prev_screen = prev_screen
+
+    def on_attach(self) -> None:
+        self._render()
+
+    def on_button_event(self, button: Button, event: ButtonEvent) -> None:
+        if event == ButtonEvent.PRESSED:
+            if button == Button.B:
+                self.ui.set_screen(self._prev_screen)
+                return
+
+    def _get_stats(self) -> List[str]:
+        stats = self.ui.system.gameboy.get_stats()
+        stall_rate = stats['stalls'] / (stats['stalls'] + stats['clocks'] + 1)
+        hit_rate = stats['cache_hits'] / (stats['cache_misses'] + stats['cache_hits'] + 1)
+        return [
+            f"Clocks: {stats['clocks']:,}",
+            f"Stalls: {stats['stalls']:,}",
+            f"Stall %: {(stall_rate * 100):0.3f}",
+            f"Cache Hit %: {(hit_rate * 100):0.3f}",
+        ]
+
+    def _render(self) -> None:
+        self.ui.draw.rectangle([(0, 0), (self.ui.width, self.ui.height)], fill=COLOR_TRANSPARENT)
+        self.ui.draw.rectangle([(20, 20), (160 - 20, 144 - 20)], fill=COLOR_BG)
+        self.ui.draw.rectangle([(20, 20), (160 - 20, 144 - 20)], outline=COLOR_BLACK)
+        self.ui.draw.text(
+            (28, 28),
+            "Stats",
+            fill=COLOR_BLACK,
+            font=self.ui.font_bold,
+        )
+        self.ui.draw.multiline_text(
+            (28, 28 + 14),
+            "\n".join(self._get_stats()),
+            fill=COLOR_BLACK,
+        )
+        self.ui.show_framebuffer()
 
 class ListWidget:
     def __init__(self, items: List[str], lines: int) -> None:

@@ -5,6 +5,7 @@ import logging
 import time
 from pathlib import Path
 import struct
+from typing import Dict
 
 logging.info("Loading Pynq libraries...")
 from pynq import allocate, GPIO, MMIO, Overlay
@@ -215,6 +216,14 @@ class Gameboy:
         self._registers.write(REGISTER_BLIT_ADDRESS, self._framebuffer.device_address)
         self._registers.write(REGISTER_BLIT_CONTROL, 1)
         self._blit_active = True
+
+    def get_stats(self) -> Dict[str, int]:
+        return {
+            "stalls": self._registers.read(REGISTER_STAT_STALLS),
+            "clocks": self._registers.read(REGISTER_STAT_CLOCKS),
+            "cache_hits": self._registers.read(REGISTER_STAT_CACHE_HITS),
+            "cache_misses": self._registers.read(REGISTER_STAT_CACHE_MISSES),
+        }
 
 
 class RomHeader:
