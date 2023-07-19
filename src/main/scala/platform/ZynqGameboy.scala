@@ -173,11 +173,28 @@ class ZynqGameboy extends Module {
   // Framebuffer output
   val framebufferX = RegInit(0.U(8.W))
   val framebufferY = RegInit(0.U(8.W))
+  val framebufferIndex = (framebufferY * 160.U(8.W)) + framebufferX
 
   val prevHblank = RegInit(false.B)
+  val prevLcdEnable = RegInit(false.B)
   when (gameboy.io.clockConfig.enable) {
     prevHblank := gameboy.io.ppu.hblank
-    when (gameboy.io.ppu.vblank) {
+    prevLcdEnable := gameboy.io.ppu.lcdEnable
+    when (!gameboy.io.ppu.lcdEnable) {
+      // Clear the screen if LCD is disabled.
+      io.framebufferWriteEnable := true.B
+      io.framebufferWriteAddr := framebufferIndex
+      io.framebufferWriteData := 0x7FFF.U(15.W)
+      when (prevLcdEnable) {
+        framebufferX := 0.U
+        framebufferY := 0.U
+      } .elsewhen (framebufferX < 159.U) {
+        framebufferX := framebufferX + 1.U
+      } .elsewhen (framebufferY < 143.U) {
+        framebufferX := 0.U
+        framebufferY := framebufferY + 1.U
+      }
+    } .elsewhen (gameboy.io.ppu.vblank) {
       framebufferX := 0.U
       framebufferY := 0.U
     } .elsewhen (gameboy.io.ppu.hblank && !prevHblank) {
@@ -185,7 +202,7 @@ class ZynqGameboy extends Module {
       framebufferY := framebufferY + 1.U
     } .elsewhen (gameboy.io.ppu.valid) {
       io.framebufferWriteEnable := true.B
-      io.framebufferWriteAddr := (framebufferY * 160.U(8.W)) + framebufferX
+      io.framebufferWriteAddr := framebufferIndex
       io.framebufferWriteData := gameboy.io.ppu.pixel
       framebufferX := framebufferX + 1.U
     }
