@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .controller import Button
 from . import resources
-from .gameboy import RomLoadException
+from .gameboy import Gameboy, RomLoadException
 
 def rgba_to_i16(r, g, b, a = 255):
     if a == 0:
@@ -267,11 +267,13 @@ class StatsScreen(Screen):
                 return
 
     def _get_stats(self) -> List[str]:
+        # The 'clocks' stat register overflows in 8.53 minutes, so estimate it instead.
+        clocks = self.ui.system.gameboy.get_playtime() * Gameboy.CLOCK_RATE
         stats = self.ui.system.gameboy.get_stats()
-        stall_rate = stats['stalls'] / (stats['stalls'] + stats['clocks'] + 1)
+        stall_rate = stats['stalls'] / (clocks + 1)
         hit_rate = stats['cache_hits'] / (stats['cache_misses'] + stats['cache_hits'] + 1)
         return [
-            f"Clocks: {stats['clocks']:,}",
+            f"Clocks: {int(clocks):,}",
             f"Stalls: {stats['stalls']:,}",
             f"Stall %: {(stall_rate * 100):0.3f}",
             f"Cache Hit %: {(hit_rate * 100):0.3f}",

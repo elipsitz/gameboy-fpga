@@ -53,11 +53,15 @@ JOYPAD_BUTTONS = [
 ]
 
 class Gameboy:
+    CLOCK_RATE = 8 * 1024 * 1024
+
     def __init__(self) -> None:
         self._paused = True
         self._reset = False
         self._emu_cartridge = False
         self._blit_active = False
+        self._duration_playing = 0.0
+        self._time_unpaused = None
         
         # Load the overlay
         logging.info("Loading overlay...")
@@ -90,6 +94,13 @@ class Gameboy:
         if not paused:
             # Cannot unpause while blit is in progress.
             self._wait_for_blit_complete()
+        if self._paused != paused:
+            # Changing pause state
+            if paused:
+                self._duration_playing += time.monotonic() - self._time_unpaused
+            else:
+                self._time_unpaused = time.monotonic()
+
         self._paused = paused
         self._write_reg_control()
 
@@ -100,6 +111,8 @@ class Gameboy:
         time.sleep(0.01)
         self._reset = False
         self._write_reg_control()
+        self._time_unpaused = time.monotonic()
+        self._duration_playing = 0.0
 
     def set_physical_cartridge(self) -> None:
         """Configure the Gameboy to use the physical cartridge"""
@@ -224,6 +237,13 @@ class Gameboy:
             "cache_hits": self._registers.read(REGISTER_STAT_CACHE_HITS),
             "cache_misses": self._registers.read(REGISTER_STAT_CACHE_MISSES),
         }
+    
+    def get_playtime(self) -> float:
+        """Get the time (in seconds) the Game Boy has been playing since the last reset."""
+        if self._paused:
+            return self._duration_playing
+        else:
+            return self._duration_playing + (time.monotonic() - self._time_unpaused)
 
 
 class RomHeader:
