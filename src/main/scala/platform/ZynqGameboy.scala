@@ -170,6 +170,12 @@ class ZynqGameboy extends Module {
   gameboy.io.clockConfig.provide8Mhz := true.B
   gameboy.reset := configRegControl.reset
 
+  // Reset stats registers
+  when (configRegControl.reset) {
+    statNumClocks := 0.U
+    statNumStalls := 0.U
+  }
+
   // Framebuffer output
   val framebufferX = RegInit(0.U(8.W))
   val framebufferY = RegInit(0.U(8.W))
