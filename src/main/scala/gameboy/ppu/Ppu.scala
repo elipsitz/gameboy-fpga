@@ -309,14 +309,14 @@ class Ppu(config: Gameboy.Configuration) extends Module {
       (io.cgbMode && io.registers.address >= 0x68.U && io.registers.address <= 0x6B.U)
 
   // Interrupt request generation
-  io.vblankIrq := !RegEnable(stateVblank, false.B, io.clocker.pulse4Mhz) && stateVblank && regLcdc.enable
+  io.vblankIrq := io.clocker.pulse4Mhz && !RegEnable(stateVblank, false.B, io.clocker.pulse4Mhz) && stateVblank && regLcdc.enable
   val statInterrupt = Cat(Seq(
     (lycEqualFlag && regStat.interruptLyEnable),
     (stateOamSearch && regStat.interruptOamEnable),
     (stateVblank && regStat.interruptVblankEnable),
     (stateHblank && regStat.interruptHblankEnable),
   )).orR
-  io.statIrq := !RegEnable(statInterrupt, false.B, io.clocker.pulse4Mhz) && statInterrupt && regLcdc.enable
+  io.statIrq := io.clocker.pulse4Mhz && !RegEnable(statInterrupt, false.B, io.clocker.pulse4Mhz) && statInterrupt && regLcdc.enable
 
   // Background FIFO
   val bgFifo = Module(new PixelFifo(new BgPixel, true))
