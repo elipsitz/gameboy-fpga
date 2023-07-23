@@ -270,11 +270,15 @@ class Control(config: Gameboy.Configuration) extends Module {
 
   when (io.clocker.enable && io.clocker.tCycle === 0.U && io.interruptsPending && (justFetched || halted)) {
     // Handle interrupts.
-    when (ime) {
+    when (ime && halted) {
+      // If IME and halted is set, start the interrupt routine without decrementing the PC,
+      // so that upon RETI, we continue after the HALT instruction.
+      state := microcode.stateForLabel("#Interrupt_keepPC").U
+    } .elsewhen (ime) {
       // Note: IME is unset in microcode
       state := microcode.stateForLabel("#Interrupt").U
-    }
-    when (halted) {
+    } .elsewhen (halted) {
+      // Go to the next instruction without doing an interrupt.
       state := microcode.stateForLabel("NOP").U
     }
   }

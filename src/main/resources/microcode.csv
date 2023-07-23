@@ -112,6 +112,6 @@ RST vec,,11???111,Same,=,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
 ,,,Same,=,-,PC_Hi,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
 ,,,RstAddr,=,-,PC_Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
 #Interrupt,decrement PC,,IncOut,Dis,-,-,-,None,Dec,PC,-,-,-,No,No,No,-,Next,-
-,decrement SP,,Same,=,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
+#Interrupt_keepPC,decrement SP,,Same,Dis,-,-,-,None,Dec,SP,-,-,-,No,No,No,-,Next,-
 ,push PC hi,,Same,=,-,PC_Hi,-,None,Dec,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Next,-
 ,"push PC, jump",,Interrupt,=,-,PC_Lo,-,None,No,SP,CopyB,-,Reg2,No,Yes,Yes,Incrementer,Jump,NOP
