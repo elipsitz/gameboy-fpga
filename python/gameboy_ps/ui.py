@@ -185,7 +185,9 @@ class RomSelectScreen(Screen):
         self.roms.sort()
         rom_filenames = [str(x.relative_to(rom_directory)) for x in self.roms]
         self._widget = ListWidget(rom_filenames, lines=9)
-        self._widget.pos = min(RomSelectScreen.list_pos, len(rom_filenames) - 1)
+        widget_pos = min(RomSelectScreen.list_pos, len(rom_filenames) - 1)
+        for i in range(widget_pos):
+            self._widget.move_down()
         self._error = None
 
     def on_attach(self) -> None:
@@ -205,6 +207,7 @@ class RomSelectScreen(Screen):
                 self._widget.move_down()
 
             if button == Button.B:
+                RomSelectScreen.list_pos = self._widget.pos
                 self.ui.set_screen(MainMenuScreen(self.ui))
                 return
 
