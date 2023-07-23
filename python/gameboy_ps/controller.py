@@ -61,7 +61,7 @@ class WiiClassicController(Controller):
     I2C_INIT_DELAY = 0.1
     I2C_READ_DELAY = 0.002
     I2C_BUS = 0
-    I2C_CONNECT_DELAY = 0.1
+    I2C_CONNECT_DELAY = 2.0
     POLL_RATE = 100
 
     def __init__(self, callback: ControllerCallback):
