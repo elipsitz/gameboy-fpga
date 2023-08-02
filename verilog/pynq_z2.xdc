@@ -1,6 +1,9 @@
 # Copyright (C) 2022 Xilinx, Inc
 # SPDX-License-Identifier: BSD-3-Clause
 
+## Enable bitstream compression
+# set_property BITSTREAM.GENERAL.COMPRESS True [current_design]
+
 ## Clock signal 125 MHz
 # set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports { clk_125mhz }]; #IO_L13P_T2_MRCC_35 Sch=sysclk
 # create_clock -add -name clk_125mhz -period 8.00 -waveform {0 4} [get_ports { clk_125mhz }];
