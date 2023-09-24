@@ -1,3 +1,8 @@
+# FPGA Game Boy Emulator
+
+This repository contains a Game Boy / Game Boy Color emulator, written in [Chisel](https://www.chisel-lang.org/), that can be run on an FPGA.
+
+Currently, only the Pynq-Z2 is supported, although the core of the emulator should be able to be used on any FPGA with sufficient resources.
 
 ## Building
 
@@ -20,7 +25,33 @@ fusesoc --cores-root . run --build --target=pynq_z2 elipsitz:gameboy:gameboy
 
 This will generate a `.bit` and `.hwh` file, which need to be accessible to the PS Python code.
 
-## Getting Xbox controller to work on Pynq-Z2
+## Running
+
+### Setup
+
+Install Pynq Linux on the Pynq-Z2, and install the pip packages listed in `python/requirements.txt`.
+
+Transfer the `gameboy_ps` Python module (located in the `python` directory) to the Pynq-Z2.
+
+Place the `gameboy.bit` and `gameboy.hwh` files from the build process in the `gameboy_ps/resources` directory.
+
+### HDMI and Controller
+
+Connect an HDMI cable from the "HDMI OUT" port on the Pynq-Z2 to a monitor or TV.
+
+Attach an Xbox-compatible controller to the USB port of the Pynq-Z2.
+
+### Running 
+
+As root, run `python3 -m gameboy_ps <path to ROM directory>`, passing the path to the directory containing ROM files.
+
+The program will load the bitstream to the PL. It takes a few seconds to load all of the Pynq libraries, but the main menu should soon show up on the display.
+
+Warning: the audio output can be quite loud. Start at the lowest setting on the monitor/TV and increase it as needed.
+
+## Appendix
+
+### Getting Xbox controller to work on Pynq-Z2
 
 This needs the `xpad` and `joydev` drivers. The Pynq image doesn't come with it built,
 so we'll need to build them as loadable kernel modules.
