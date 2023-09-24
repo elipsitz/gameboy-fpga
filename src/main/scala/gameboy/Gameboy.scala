@@ -152,6 +152,11 @@ class Gameboy(config: Gameboy.Configuration) extends Module {
     cpu.io.clocker.enable := systemControl.io.clocker.enable && !vramDma.io.active
     cpu.io.clocker.phiPulse := systemControl.io.clocker.phiPulse && !vramDma.io.active
     cpu.io.clocker.pulse4Mhz := systemControl.io.clocker.pulse4Mhz && !vramDma.io.active
+  } else {
+    vramDma.io.enabled := false.B
+    vramDma.io.address := DontCare
+    vramDma.io.dataWrite := DontCare
+    vramDma.io.write := DontCare
   }
 
   // External bus read/write logic
