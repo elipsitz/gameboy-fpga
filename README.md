@@ -1,10 +1,14 @@
 # FPGA Game Boy Emulator
 
-This repository contains a Game Boy / Game Boy Color emulator, written in [Chisel](https://www.chisel-lang.org/), that can be run on an FPGA.
+This repository contains a Game Boy / Game Boy Color emulator, written in [Chisel](https://www.chisel-lang.org/), that can be run on an FPGA. Read the full writeup [here](https://eli.lipsitz.net/posts/fpga-gameboy-emulator/).
+
+<img src="https://raw.githubusercontent.com/elipsitz/gameboy-fpga/main/extra/device.jpg" align="center" height="400">
 
 Currently, only the Pynq-Z2 is supported, although the core of the emulator should be able to be used on any FPGA with sufficient resources.
 
 ## Building
+
+A precompiled bitstream is available under Releases.
 
 ### Setup
 
