@@ -88,8 +88,16 @@ sudo make -C . M=drivers/input/ joydev.ko
 sudo make -C . M=drivers/input/joystick xpad.ko
 ```
 
-TODO: figure out how to get them to be loaded on boot
-(or use `insmod <modules>.ko` to load once)
+Install the modules so that they'll be loaded automatically on boot.
+Copy the `.ko` files to `/usr/lib/modules/$(uname -r)/kernel/`, and append
+to `/etc/modules`:
+
+```
+joydev
+xpad
+```
+
+Alternatively, use `insmod <modules>.ko` to load them once.
 
 Make sure the `xilinx` user is in the group `input`:
 `sudo usermod -a -G input xilinx` (and re-login)
