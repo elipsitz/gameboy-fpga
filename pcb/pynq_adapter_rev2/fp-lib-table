@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name "Gekkio_Connector_PCBEdge")(type "KiCad")(uri "${KIPRJMOD}/libs/Gekkio_Connector_PCBEdge.pretty")(options "")(descr ""))
+  (lib (name "Gekkio_Connector")(type "KiCad")(uri "${KIPRJMOD}/libs/Gekkio_Connector.pretty")(options "")(descr ""))
+  (lib (name "Misc")(type "KiCad")(uri "${KIPRJMOD}/libs/Misc.pretty")(options "")(descr ""))
+)

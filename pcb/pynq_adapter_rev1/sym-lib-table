@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "Gekkio_Connector_Specialized")(type "KiCad")(uri "${KIPRJMOD}/libs/Gekkio_Connector_Specialized.kicad_sym")(options "")(descr ""))
+)
