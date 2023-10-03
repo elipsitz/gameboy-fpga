@@ -6,20 +6,29 @@ This repository contains a Game Boy / Game Boy Color emulator, written in [Chise
 
 Currently, only the Pynq-Z2 is supported, although the core of the emulator should be able to be used on any FPGA with sufficient resources.
 
+
 ## Building
 
 A precompiled bitstream is available under Releases.
 
 ### Setup
 
-Currently this project uses Vivado 2020.2.
+#### Install Vivado
 
-After installing, set up a shared IP cache to speed up synthesis of Xilinx IP:
+Currently this project uses Vivado 2020.2. The free edition is sufficient. Make sure to install with support for Zynq-7000 SoCs.
+
+Install the [Pynq-Z2 Vivado board files](https://pynq.readthedocs.io/en/latest/overlay_design_methodology/board_settings.html).
+
+Additionally, you should set up a shared IP cache to speed up synthesis of Xilinx IP:
 1. Create the `~/vivado_ip_cache` directory (could be located somewhere else).
 2. Create the file `~/.Xilinx/Vivado/Vivado_init.tcl`
 3. In that file, add `set_param project.defaultIPCacheSetting /home/eli/vivado_ip_cache/` (substituting the absolute path to the IP cache directory).
 
-### Running `fusesoc`
+#### Install other tools
+
+You'll need to install JDK 8 or later, and [Scala Build Tool (`sbt`)](https://www.scala-sbt.org/download.html). Additionally, install [FuseSoC](https://github.com/olofk/fusesoc).
+
+### Building the bitstream
 
 From the top-level directory:
 
@@ -28,6 +37,7 @@ fusesoc --cores-root . run --build --target=pynq_z2 elipsitz:gameboy:gameboy
 ```
 
 This will generate a `.bit` and `.hwh` file, which need to be accessible to the PS Python code.
+
 
 ## Running
 
@@ -53,12 +63,29 @@ The program will load the bitstream to the PL. It takes a few seconds to load al
 
 Warning: the audio output can be quite loud. Start at the lowest setting on the monitor/TV and increase it as needed.
 
+
+## Building the cartridge adapter board
+
+To play physical cartridges, you'll need to assemble the adapter board. KiCad board files can be found in the `pcb/pynq_adapter_rev2` directory. The schematic is pre-populated with LCSC part numbers for easy assembly at JLCPCB.
+
+You'll need to add a few components yourself. These are all easy to solder:
+
+* A 2x20 0.1mm female pin header (e.g. [this one](https://www.adafruit.com/product/2222)). These are used for Raspberry Pi HATs, so they're pretty easy to find.
+* A SPDT slide switch such as the [EG1218](https://octopart.com/search?q=EG1218), or just a 1x3 strip of 0.1mm male pin header and a jumper.
+* A GBA SP slot (such as [this one](https://handheldlegend.com/products/game-boy-cartridge-slot)). These can be found quite cheaply on eBay or Aliexpress as well. They're all pretty much the same.
+* If desired, a GBA link port (e.g. [this one](https://handheldlegend.com/products/game-boy-advance-ext-link-port)). These can also be found easily from other sources.
+
+The other parts are relatively small, so I don't recommend hand soldering the board. However, if you want to assemble the whole thing yourself, in addition to assorted resistors and capacitors, you'll also need:
+
+* 6x [74LVC1T45DCK](https://octopart.com/search?q=74LVC1T45DCK) 1-bit level shifters.
+* 2x [74LVCH16T245DGGR](https://octopart.com/search?q=74LVCH16T245DGGR) 16-bit level shifters. The non 'H' version should work as well, but the 'H' (bus hold) version is preferable.
+
+
 ## Appendix
 
 ### Getting Xbox controller to work on Pynq-Z2
 
-This needs the `xpad` and `joydev` drivers. The Pynq image doesn't come with it built,
-so we'll need to build them as loadable kernel modules.
+This needs the `xpad` and `joydev` drivers. Pynq Linux isn't built with them. If you're running Pynq Linux with kernel `5.15.19-xilinx-v2022.1`, prebuilt kernel modules can be found in the `extra` directory in the repository. Otherwise, to build loadable kernel modules from scratch:
 
 On the Pynq-Z2, go to `/lib/modules/5.15.19-xilinx-v2022.1/build`.
 
